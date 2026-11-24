@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Fusiona oficios, bestias y divinidades en una forja de cartas.">
+  <meta name="theme-color" content="#0c0a14">
+  <title>Quimeraria · Forja de cartas</title>
+  <link rel="icon" href="./assets/sigil.png">
+  <link rel="stylesheet" href="./styles.css">
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a href="#forja" class="wordmark" aria-label="Quimeraria, forja">
+        <span class="brand-icon" aria-hidden="true">✧</span><span>Quimeraria<span class="brand-sub">JUEGO DE FUSIÓN</span></span>
+      </a>
+      <nav class="navigation" aria-label="Secciones del juego">
+        <a href="#forja" data-view="forja"><span aria-hidden="true">✦</span> Forja</a>
+        <a href="#coleccion" data-view="coleccion"><span aria-hidden="true">▤</span> Colección</a>
+        <a href="#sobres" data-view="sobres"><span aria-hidden="true">◈</span> Sobres</a>
+        <a href="#expediciones" data-view="expediciones"><span aria-hidden="true">⌖</span> Expediciones</a>
+      </nav>
+      <div class="account">
+        <button class="wallet" data-action="rules" aria-label="Óbolos y reglas"><span class="coin" aria-hidden="true">◈</span><strong id="wallet">—</strong><span class="wallet-name">óbolos</span></button>
+        <button class="help-button" data-action="rules" aria-label="Cómo jugar">?</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main" class="container">
+    <div id="app"></div>
+    <noscript>Activa JavaScript para jugar Quimeraria.</noscript>
+  </main>
+
+  <footer class="page-footer container">
+    <span><i aria-hidden="true">✧</i> Quimeraria</span>
+    <button data-action="rules">Cómo jugar</button>
+    <span>El progreso se guarda en este navegador</span>
+  </footer>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <dialog id="modal" aria-labelledby="modal-title"><div id="modal-content"></div></dialog>
+</body>
+</html>
