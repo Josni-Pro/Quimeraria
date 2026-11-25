@@ -9,6 +9,7 @@ import { PORTRAIT_PROFILES } from "./portrait-profiles.js";
 import { renderAlchemy, renderAberrationDetails, renderEssences } from "./alchemy-ui.js";
 import { energyAccent, playRitual } from "./ritual.js";
 import { ALCHEMY } from "./game-config.js";
+import { FAILURE_FAMILIES } from "./aberration-concepts.js";
 import { CONCEPT_LABELS, getCreatureConcept } from "./creature-concepts.js";
 import { CAPABILITY_FAMILIES, COMBAT_ROLES, COMBAT_STATS, getCreatureProfiles, MOBILITY_LABELS, UTILITY_FAMILIES } from "./creature-profiles.js";
 import { VARIANT_FAMILIES, VARIANT_QUALITY_LABELS } from "./fusion-variants.js";
@@ -147,7 +148,7 @@ function cardFace(card, options = {}) {
     ${badge(card, "card-badge")}
     ${count || picked ? `<span class="card-count ${picked ? "card-pick" : ""}">${picked ? "✓" + (picked > 1 ? picked : "") : "×" + count}</span>` : ""}
     <span class="card-name">${escape(card.name)}</span>
-    <span class="card-kind">${CATEGORIES[card.category].singular}${card.generation ? " · G" + card.generation : ""}${finish ? " · " + finish : ""}</span>
+    <span class="card-kind">${CATEGORIES[card.category].singular}${card.generation ? " · G" + card.generation : ""}${finish ? " · " + finish : ""}${card.category === "aberration" ? " · " + (FAILURE_FAMILIES[card.family] ?? FAILURE_FAMILIES.historical) : ""}</span>
     ${slot ? `<span class="card-tags">${traits(card)}</span>` : ""}
     ${compact && card.stats ? `<span class="micro-stats">${Object.keys(STATS).map(id => `<span aria-label="${STATS[id].name}">${icons[id]}</span>${card.stats[id]}`).join("")}</span>` : ""}
   </${tag}>`;
@@ -252,6 +253,10 @@ function collectionGroups(items) {
       key = card.family ?? "legacy";
       label = interpretationName(card);
     }
+    if (card.category === "aberration" && collectionGroup === "family") {
+      key = "aberration-" + card.family;
+      label = FAILURE_FAMILIES[card.family] ?? FAILURE_FAMILIES.historical;
+    }
     if (!groups.has(key)) groups.set(key, { label, items: [] });
     groups.get(key).items.push(item);
   }
@@ -271,6 +276,7 @@ function collectionGrid() {
       terms.push(speciesName(card), ...roleNames(getCreatureProfiles(card).combat));
     }
     if (view === "coleccion" && card.category === "fusion") terms.push(interpretationName(card));
+    if (view === "coleccion" && card.category === "aberration") terms.push(FAILURE_FAMILIES[card.family], ...cardNames(card.parents));
     return normalize(terms.join(" ")).includes(search);
   });
   if (!items.length) return '<div class="empty">No hay cartas con estos filtros.</div>';

@@ -19,7 +19,7 @@ button:focus-visible, select:focus-visible, summary:focus-visible, a:focus-visib
 .brand { color: inherit; text-decoration: none; font: 700 1.4rem Georgia, serif; }
 .back { text-underline-offset: .2em; }
 .intro { max-width: 46rem; margin: 2.6rem 0 2rem; }
-h1, h2, h3 { font-family: Georgia, serif; line-height: 1.14; margin: 0; }
+h1, h2, h3, h4 { font-family: Georgia, serif; line-height: 1.14; margin: 0; }
 h1 { font-size: clamp(2.05rem, 5.5vw, 3.5rem); }
 .intro p, #pair-summary, .note { color: var(--muted); }
 .layout { display: grid; grid-template-columns: minmax(13rem, 15rem) minmax(0, 1fr); gap: 1.3rem; align-items: start; padding-bottom: 3rem; }
@@ -35,7 +35,8 @@ h1 { font-size: clamp(2.05rem, 5.5vw, 3.5rem); }
 .variant__meta { color: var(--gold); font-size: .85rem; margin: 0 0 .45rem; }
 .variant__name { font-size: 1.45rem; }
 .variant__role { color: var(--muted); font-size: .87rem; margin-bottom: 1rem; }
-#export-registry { margin: 0 0 1rem; background: transparent; border: 1px solid var(--edge); color: var(--gold); border-radius: .3rem; padding: .4rem .65rem; cursor: pointer; }
+#export-registry, #export-aberrations, .trial button { margin: 0 0 1rem; background: transparent; border: 1px solid var(--edge); color: var(--gold); border-radius: .3rem; padding: .4rem .65rem; cursor: pointer; }
+.trial button:disabled { color: var(--muted); cursor: default; }
 .variant__button { color: #201524; background: var(--gold); border: none; border-radius: .3rem; padding: .45rem .66rem; min-height: 2.4rem; cursor: pointer; font-weight: 650; }
 .variant__button:disabled { color: var(--muted); background: #31253b; cursor: default; }
 details { border-top: 1px solid var(--edge); margin: .95rem 0; padding-top: .75rem; }
@@ -50,3 +51,18 @@ dd { margin: 0 0 .55rem; overflow-wrap: anywhere; }
 .art-batch .variant__name { margin-bottom: .4rem; }
 .art-batch code { overflow-wrap: anywhere; }
 .art-links { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .25rem 1rem; }
+
+.trial {
+  display: grid;
+  gap: .6rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--edge);
+}
+
+.trial h2, .trial p, .trial ol { margin: 0; }
+.trial ol { padding-left: 1.25rem; }
+.trial h2 { font-size: 1.1rem; }
+.trial button { justify-self: start; margin: 0; }
+.results > h3 { margin: 1.75rem 0 .75rem; }
+.variant__body code { overflow-wrap: anywhere; }

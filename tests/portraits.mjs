@@ -5,10 +5,11 @@ import { pathToFileURL } from 'node:url'
 import { CARDS, RECIPES } from '../docs/catalog.js'
 import { describeFusionPortrait, fusionPortraitSpec, renderFusionPortrait } from '../docs/fusion-art.js'
 import { nameFusion } from '../docs/fusion-names.js'
-import { ABERRATION_DEFECTS, ALCHEMY } from '../docs/game-config.js'
+import { ALCHEMY } from '../docs/game-config.js'
+import { FAILURE_FAMILIES } from '../docs/aberration-concepts.js'
 import { assetPortrait, getPortrait } from '../docs/illustrations.js'
 import {
-  acknowledgeReveal, createGame, fuseCards, getCard, loadGame, SAVE_VERSION, serializeGame,
+  acknowledgeReveal, createGame, fuseCards, getCard, inspectAberrationVariants, loadGame, SAVE_VERSION, serializeGame,
 } from '../docs/engine.js'
 
 const fixture = JSON.parse(readFileSync(new URL('./fixtures/quimeraria-v1.json', import.meta.url), 'utf8'))
@@ -184,18 +185,24 @@ function verifyAdvancedPortraits() {
   const stocked = originalState()
   for (const [index, first] of CARDS.entries()) {
     for (const second of CARDS.slice(index)) {
-      const failure = fuseCards(stocked, first.id, second.id, () => 1)
-      assert.ok(failure.ok && failure.outcome === 'aberration', failure.error)
-      const { card } = failure
-      const spec = fusionPortraitSpec(card, failure.state)
-      assert.equal(spec.defect, card.defect)
-      assert.ok(ABERRATION_DEFECTS[spec.defect])
-      assert.deepEqual(spec.groups.flat().map(profile => profile.id).sort(), [...card.parents].sort())
-      if (!defects.has(card.defect)) defects.set(card.defect, { card, state: failure.state, level: 1 })
+      const failure = inspectAberrationVariants(stocked, first.id, second.id)
+      assert.ok(failure.ok)
+      for (const card of failure.variants) {
+        assert.ok(FAILURE_FAMILIES[card.family])
+        assert.deepEqual(card.identity.contributions.map(source => source.parentId), card.parents)
+        if (!defects.has(card.defect)) {
+          const art = getPortrait(card, stocked)
+          if (art.kind === 'generated') assert.match(art.src, /^data:image\/svg\+xml/)
+          defects.set(card.defect, art.src)
+        }
+      }
     }
   }
-  assert.equal(defects.size, Object.keys(ABERRATION_DEFECTS).length, 'El catálogo permite ilustrar todos los defectos configurados')
-  return { advanced, defects: [...defects.values()] }
+  assert.equal(defects.size, Object.keys(FAILURE_FAMILIES).length - 1)
+  assert.equal(new Set(defects.values()).size, defects.size)
+  const old = loadGame(readFileSync(new URL('./fixtures/quimeraria-v3-aberraciones.json', import.meta.url), 'utf8'))
+  const legacyDefects = Object.values(old.aberrations).map(card => ({ card, state: old, level: 1 }))
+  return { advanced, defectCount: defects.size, legacyDefects }
 }
 
 function verifyCurrentSaveMigration() {
@@ -298,17 +305,17 @@ async function verifyRasterVariants(variants, extra) {
 const combinations = verifyNewNames()
 const advancedNames = verifyAdvancedNames(combinations)
 const generatedPortraits = verifyGeneratedPortraits(combinations)
-const { advanced, defects } = verifyAdvancedPortraits()
+const { advanced, defectCount, legacyDefects } = verifyAdvancedPortraits()
 const legacyCount = verifyCurrentSaveMigration()
 const { levels, variants } = verifyPortraitLevels()
-const rasterVariants = await verifyRasterVariants(variants, [...advanced, ...defects])
+const rasterVariants = await verifyRasterVariants(variants, [...advanced, ...legacyDefects])
 console.log(JSON.stringify({
   retratosDedicados: verifyIllustrations(),
   nombresGeneradosYDeReceta: combinations.length,
   nombresDeSegundaGeneracion: advancedNames,
   composicionesVerificadas: generatedPortraits,
   generacionesAltasIlustradas: advanced.length,
-  defectosIlustrados: defects.length,
+  defectosIlustrados: defectCount,
   fusionesMigradas: legacyCount,
   progresionVisual: levels,
   ...(rasterVariants && { variantesRasterizadas: rasterVariants }),

@@ -1,0 +1,484 @@
+{
+  "version": 3,
+  "coins": 2374,
+  "pity": {},
+  "inventory": {
+    "civil": 12,
+    "obrero": 12,
+    "alquimista": 11,
+    "mago": 12,
+    "abogado": 11,
+    "medica": 12,
+    "herrera": 12,
+    "cartografa": 12,
+    "musico": 12,
+    "arquitecta": 12,
+    "lobo": 9,
+    "zorro": 11,
+    "buho": 8,
+    "oso": 12,
+    "pulpo": 11,
+    "ajolote": 12,
+    "mamut": 11,
+    "velociraptor": 12,
+    "triceratops": 12,
+    "anquilosaurio": 12,
+    "megalodon": 12,
+    "rinoceronte_lanudo": 12,
+    "grifo": 12,
+    "dragon": 12,
+    "fenix": 12,
+    "esfinge": 12,
+    "sirena": 12,
+    "quetzalcoatl": 12,
+    "anubis": 12,
+    "atenea": 12,
+    "thor": 12,
+    "aberration(lobo+mamut)": 1
+  },
+  "fusionCopies": {},
+  "fusions": {},
+  "aberrations": {
+    "aberration(alquimista+lobo)": {
+      "id": "aberration(alquimista+lobo)",
+      "name": "Eje atravesado de Crisocolmillo",
+      "category": "aberration",
+      "rarity": null,
+      "stats": null,
+      "ability": null,
+      "traits": [
+        "alquimia",
+        "olfato",
+        "erudicion"
+      ],
+      "art": null,
+      "description": "Un objeto rígido atraviesa el eje que une todas sus articulaciones. La pieza las mantiene fijas en direcciones incompatibles.",
+      "defect": "objeto_incrustado",
+      "generation": 1,
+      "parents": [
+        "alquimista",
+        "lobo"
+      ],
+      "lineage": [
+        "alquimista",
+        "lobo"
+      ]
+    },
+    "aberration(buho+lobo)": {
+      "id": "aberration(buho+lobo)",
+      "name": "Aleteo inverso de Lupopluma",
+      "category": "aberration",
+      "rarity": null,
+      "stats": null,
+      "ability": null,
+      "traits": [
+        "vuelo",
+        "olfato",
+        "nocturno"
+      ],
+      "art": null,
+      "description": "Las alas nacen bajo el cuerpo, con las plumas hacia dentro. Cada aleteo empuja a la criatura contra el suelo.",
+      "defect": "alas_invertidas",
+      "generation": 1,
+      "parents": [
+        "buho",
+        "lobo"
+      ],
+      "lineage": [
+        "buho",
+        "lobo"
+      ]
+    },
+    "aberration(buho+zorro)": {
+      "id": "aberration(buho+zorro)",
+      "name": "Órbita andante de Vulpipluma",
+      "category": "aberration",
+      "rarity": null,
+      "stats": null,
+      "ability": null,
+      "traits": [
+        "vuelo",
+        "sigilo",
+        "nocturno"
+      ],
+      "art": null,
+      "description": "Una extremidad ocupa la órbita y se dobla al intentar mirar. Nunca llega al suelo para sostener el cuerpo.",
+      "defect": "miembro_ocular",
+      "generation": 1,
+      "parents": [
+        "buho",
+        "zorro"
+      ],
+      "lineage": [
+        "buho",
+        "zorro"
+      ]
+    },
+    "aberration(abogado+pulpo)": {
+      "id": "aberration(abogado+pulpo)",
+      "name": "Enjambre anudado de Lexitentáculo",
+      "category": "aberration",
+      "rarity": null,
+      "stats": null,
+      "ability": null,
+      "traits": [
+        "autoridad",
+        "oceano",
+        "erudicion"
+      ],
+      "art": null,
+      "description": "Sus extremidades se enlazan a través de un único punto de apoyo. Cuando tira de una, las demás quedan inmovilizadas.",
+      "defect": "enjambre_trabado",
+      "generation": 1,
+      "parents": [
+        "abogado",
+        "pulpo"
+      ],
+      "lineage": [
+        "abogado",
+        "pulpo"
+      ]
+    },
+    "aberration(buho+buho)": {
+      "id": "aberration(buho+buho)",
+      "name": "Cuello de contramarcha de Noctipluma",
+      "category": "aberration",
+      "rarity": null,
+      "stats": null,
+      "ability": null,
+      "traits": [
+        "vuelo",
+        "nocturno"
+      ],
+      "art": null,
+      "description": "Dos cabezas dirigen la misma columna hacia rumbos opuestos. Cada intento de avanzar bloquea el siguiente movimiento.",
+      "defect": "cabezas_opuestas",
+      "generation": 1,
+      "parents": [
+        "buho",
+        "buho"
+      ],
+      "lineage": [
+        "buho"
+      ]
+    },
+    "aberration(lobo+mamut)": {
+      "id": "aberration(lobo+mamut)",
+      "name": "Paso ladeado de Marficolmillo",
+      "category": "aberration",
+      "rarity": null,
+      "stats": null,
+      "ability": null,
+      "traits": [
+        "olfato",
+        "temple",
+        "manada"
+      ],
+      "art": null,
+      "description": "Todas las extremidades nacen del mismo costado. Su peso cae donde no tiene ningún apoyo.",
+      "defect": "extremidades_unilaterales",
+      "generation": 1,
+      "parents": [
+        "lobo",
+        "mamut"
+      ],
+      "lineage": [
+        "lobo",
+        "mamut"
+      ]
+    }
+  },
+  "portraits": {},
+  "essences": {
+    "essence-6": {
+      "id": "essence-6",
+      "category": "essence",
+      "name": "Esencia Quimérica",
+      "sources": [
+        "aberration(abogado+pulpo)",
+        "aberration(alquimista+lobo)",
+        "aberration(buho+buho)",
+        "aberration(buho+lobo)",
+        "aberration(buho+zorro)"
+      ],
+      "progenitors": [
+        {
+          "id": "abogado",
+          "count": 1
+        },
+        {
+          "id": "alquimista",
+          "count": 1
+        },
+        {
+          "id": "buho",
+          "count": 4
+        },
+        {
+          "id": "lobo",
+          "count": 2
+        },
+        {
+          "id": "pulpo",
+          "count": 1
+        },
+        {
+          "id": "zorro",
+          "count": 1
+        }
+      ],
+      "pairCount": 17
+    }
+  },
+  "discovered": [
+    "civil",
+    "obrero",
+    "alquimista",
+    "mago",
+    "abogado",
+    "medica",
+    "herrera",
+    "cartografa",
+    "musico",
+    "arquitecta",
+    "lobo",
+    "zorro",
+    "buho",
+    "oso",
+    "pulpo",
+    "ajolote",
+    "mamut",
+    "velociraptor",
+    "triceratops",
+    "anquilosaurio",
+    "megalodon",
+    "rinoceronte_lanudo",
+    "grifo",
+    "dragon",
+    "fenix",
+    "esfinge",
+    "sirena",
+    "quetzalcoatl",
+    "anubis",
+    "atenea",
+    "thor",
+    "aberration(alquimista+lobo)",
+    "aberration(buho+lobo)",
+    "aberration(buho+zorro)",
+    "aberration(abogado+pulpo)",
+    "aberration(buho+buho)",
+    "aberration(lobo+mamut)"
+  ],
+  "history": [
+    {
+      "kind": "aberration",
+      "cardId": "aberration(lobo+mamut)",
+      "parents": [
+        "lobo",
+        "mamut"
+      ],
+      "paid": 24
+    },
+    {
+      "kind": "essence",
+      "essenceId": "essence-6",
+      "sources": [
+        "aberration(abogado+pulpo)",
+        "aberration(alquimista+lobo)",
+        "aberration(buho+buho)",
+        "aberration(buho+lobo)",
+        "aberration(buho+zorro)"
+      ],
+      "progenitors": [
+        {
+          "id": "abogado",
+          "count": 1
+        },
+        {
+          "id": "alquimista",
+          "count": 1
+        },
+        {
+          "id": "buho",
+          "count": 4
+        },
+        {
+          "id": "lobo",
+          "count": 2
+        },
+        {
+          "id": "pulpo",
+          "count": 1
+        },
+        {
+          "id": "zorro",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "kind": "aberration",
+      "cardId": "aberration(buho+buho)",
+      "parents": [
+        "buho",
+        "buho"
+      ],
+      "paid": 18
+    },
+    {
+      "kind": "aberration",
+      "cardId": "aberration(abogado+pulpo)",
+      "parents": [
+        "abogado",
+        "pulpo"
+      ],
+      "paid": 24
+    },
+    {
+      "kind": "aberration",
+      "cardId": "aberration(buho+zorro)",
+      "parents": [
+        "buho",
+        "zorro"
+      ],
+      "paid": 18
+    },
+    {
+      "kind": "aberration",
+      "cardId": "aberration(buho+lobo)",
+      "parents": [
+        "buho",
+        "lobo"
+      ],
+      "paid": 18
+    },
+    {
+      "kind": "aberration",
+      "cardId": "aberration(alquimista+lobo)",
+      "parents": [
+        "alquimista",
+        "lobo"
+      ],
+      "paid": 24
+    }
+  ],
+  "alchemyHistory": [
+    {
+      "kind": "aberration",
+      "cardId": "aberration(lobo+mamut)",
+      "parents": [
+        "lobo",
+        "mamut"
+      ],
+      "paid": 24
+    },
+    {
+      "kind": "essence",
+      "essenceId": "essence-6",
+      "sources": [
+        "aberration(abogado+pulpo)",
+        "aberration(alquimista+lobo)",
+        "aberration(buho+buho)",
+        "aberration(buho+lobo)",
+        "aberration(buho+zorro)"
+      ],
+      "progenitors": [
+        {
+          "id": "abogado",
+          "count": 1
+        },
+        {
+          "id": "alquimista",
+          "count": 1
+        },
+        {
+          "id": "buho",
+          "count": 4
+        },
+        {
+          "id": "lobo",
+          "count": 2
+        },
+        {
+          "id": "pulpo",
+          "count": 1
+        },
+        {
+          "id": "zorro",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "kind": "aberration",
+      "cardId": "aberration(buho+buho)",
+      "parents": [
+        "buho",
+        "buho"
+      ],
+      "paid": 18
+    },
+    {
+      "kind": "aberration",
+      "cardId": "aberration(abogado+pulpo)",
+      "parents": [
+        "abogado",
+        "pulpo"
+      ],
+      "paid": 24
+    },
+    {
+      "kind": "aberration",
+      "cardId": "aberration(buho+zorro)",
+      "parents": [
+        "buho",
+        "zorro"
+      ],
+      "paid": 18
+    },
+    {
+      "kind": "aberration",
+      "cardId": "aberration(buho+lobo)",
+      "parents": [
+        "buho",
+        "lobo"
+      ],
+      "paid": 18
+    },
+    {
+      "kind": "aberration",
+      "cardId": "aberration(alquimista+lobo)",
+      "parents": [
+        "alquimista",
+        "lobo"
+      ],
+      "paid": 24
+    }
+  ],
+  "pendingReveal": {
+    "id": "reveal-7",
+    "kind": "fusion",
+    "outcome": "aberration",
+    "cardId": "aberration(lobo+mamut)",
+    "parents": [
+      "lobo",
+      "mamut"
+    ],
+    "portraitLevel": 1,
+    "paid": 24
+  },
+  "sequence": 7,
+  "settings": {
+    "animation": "full"
+  },
+  "stats": {
+    "packs": 0,
+    "fusions": 0,
+    "fusionFailures": 6,
+    "essencesCreated": 1,
+    "essencesUsed": 0,
+    "expeditions": 0,
+    "won": 0,
+    "missions": {}
+  }
+}

@@ -42,7 +42,7 @@ function verifyQuoteAndRolls() {
   const origin = createGame()
   const quote = previewFusion(origin, 'alquimista', 'lobo')
   assert.deepEqual(Object.keys(quote).sort(),
-    ['aberrationRate', 'affordable', 'cost', 'ok', 'successRate'].sort(),
+    ['aberrationRate', 'affordable', 'cost', 'generation', 'ok', 'successRate'].sort(),
     'La cotización no debe exponer la carta, ilustración, rareza, rasgos o variante')
   assert.ok(quote.ok && quote.affordable)
   assert.equal(quote.cost, ECONOMY.fusionCosts[1])
@@ -65,8 +65,7 @@ function verifyQuoteAndRolls() {
     })
     assert.ok(resolved.ok)
     assert.equal(resolved.outcome, expected)
-    assert.equal(calls, expected === 'success' ? 2 : 1,
-      'Solo una fusión exitosa debe tirar para elegir variante')
+    assert.equal(calls, 2, 'El resultado y la variante se eligen por separado')
     assert.equal(resolved.state.coins, origin.coins - quote.cost)
     assert.equal(ownedCount(resolved.state, 'alquimista'), 0)
     assert.equal(ownedCount(resolved.state, 'lobo'), 0)
@@ -151,7 +150,7 @@ function validatePairKeys(state, progenitors) {
       const b = getCard(second.id, state)
       assert.ok(a && b)
       if (Math.max(a.generation, b.generation) >= ALCHEMY.maxGeneration) continue
-      if (Math.max(a.generation, b.generation) > 0 && a.lineage.some(id => b.lineage.includes(id))) continue
+      if (a.id !== b.id && Math.max(a.generation, b.generation) > 0 && a.lineage.some(id => b.lineage.includes(id))) continue
       valid.add(pairKey(a.id, b.id))
     }
   }
@@ -331,17 +330,17 @@ function simulateFailureEconomy() {
   let successes = 0
   let failures = 0
   let recovered = 0
-  let aberrationId
+  const aberrations = []
 
   for (let attempt = 0; attempt < count; attempt += 1) {
     const resolved = fuseCards(state, a, b, rng)
     assert.ok(resolved.ok, resolved.error)
     successes += Number(resolved.outcome === 'success')
     failures += Number(resolved.outcome === 'aberration')
-    if (resolved.outcome === 'aberration') aberrationId = resolved.card.id
+    if (resolved.outcome === 'aberration') aberrations.push(resolved.card.id)
     state = finish(resolved)
-    if (aberrationId && ownedCount(state, aberrationId) >= ALCHEMY.aberrationsPerEssence) {
-      const created = createEssence(state, Array(ALCHEMY.aberrationsPerEssence).fill(aberrationId))
+    if (aberrations.length === ALCHEMY.aberrationsPerEssence) {
+      const created = createEssence(state, aberrations.splice(0))
       assert.ok(created.ok, created.error)
       const returned = useEssence(created.state, created.essence.id, rng)
       assert.ok(returned.ok && returned.outcome === 'success')
@@ -356,7 +355,9 @@ function simulateFailureEconomy() {
   assert.equal(state.coins, initial.coins - count * attemptCost)
   assert.equal(ownedCount(state, a), 0)
   assert.equal(ownedCount(state, b), 0)
-  assert.equal(ownedCount(state, aberrationId), failures % ALCHEMY.aberrationsPerEssence)
+  const remaining = Object.entries(state.inventory).reduce((sum, [id, copies]) =>
+    sum + (getCard(id, state).category === 'aberration' ? copies : 0), 0)
+  assert.equal(remaining, failures % ALCHEMY.aberrationsPerEssence)
   assert.equal(recovered, Math.floor(failures / ALCHEMY.aberrationsPerEssence))
   assert.equal(Object.keys(state.essences).length, 0)
   const functionalCopies = Object.entries(state.inventory).reduce((sum, [id, copies]) =>

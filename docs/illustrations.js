@@ -1,6 +1,7 @@
 import { artStatus, resolvePortraitAsset } from "./fusion-art-registry.js";
 import { renderFusionPortrait } from "./fusion-art.js";
 import { renderProvisionalPortrait } from "./provisional-art.js";
+import { renderAberrationPortrait } from "./aberration-portrait.js";
 
 const finishes = ["", "", "Refinada", "Magistral"];
 
@@ -18,6 +19,10 @@ export function getPortrait(card, state, level = portraitLevelFor(card, state), 
   const asset = resolvePortraitAsset(card, level);
   if (asset) return { src: assetPortrait(asset.key), kind: asset.kind, level };
   if (card.category !== "fusion" && card.category !== "aberration") return { src: null, kind: "missing", level };
+  if (card.category === "aberration" && card.failureRulesVersion) {
+    return defer ? { src: null, kind: "generated", format: "svg", level, deferred: true }
+      : { src: renderAberrationPortrait(card), kind: "generated", format: "svg", level };
+  }
   if (card.category === "fusion" && card.identity?.shape && card.identity.shape !== "classic") {
     return defer ? { src: null, kind: "generated", format: "svg", level, deferred: true }
       : { src: renderProvisionalPortrait(card, level), kind: "generated", format: "svg", level };

@@ -1,5 +1,6 @@
-import { getCard, previewEssence } from "./engine.js";
+import { getAberrationCopies, getCard, previewEssence } from "./engine.js";
 import { ALCHEMY } from "./game-config.js";
+import { FAILURE_FAMILIES } from "./aberration-concepts.js";
 
 function escape(value) {
   return String(value ?? "").replace(/[&<>"']/g, character => ({
@@ -35,8 +36,15 @@ function provenance(parents, lineage, state) {
 }
 
 export function renderAberrationDetails({ state, card }) {
-  return `<p class="alchemy-defect">${escape(card.description)}</p>
-    ${provenance(card.parents, card.lineage, state)}`;
+  const label = FAILURE_FAMILIES[card.family] ?? FAILURE_FAMILIES.historical;
+  const copies = getAberrationCopies(state, card.id);
+  const available = state.inventory[card.id] ?? 0;
+  return `<p><strong>${escape(label)}</strong> · G${card.generation}</p>
+    <p class="alchemy-defect">${escape(card.description)}</p>
+    ${provenance(card.parents, card.lineage, state)}
+    <p>${available ? `${available} ${available === 1 ? "copia disponible" : "copias disponibles"} para destilar esencia.`
+      : "Descubierta · 0 copias disponibles para destilar."}</p>
+    ${copies.length ? `<details><summary>Identificadores de las copias</summary><ul>${copies.map(({ id }) => `<li><code>${escape(id)}</code></li>`).join("")}</ul></details>` : ""}`;
 }
 
 function aberrationRow(card, count, picked, canAdd, state, cardFace) {
@@ -85,15 +93,16 @@ function usedEssences(state) {
 }
 
 function essenceRow(essence, state) {
-  const count = essence.progenitors.length;
+  const count = essence.progenitors.reduce((total, entry) => total + entry.count, 0);
+  const unavailable = essence.pairCount === 0;
   return `<li class="alchemy-essence">
     <div class="alchemy-essence-main">
       ${essenceSymbol()}
       <div class="alchemy-essence-copy">
         <strong>${escape(essence.name)}</strong>
-        <span>${count} ${count === 1 ? "progenitor registrado" : "progenitores registrados"} · ${essence.used ? "Consumida" : "Éxito garantizado"}</span>
+        <span>${count} ${count === 1 ? "referencia directa" : "referencias directas"} · ${essence.used ? "Consumida" : unavailable ? "En espera de una pareja compatible" : "Éxito garantizado"}</span>
       </div>
-      ${essence.used ? "" : `<button type="button" class="button alchemy-use" data-action="alchemy-use" data-id="${escape(essence.id)}" ${state.pendingReveal ? "disabled" : ""}>Utilizar</button>`}
+      ${essence.used ? "" : `<button type="button" class="button alchemy-use" data-action="alchemy-use" data-id="${escape(essence.id)}" ${state.pendingReveal || unavailable ? "disabled" : ""}>Utilizar</button>`}
     </div>
     <details class="alchemy-origin">
       <summary>Progenitores registrados</summary>
