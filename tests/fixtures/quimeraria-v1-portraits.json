@@ -1,0 +1,159 @@
+{
+  "version": 1,
+  "coins": 192,
+  "pity": {
+    "esencial": 1
+  },
+  "inventory": {
+    "mamut": 1,
+    "zorro": 1,
+    "fusion(alquimista+lobo)": 3,
+    "fusion(buho+obrero)": 2
+  },
+  "fusions": {
+    "fusion(alquimista+lobo)": {
+      "id": "fusion(alquimista+lobo)",
+      "name": "Arcanolobo",
+      "category": "fusion",
+      "rarity": 2,
+      "stats": {
+        "power": 5,
+        "guard": 4,
+        "focus": 9
+      },
+      "ability": "olfato_alquimico",
+      "traits": [
+        "alquimia",
+        "olfato",
+        "erudicion"
+      ],
+      "art": "arcanolobo",
+      "description": "Sigue reactivos invisibles para un olfato común y reconoce cambios en su composición.",
+      "generation": 1,
+      "parents": [
+        "alquimista",
+        "lobo"
+      ],
+      "lineage": [
+        "alquimista",
+        "lobo"
+      ]
+    },
+    "fusion(buho+obrero)": {
+      "id": "fusion(buho+obrero)",
+      "name": "Ferropluma",
+      "category": "fusion",
+      "rarity": 1,
+      "stats": {
+        "power": 5,
+        "guard": 4,
+        "focus": 6
+      },
+      "ability": "vista_lunar",
+      "traits": [
+        "vuelo",
+        "forja",
+        "nocturno"
+      ],
+      "art": null,
+      "description": "Quimera que combina los rasgos de Búho y Obrero.",
+      "generation": 1,
+      "parents": [
+        "buho",
+        "obrero"
+      ],
+      "lineage": [
+        "buho",
+        "obrero"
+      ]
+    }
+  },
+  "portraits": {
+    "fusion(alquimista+lobo)": 3,
+    "fusion(buho+obrero)": 2
+  },
+  "discovered": [
+    "alquimista",
+    "lobo",
+    "mamut",
+    "buho",
+    "obrero",
+    "zorro",
+    "fusion(alquimista+lobo)",
+    "fusion(buho+obrero)"
+  ],
+  "history": [
+    {
+      "kind": "fusion",
+      "cardId": "fusion(buho+obrero)",
+      "parents": [
+        "buho",
+        "obrero"
+      ],
+      "paid": 18
+    },
+    {
+      "kind": "fusion",
+      "cardId": "fusion(buho+obrero)",
+      "parents": [
+        "buho",
+        "obrero"
+      ],
+      "paid": 18
+    },
+    {
+      "kind": "fusion",
+      "cardId": "fusion(alquimista+lobo)",
+      "parents": [
+        "alquimista",
+        "lobo"
+      ],
+      "paid": 24
+    },
+    {
+      "kind": "fusion",
+      "cardId": "fusion(alquimista+lobo)",
+      "parents": [
+        "alquimista",
+        "lobo"
+      ],
+      "paid": 24
+    },
+    {
+      "kind": "fusion",
+      "cardId": "fusion(alquimista+lobo)",
+      "parents": [
+        "alquimista",
+        "lobo"
+      ],
+      "paid": 24
+    },
+    {
+      "kind": "pack",
+      "packId": "esencial",
+      "cards": [
+        "obrero",
+        "obrero",
+        "obrero"
+      ],
+      "paid": 55,
+      "pityTriggered": false
+    },
+    {
+      "kind": "expedition",
+      "missionId": "observatorio",
+      "success": true,
+      "reward": 31,
+      "score": 19
+    }
+  ],
+  "stats": {
+    "packs": 1,
+    "fusions": 5,
+    "expeditions": 1,
+    "won": 1,
+    "missions": {
+      "observatorio": 1
+    }
+  }
+}

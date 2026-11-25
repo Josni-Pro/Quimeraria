@@ -2,13 +2,14 @@ import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
-import { CARDS, RECIPES } from '../dist/catalog.js'
-import { describeFusionPortrait, fusionPortraitSpec, renderFusionPortrait } from '../dist/fusion-art.js'
-import { nameFusion } from '../dist/fusion-names.js'
-import { assetPortrait, getPortrait } from '../dist/illustrations.js'
+import { CARDS, RECIPES } from '../docs/catalog.js'
+import { describeFusionPortrait, fusionPortraitSpec, renderFusionPortrait } from '../docs/fusion-art.js'
+import { nameFusion } from '../docs/fusion-names.js'
+import { ABERRATION_DEFECTS, ALCHEMY } from '../docs/game-config.js'
+import { assetPortrait, getPortrait } from '../docs/illustrations.js'
 import {
-  createGame, fuseCards, getCard, loadGame, previewFusion, serializeGame,
-} from '../dist/engine.js'
+  acknowledgeReveal, createGame, fuseCards, getCard, loadGame, SAVE_VERSION, serializeGame,
+} from '../docs/engine.js'
 
 const fixture = JSON.parse(readFileSync(new URL('./fixtures/quimeraria-v1.json', import.meta.url), 'utf8'))
 const originalState = () => ({
@@ -22,8 +23,9 @@ const expansionCard = {
   ...getCard('civil'), id: 'astronoma', name: 'Astrónoma', art: 'astronoma',
   traits: ['erudicion', 'presagio'], lineage: ['astronoma'],
 }
-const readAsset = id => readFileSync(new URL(`../dist/assets/${id}.webp`, import.meta.url))
+const readAsset = id => readFileSync(new URL(`../docs/assets/${id}.webp`, import.meta.url))
 const fusionId = (a, b) => `fusion(${[a.id, b.id].sort().join('+')})`
+const forge = (state, first, second) => fuseCards(state, first, second, () => 0)
 
 function verifyIllustrations() {
   const collected = new Map()
@@ -43,7 +45,7 @@ function verifyIllustrations() {
     assert.deepEqual(getPortrait(card, state), { src: assetPortrait(card.art), kind: 'painted', level: 0 })
   }
   for (const recipe of RECIPES) {
-    const fusion = previewFusion(state, ...recipe.parents)
+    const fusion = forge(state, ...recipe.parents)
     assert.ok(fusion.ok, recipe.name)
     const stages = [recipe.art, ...(recipe.artVariants ?? [])]
     assert.equal(stages.length, 3, `La receta especial requiere tres retratos distintos: ${recipe.name}`)
@@ -68,9 +70,9 @@ function verifyNewNames() {
   const combinations = []
   for (const [index, first] of CARDS.entries()) {
     for (const second of CARDS.slice(index)) {
-      const preview = previewFusion(state, first.id, second.id)
+      const preview = forge(state, first.id, second.id)
       assert.ok(preview.ok, `Fusión rechazada: ${first.name} + ${second.name}`)
-      const reversed = previewFusion(state, second.id, first.id)
+      const reversed = forge(state, second.id, first.id)
       assert.ok(reversed.ok)
       const card = preview.card
       assertOriginalName(card)
@@ -140,7 +142,7 @@ function verifyGeneratedPortraits(combinations) {
     ['fusion(anubis+zorro)', 'obrero'],
   ]
   for (const ids of examples) {
-    const preview = previewFusion(state, ...ids)
+    const preview = forge(state, ...ids)
     assert.ok(preview.ok, ids.join(', '))
     const { card } = preview
     const portrait = fusionPortraitSpec(card, state)
@@ -159,10 +161,52 @@ function verifyGeneratedPortraits(combinations) {
   return seeds.size
 }
 
+function verifyAdvancedPortraits() {
+  const advanced = []
+  const defects = new Map()
+  let state = originalState()
+  let ancestor = getCard(CARDS[0].id)
+  for (let generation = 1; generation <= ALCHEMY.maxGeneration; generation += 1) {
+    const fusion = forge(state, ancestor.id, CARDS[generation].id)
+    assert.ok(fusion.ok, fusion.error)
+    const next = acknowledgeReveal(fusion.state, fusion.reveal.id)
+    assert.ok(next.ok, next.error)
+    state = next.state
+    ancestor = fusion.card
+    if (generation < 2) continue
+    const spec = fusionPortraitSpec(ancestor, state)
+    assert.equal(spec.generation, generation)
+    assert.deepEqual(spec.groups.map(group => group.map(profile => profile.id).sort()).sort(),
+      ancestor.parents.map(id => [...getCard(id, state).lineage].sort()).sort())
+    advanced.push({ card: ancestor, state, level: 1 })
+  }
+
+  const stocked = originalState()
+  for (const [index, first] of CARDS.entries()) {
+    for (const second of CARDS.slice(index)) {
+      const failure = fuseCards(stocked, first.id, second.id, () => 1)
+      assert.ok(failure.ok && failure.outcome === 'aberration', failure.error)
+      const { card } = failure
+      const spec = fusionPortraitSpec(card, failure.state)
+      assert.equal(spec.defect, card.defect)
+      assert.ok(ABERRATION_DEFECTS[spec.defect])
+      assert.deepEqual(spec.groups.flat().map(profile => profile.id).sort(), [...card.parents].sort())
+      if (!defects.has(card.defect)) defects.set(card.defect, { card, state: failure.state, level: 1 })
+    }
+  }
+  assert.equal(defects.size, Object.keys(ABERRATION_DEFECTS).length, 'El catálogo permite ilustrar todos los defectos configurados')
+  return { advanced, defects: [...defects.values()] }
+}
+
 function verifyCurrentSaveMigration() {
   const loaded = loadGame(JSON.stringify(fixture))
-  for (const key of ['coins', 'version', 'pity', 'inventory', 'discovered', 'stats', 'history']) {
+  assert.equal(loaded.version, SAVE_VERSION)
+  for (const key of ['coins', 'pity', 'inventory', 'discovered']) {
     assert.deepEqual(loaded[key], fixture[key], `La actualización cambió ${key}`)
+  }
+  for (const [key, value] of Object.entries(fixture.stats)) assert.deepEqual(loaded.stats[key], value, key)
+  for (const [index, entry] of fixture.history.entries()) {
+    for (const [key, value] of Object.entries(entry)) assert.deepEqual(loaded.history[index][key], value, key)
   }
   for (const [id, old] of Object.entries(fixture.fusions)) {
     const card = getCard(id, loaded)
@@ -173,7 +217,7 @@ function verifyCurrentSaveMigration() {
     if (old.name.includes(' × ')) {
       assertOriginalName(card)
       assert.notEqual(card.name, old.name)
-      assert.equal(getPortrait(card, loaded).kind, 'generated', 'La quimera anterior debe recibir un retrato de ambos linajes')
+      assert.equal(getPortrait(card, loaded).level, 1, 'La quimera anterior debe conservar su retrato de nivel inicial')
     } else {
       assert.equal(card.name, old.name, 'La receta especial debe conservar su nombre')
       assert.equal(getPortrait(card, loaded).src, assetPortrait(old.art), 'La receta especial conserva el retrato base')
@@ -201,17 +245,19 @@ function verifyPortraitLevels() {
   let card
   for (const [index, expectedLevel] of [1, 2, 3, 3].entries()) {
     const pair = index % 2 === 0 ? [first, second] : [second, first]
-    const preview = previewFusion(updated, ...pair)
-    const forged = fuseCards(updated, ...pair)
-    assert.ok(preview.ok && forged.ok)
+    const forged = forge(updated, ...pair)
+    assert.ok(forged.ok)
     if (!id) id = forged.card.id
     if (!card) card = forged.card
-    assert.deepEqual(preview.card, card, 'El aspecto visual no cambia la carta jugable')
     assert.deepEqual(forged.card, card)
-    assert.equal(preview.portraitLevel, expectedLevel, 'La vista previa muestra el nivel que se va a obtener')
+    assert.equal(forged.portraitLevel, expectedLevel)
     assert.equal(forged.state.portraits[id], expectedLevel, 'La fusión aumenta y limita el nivel del retrato')
     assert.equal(forged.state.inventory[id], index + 1, 'Las mejoras visuales no cambian la entrega de copias')
-    updated = loadGame(serializeGame(forged.state))
+    const restored = loadGame(serializeGame(forged.state))
+    assert.equal(restored.pendingReveal.id, forged.reveal.id)
+    const finalized = acknowledgeReveal(restored, forged.reveal.id)
+    assert.ok(finalized.ok)
+    updated = finalized.state
     assert.equal(updated.portraits[id], expectedLevel, 'La mejora visual debe conservarse al recargar')
     levels.push(updated.portraits[id])
     variants.push({ card, state: updated, level: expectedLevel })
@@ -219,7 +265,7 @@ function verifyPortraitLevels() {
   return { levels, variants }
 }
 
-async function verifyRasterVariants(variants) {
+async function verifyRasterVariants(variants, extra) {
   const modulePath = process.env.QUIMERARIA_CANVAS_MODULE
   if (!modulePath) return null
   const { createCanvas, loadImage } = await import(pathToFileURL(modulePath))
@@ -229,14 +275,9 @@ async function verifyRasterVariants(variants) {
       return createCanvas(1, 1)
     },
   }
-  const images = []
   const sample = createCanvas(24, 24).getContext('2d')
-  for (const { card, state, level } of variants) {
-    const portrait = getPortrait(card, state)
-    assert.equal(portrait.level, level)
-    assert.equal(portrait.kind, 'generated')
-    const image = portrait.src
-    assert.equal(image, renderFusionPortrait(card, state, level))
+  async function verifyImage({ card, state, level }) {
+    const image = renderFusionPortrait(card, state, level)
     assert.match(image, /^data:image\/(webp|png);base64,/)
     const decoded = await loadImage(image)
     assert.ok(decoded.width >= 300 && decoded.height >= 250, 'Resolución insuficiente')
@@ -245,25 +286,31 @@ async function verifyRasterVariants(variants) {
     const colors = new Set(Array.from({ length: 24 * 24 }, (_, index) =>
       rgb[index * 4] * 65_536 + rgb[index * 4 + 1] * 256 + rgb[index * 4 + 2]))
     assert.ok(colors.size > 100, 'El retrato debe tener una composición con variedad de color')
-    images.push(image)
+    return image
   }
+  const images = await Promise.all(variants.map(verifyImage))
   assert.notEqual(images[0], images[1], 'El segundo nivel debe cambiar el retrato')
   assert.notEqual(images[1], images[2], 'El tercer nivel debe cambiar el retrato')
   assert.equal(images[2], images[3], 'El retrato no cambia tras llegar al tope')
-  return new Set(images).size
+  const extraImages = await Promise.all(extra.map(verifyImage))
+  assert.equal(new Set(extraImages).size, extra.length, 'El renderizado excepcional no reutiliza una misma imagen')
+  return new Set([...images, ...extraImages]).size
 }
 
 const combinations = verifyNewNames()
 const advancedNames = verifyAdvancedNames(combinations)
 const generatedPortraits = verifyGeneratedPortraits(combinations)
+const { advanced, defects } = verifyAdvancedPortraits()
 const legacyCount = verifyCurrentSaveMigration()
 const { levels, variants } = verifyPortraitLevels()
-const rasterVariants = await verifyRasterVariants(variants)
+const rasterVariants = await verifyRasterVariants(variants, [...advanced, ...defects])
 console.log(JSON.stringify({
   retratosDedicados: verifyIllustrations(),
   nombresGeneradosYDeReceta: combinations.length,
   nombresDeSegundaGeneracion: advancedNames,
   composicionesVerificadas: generatedPortraits,
+  generacionesAltasIlustradas: advanced.length,
+  defectosIlustrados: defects.length,
   fusionesMigradas: legacyCount,
   progresionVisual: levels,
   ...(rasterVariants && { variantesRasterizadas: rasterVariants }),

@@ -5,6 +5,8 @@ export const CATEGORIES = {
   mythic: { name: "Criaturas míticas", singular: "Criatura mítica", art: "dragon" },
   deity: { name: "Deidades", singular: "Deidad", art: "anubis" },
   fusion: { name: "Quimeras", singular: "Quimera", art: "arcanolobo" },
+  aberration: { name: "Aberraciones", singular: "Aberración" },
+  essence: { name: "Esencias", singular: "Esencia quimérica" },
 };
 
 export const STATS = {
