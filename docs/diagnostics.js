@@ -1,9 +1,9 @@
 import { CARDS, RARITIES } from "./catalog.js";
 import { acknowledgeReveal, createGame, fuseCards, getCard, inspectFusionVariants, previewFusion } from "./engine.js";
-import { assetPortrait, getPortrait, portraitStatus } from "./illustrations.js";
+import { getPortrait, illustrationRecord } from "./illustrations.js";
 import { getCreatureConcept, CONCEPT_LABELS } from "./creature-concepts.js";
 import { CAPABILITY_FAMILIES, COMBAT_ROLES, COMBAT_STATS, getCreatureProfiles, MOBILITY_LABELS, UTILITY_FAMILIES } from "./creature-profiles.js";
-import { describeFusionPortrait } from "./fusion-art.js";
+import { buildArtBrief } from "./fusion-art-registry.js";
 import { VARIANT_FAMILIES, VARIANT_QUALITY_LABELS } from "./fusion-variants.js";
 
 const examples = [
@@ -16,7 +16,8 @@ const examples = [
   [["zorro", "buho"], ["thor", "mago"]],
   [[["mamut", "obrero"], "dragon"], "sirena"],
   [["lobo", "zorro"], ["lobo", "zorro"]],
-  [{ parents: ["alquimista", "mamut"], key: "colossus", label: "Coloso Alquímico" }, "mago"]
+  [{ parents: ["alquimista", "mamut"], key: "colossus", label: "Coloso Alquímico" }, "mago"],
+  ["medica", "buho"], ["pulpo", "mamut"], ["atenea", "thor"], ["musico", "pulpo"]
 ];
 
 const exampleSelect = document.querySelector("#example");
@@ -145,7 +146,8 @@ function variantArticle(card, index) {
   const { combat, utility } = getCreatureProfiles(card);
   const { identity } = card;
   const portrait = getPortrait(card, state);
-  const status = portraitStatus(portrait);
+  const { status, final, provisional } = illustrationRecord(card, portrait);
+  const brief = identity.brief ?? buildArtBrief(card, card.parents.map(id => getCard(id, state)));
   const name = escape(card.name);
   const quality = qualityName(card.quality);
   const chance = number.format(card.probability * 100) + "\u00a0%";
@@ -160,19 +162,26 @@ function variantArticle(card, index) {
     ["Rareza de carta", RARITIES[card.rarity]?.name],
     ["Calidad conceptual", quality],
     ["Probabilidad dado el éxito", chance],
-    ["Descripción visual", identity?.visual ?? identity?.visualDescription ?? describeFusionPortrait(card, state)],
+    ["Descripción visual", brief.silhouette],
     ["Anatomía", CONCEPT_LABELS.anatomy[concept.anatomy] ?? concept.anatomy],
     ["Naturaleza", CONCEPT_LABELS.nature[concept.nature]],
     ["Tamaño", CONCEPT_LABELS.size[concept.size]],
     ["Accesorios", formatList(identity?.accessories?.length ? identity.accessories : concept.tools)],
     ["Materiales", formatList(identity?.materials?.length ? identity.materials : concept.materials)],
     ["Poderes representativos", formatList(identity?.powers?.length ? identity.powers : concept.affinities)],
+    ["Extremidades y rasgos", formatList(brief.limbs)],
+    ["Rostro y motivos", formatList(brief.face)],
+    ["Vestimenta", formatList(brief.clothing)],
+    ["Estructuras", formatList(brief.structures)],
+    ["Poderes visibles", formatList(brief.visiblePowers)],
+    ["Función en escena", brief.action],
+    ["Aportes de cada progenitor", formatList(brief.sources.map(source => `${source.name} · ${source.motif}`))],
+    ["Distintivo", brief.distinguishingFeatures],
     ["Referencia de ilustración", identity?.illustration?.reference],
     ["Estado de ilustración", status]
   ];
   const imageLink = portrait.src && portrait.src.startsWith("./assets/") ? `<a href="${escape(portrait.src)}">Imagen ${status}</a>` : "";
-  const future = identity?.illustration?.final ? assetPortrait(identity.illustration.final) : null;
-  const finalLink = future && future !== portrait.src ? `<a href="${escape(future)}">Imagen definitiva</a>` : "";
+  const finalLink = !imageLink && (final || provisional) ? `<a href="${escape(final || provisional)}" download>Descargar imagen</a>` : "";
   const available = pool.has(card.id);
   return `<article class="variant">
     ${portrait.src ? `<img class="variant__art" src="${escape(portrait.src)}" alt="${name}" loading="lazy" decoding="async">` : ""}
@@ -250,16 +259,10 @@ results.addEventListener("click", event => {
 exportRegistry.addEventListener("click", () => {
   const variants = shown.map(card => {
     const portrait = getPortrait(card, state);
-    const status = portraitStatus(portrait);
     return {
       ...card,
       ...getCreatureProfiles(card),
-      illustrationRegistry: {
-        status,
-        reference: card.identity.illustration.reference,
-        provisional: status === "provisional" ? portrait.src : null,
-        final: status === "definitiva" ? portrait.src : null
-      }
+      illustrationRegistry: illustrationRecord(card, portrait)
     };
   });
   const url = URL.createObjectURL(new Blob([JSON.stringify(variants, null, 2)], { type: "application/json" }));

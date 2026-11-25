@@ -1,10 +1,7 @@
-import { RECIPES } from "./catalog.js";
-import { BAKED_FUSIONS } from "./fusion-bakes.js";
-import { fusionArtKey, PAINTED_FUSIONS, PORTRAIT_OVERRIDES } from "./fusion-paintings.js";
+import { artStatus, resolvePortraitAsset } from "./fusion-art-registry.js";
 import { renderFusionPortrait } from "./fusion-art.js";
 import { renderProvisionalPortrait } from "./provisional-art.js";
 
-const library = new Map(RECIPES.map(recipe => [fusionArtKey(recipe.parents), recipe]));
 const finishes = ["", "", "Refinada", "Magistral"];
 
 export function assetPortrait(key) {
@@ -18,31 +15,15 @@ export function portraitLevelFor(card, state) {
 }
 
 export function getPortrait(card, state, level = portraitLevelFor(card, state), { defer = false } = {}) {
-  if (!["fusion", "aberration"].includes(card.category)) {
-    return { src: assetPortrait(card.art), kind: "painted", level: 0 };
+  const asset = resolvePortraitAsset(card, level);
+  if (asset) return { src: assetPortrait(asset.key), kind: asset.kind, level };
+  if (card.category !== "fusion" && card.category !== "aberration") return { src: null, kind: "missing", level };
+  if (card.category === "fusion" && card.identity?.shape && card.identity.shape !== "classic") {
+    return defer ? { src: null, kind: "generated", format: "svg", level, deferred: true }
+      : { src: renderProvisionalPortrait(card, level), kind: "generated", format: "svg", level };
   }
-  const override = PORTRAIT_OVERRIDES.get(card.id);
-  if (override?.length) {
-    return { src: assetPortrait(override[level - 1] ?? override.at(-1)), kind: "painted", level };
-  }
-  if (card.category === "fusion") {
-    const assigned = card.identity?.illustration?.final;
-    if (assigned && card.identity.shape !== "classic") return { src: assetPortrait(assigned), kind: "painted", level };
-    if (card.identity?.shape && card.identity.shape !== "classic") {
-      if (defer) return { src: null, kind: "generated", level, deferred: true };
-      return { src: renderProvisionalPortrait(card, level), kind: "generated", level };
-    }
-    const pair = fusionArtKey(card.parents);
-    const recipe = library.get(pair);
-    if (recipe?.art) {
-      const key = level === 1 ? recipe.art : recipe.artVariants?.[level - 2] ?? recipe.artVariants?.[0] ?? recipe.art;
-      return { src: assetPortrait(key), kind: "painted", level };
-    }
-    if (PAINTED_FUSIONS.has(pair)) return { src: assetPortrait("fusiones/" + pair), kind: "painted", level };
-    if (level === 1 && BAKED_FUSIONS.has(pair)) return { src: assetPortrait("fusiones/" + pair), kind: "baked", level };
-  }
-  if (defer) return { src: null, kind: "generated", level, deferred: true };
-  return { src: renderFusionPortrait(card, state, level), kind: "generated", level };
+  if (defer) return { src: null, kind: "generated", format: "canvas", level, deferred: true };
+  return { src: renderFusionPortrait(card, state, level), kind: "generated", format: "canvas", level };
 }
 
 export function portraitFinish(level) {
@@ -50,5 +31,15 @@ export function portraitFinish(level) {
 }
 
 export function portraitStatus(portrait) {
-  return portrait.kind === "painted" ? "definitiva" : "provisional";
+  const format = portrait.src || portrait.deferred ? portrait.format : null;
+  return artStatus(portrait.kind, format);
+}
+
+export function illustrationRecord(card, portrait) {
+  const status = portraitStatus(portrait);
+  return {
+    status, reference: card.identity?.illustration?.reference ?? card.id,
+    provisional: status !== "definitiva" ? portrait.src : null,
+    final: status === "definitiva" ? portrait.src : null
+  };
 }

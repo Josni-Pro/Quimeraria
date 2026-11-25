@@ -1,0 +1,319 @@
+{
+  "version": 3,
+  "coins": 264,
+  "pity": {},
+  "inventory": {
+    "alquimista": 1,
+    "lobo": 1,
+    "mamut": 1,
+    "obrero": 1,
+    "variant(fusion(buho+buho);aerial)": 1,
+    "variant(fusion(zorro+zorro);kitsune)": 1
+  },
+  "fusionCopies": {
+    "variant(fusion(buho+buho);aerial)": [
+      {
+        "id": "copy-1",
+        "origin": "fusion"
+      }
+    ],
+    "variant(fusion(zorro+zorro);kitsune)": [
+      {
+        "id": "copy-2",
+        "origin": "fusion"
+      }
+    ]
+  },
+  "fusions": {
+    "variant(fusion(buho+buho);aerial)": {
+      "id": "variant(fusion(buho+buho);aerial)",
+      "name": "Planeador de Búho",
+      "category": "fusion",
+      "rarity": 0,
+      "stats": {
+        "power": 4,
+        "guard": 2,
+        "focus": 6
+      },
+      "ability": "vista_lunar",
+      "traits": [
+        "vuelo",
+        "nocturno"
+      ],
+      "art": null,
+      "description": "Las alas heredadas de Búho sostienen una forma aligerada de Búho. Los tendones de las alas cierran el perfil al aterrizar.",
+      "generation": 1,
+      "parents": [
+        "buho",
+        "buho"
+      ],
+      "lineage": [
+        "buho"
+      ],
+      "combinationId": "fusion(buho+buho)",
+      "variantId": "variant(fusion(buho+buho);aerial)",
+      "variantKey": "aerial",
+      "fusionRulesVersion": 1,
+      "family": "hybrid",
+      "quality": "uncommon",
+      "concept": {
+        "speciesId": "variant(fusion(buho+buho);aerial)",
+        "nature": "biological",
+        "anatomy": "avian",
+        "size": "medium",
+        "intelligence": "animal",
+        "profession": null,
+        "structure": null,
+        "culture": null,
+        "role": "marksman",
+        "secondaryRole": null,
+        "inheritance": [
+          {
+            "parentId": "buho",
+            "field": "features",
+            "value": "alas silenciosas"
+          },
+          {
+            "parentId": "buho",
+            "field": "tags",
+            "value": "bird"
+          },
+          {
+            "parentId": "buho",
+            "field": "habitat",
+            "value": "bosque"
+          },
+          {
+            "parentId": "buho",
+            "field": "features",
+            "value": "visión nocturna"
+          },
+          {
+            "parentId": "buho",
+            "field": "tags",
+            "value": "stealth"
+          }
+        ],
+        "tags": [
+          "winged",
+          "bird",
+          "stealth"
+        ],
+        "features": [
+          "tendones de ala reforzados",
+          "huesos ligeros",
+          "alas silenciosas",
+          "visión nocturna"
+        ],
+        "habitat": [
+          "bosque"
+        ],
+        "knowledge": [],
+        "tools": [],
+        "materials": [],
+        "affinities": [],
+        "capabilities": [
+          "piercing"
+        ],
+        "utility": [
+          "explore"
+        ]
+      },
+      "identity": {
+        "shape": "aerial",
+        "accent": null,
+        "anatomy": "avian",
+        "speciesId": "variant(fusion(buho+buho);aerial)",
+        "visual": "Las alas heredadas de Búho sostienen una forma aligerada de Búho. Los tendones de las alas cierran el perfil al aterrizar.",
+        "materials": [],
+        "accessories": [],
+        "powers": [
+          "piercing"
+        ],
+        "illustration": {
+          "reference": "variant(fusion(buho+buho);aerial)",
+          "final": null,
+          "status": "provisional"
+        }
+      },
+      "origin": "fusion"
+    },
+    "variant(fusion(zorro+zorro);kitsune)": {
+      "id": "variant(fusion(zorro+zorro);kitsune)",
+      "name": "Kitsune",
+      "category": "fusion",
+      "rarity": 0,
+      "stats": {
+        "power": 4,
+        "guard": 2,
+        "focus": 6
+      },
+      "ability": "huella",
+      "traits": [
+        "sigilo",
+        "olfato"
+      ],
+      "art": null,
+      "description": "El zorro de la tradición japonesa confunde a sus perseguidores con colas ilusorias. Conserva el oído agudo del linaje y desvía los rastros hacia caminos falsos.",
+      "generation": 1,
+      "parents": [
+        "zorro",
+        "zorro"
+      ],
+      "lineage": [
+        "zorro"
+      ],
+      "combinationId": "fusion(zorro+zorro)",
+      "variantId": "variant(fusion(zorro+zorro);kitsune)",
+      "variantKey": "kitsune",
+      "fusionRulesVersion": 1,
+      "family": "mythology",
+      "quality": "rare",
+      "concept": {
+        "speciesId": "kitsune",
+        "nature": "spiritual",
+        "anatomy": "quadruped",
+        "size": "small",
+        "intelligence": "sapient",
+        "profession": null,
+        "structure": null,
+        "culture": "tradición japonesa",
+        "role": "controller",
+        "secondaryRole": "assassin",
+        "inheritance": [
+          {
+            "parentId": "zorro",
+            "field": "features",
+            "value": "cola tupida"
+          },
+          {
+            "parentId": "zorro",
+            "field": "tags",
+            "value": "tracker"
+          },
+          {
+            "parentId": "zorro",
+            "field": "habitat",
+            "value": "bosque"
+          },
+          {
+            "parentId": "zorro",
+            "field": "tags",
+            "value": "stealth"
+          },
+          {
+            "parentId": "zorro",
+            "field": "habitat",
+            "value": "pradera"
+          },
+          {
+            "parentId": "zorro",
+            "field": "utility",
+            "value": "survival"
+          }
+        ],
+        "tags": [
+          "canid",
+          "magic",
+          "tracker",
+          "stealth"
+        ],
+        "features": [
+          "colas ilusorias",
+          "orejas sensibles",
+          "cola tupida"
+        ],
+        "habitat": [
+          "bosque",
+          "pradera"
+        ],
+        "knowledge": [],
+        "tools": [],
+        "materials": [],
+        "affinities": [],
+        "capabilities": [
+          "slow",
+          "weaken"
+        ],
+        "utility": [
+          "events",
+          "explore",
+          "survival"
+        ]
+      },
+      "identity": {
+        "shape": "kitsune",
+        "accent": null,
+        "anatomy": "quadruped",
+        "speciesId": "kitsune",
+        "visual": "El zorro de la tradición japonesa confunde a sus perseguidores con colas ilusorias. Conserva el oído agudo del linaje y desvía los rastros hacia caminos falsos.",
+        "materials": [],
+        "accessories": [],
+        "powers": [
+          "slow",
+          "weaken"
+        ],
+        "illustration": {
+          "reference": "variant(fusion(zorro+zorro);kitsune)",
+          "final": null,
+          "status": "provisional"
+        }
+      },
+      "origin": "fusion"
+    }
+  },
+  "aberrations": {},
+  "portraits": {
+    "variant(fusion(buho+buho);aerial)": 1,
+    "variant(fusion(zorro+zorro);kitsune)": 1
+  },
+  "essences": {},
+  "discovered": [
+    "alquimista",
+    "lobo",
+    "mamut",
+    "buho",
+    "obrero",
+    "zorro",
+    "variant(fusion(buho+buho);aerial)",
+    "variant(fusion(zorro+zorro);kitsune)"
+  ],
+  "history": [
+    {
+      "kind": "fusion",
+      "cardId": "variant(fusion(zorro+zorro);kitsune)",
+      "parents": [
+        "zorro",
+        "zorro"
+      ],
+      "paid": 18,
+      "copyId": "copy-2"
+    },
+    {
+      "kind": "fusion",
+      "cardId": "variant(fusion(buho+buho);aerial)",
+      "parents": [
+        "buho",
+        "buho"
+      ],
+      "paid": 18,
+      "copyId": "copy-1"
+    }
+  ],
+  "alchemyHistory": [],
+  "pendingReveal": null,
+  "sequence": 2,
+  "settings": {
+    "animation": "full"
+  },
+  "stats": {
+    "packs": 0,
+    "fusions": 2,
+    "fusionFailures": 0,
+    "essencesCreated": 0,
+    "essencesUsed": 0,
+    "expeditions": 0,
+    "won": 0,
+    "missions": {}
+  }
+}
