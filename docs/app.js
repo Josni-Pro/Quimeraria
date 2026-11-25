@@ -1,17 +1,21 @@
 import { ABILITIES, CARDS, CATEGORIES, ECONOMY, MISSIONS, PACKS, RARITIES, STATS, TRAITS } from "./catalog.js";
 import {
-  acknowledgeReveal, createEssence, createGame, describeDiscoveredFusion, fuseCards, getCard, getExpeditionSlots, getPackOdds, loadGame,
+  acknowledgeReveal, createEssence, createGame, describeDiscoveredFusion, fuseCards, getCard, getExpeditionSlots, getFusionCopies, getPackOdds, loadGame,
   MAX_GENERATION, openPack, previewExpedition, previewFusion, runExpedition, serializeGame, setAnimationMode, useEssence
 } from "./engine.js";
-import { assetPortrait, getPortrait, portraitFinish, portraitLevelFor } from "./illustrations.js";
+import { assetPortrait, getPortrait, portraitFinish, portraitLevelFor, portraitStatus } from "./illustrations.js";
 import { describeFusionPortrait } from "./fusion-art.js";
 import { PORTRAIT_PROFILES } from "./portrait-profiles.js";
 import { renderAlchemy, renderAberrationDetails, renderEssences } from "./alchemy-ui.js";
 import { energyAccent, playRitual } from "./ritual.js";
 import { ALCHEMY } from "./game-config.js";
+import { CONCEPT_LABELS, getCreatureConcept } from "./creature-concepts.js";
+import { CAPABILITY_FAMILIES, COMBAT_ROLES, COMBAT_STATS, getCreatureProfiles, MOBILITY_LABELS, UTILITY_FAMILIES } from "./creature-profiles.js";
+import { VARIANT_FAMILIES, VARIANT_QUALITY_LABELS } from "./fusion-variants.js";
 
 const SAVE_KEY = "quimeraria:partida:v1";
 const number = new Intl.NumberFormat("es-MX", { maximumFractionDigits: 1 });
+const collator = new Intl.Collator("es-MX");
 const app = document.querySelector("#app");
 const wallet = document.querySelector("#wallet");
 const modal = document.querySelector("#modal");
@@ -43,6 +47,7 @@ let team = [];
 let view = currentView();
 let category = "all";
 let collectionMode = "owned";
+let collectionGroup = "none";
 let query = "";
 let toastTimer;
 let storageUnavailable = false;
@@ -99,6 +104,7 @@ function observePortraits(root = app) {
 }
 
 function visualTraits(card) {
+  if (card.identity?.visual && card.identity.shape !== "classic") return card.identity.visual;
   if (card.category !== "fusion" && card.category !== "aberration") return PORTRAIT_PROFILES[card.id]?.visual ?? "";
   return describeFusionPortrait(card, state);
 }
@@ -210,19 +216,73 @@ function normalize(value) {
   return value.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLocaleLowerCase("es");
 }
 
+function cardNames(ids) {
+  return ids.map(id => getCard(id, state)?.name ?? id);
+}
+
+function speciesName(card, concept = getCreatureConcept(card)) {
+  if (concept.speciesId === "humano") return "Humano";
+  return concept.speciesName ?? getCard(concept.speciesId, state)?.name ?? card.name;
+}
+
+function roleNames(combat) {
+  return [combat.role, combat.secondaryRole].map(id => COMBAT_ROLES[id]?.name).filter(Boolean);
+}
+
+function interpretationName(card) {
+  return VARIANT_FAMILIES[card.family] ?? "Histórica";
+}
+
+function collectionGroups(items) {
+  const groups = new Map();
+  for (const item of items) {
+    const { card } = item;
+    let label = CATEGORIES[card.category].name;
+    let key = card.category;
+    if (isFunctional(card) && collectionGroup === "species") {
+      const concept = getCreatureConcept(card);
+      key = concept.speciesId;
+      label = speciesName(card, concept);
+    }
+    if (card.category === "fusion" && collectionGroup === "combination") {
+      key = card.combinationId ?? card.parents.join("+");
+      label = cardNames(card.parents).join(" + ");
+    }
+    if (card.category === "fusion" && collectionGroup === "family") {
+      key = card.family ?? "legacy";
+      label = interpretationName(card);
+    }
+    if (!groups.has(key)) groups.set(key, { label, items: [] });
+    groups.get(key).items.push(item);
+  }
+  return [...groups.values()].sort((a, b) => collator.compare(a.label, b.label));
+}
+
 function collectionGrid() {
   if (category === "essence") return renderEssences({ state, includeUsed: collectionMode !== "owned", query });
   const action = view === "forja" ? "choose" : "detail";
+  const search = normalize(query);
   const items = collectionItems().filter(({ card }) => {
     if (category === "normal" && card.generation !== 0) return false;
     if (!["all", "normal"].includes(category) && card.category !== category) return false;
-    return !query || normalize(`${card.name} ${(card.traits ?? []).map(id => TRAITS[id]?.name).join(" ")}`).includes(normalize(query));
+    if (!search) return true;
+    const terms = [card.name, ...(card.traits ?? []).map(id => TRAITS[id]?.name)];
+    if (view === "coleccion" && isFunctional(card)) {
+      terms.push(speciesName(card), ...roleNames(getCreatureProfiles(card).combat));
+    }
+    if (view === "coleccion" && card.category === "fusion") terms.push(interpretationName(card));
+    return normalize(terms.join(" ")).includes(search);
   });
   if (!items.length) return '<div class="empty">No hay cartas con estos filtros.</div>';
-  return items.map(({ card, count }) => {
+  const tile = ({ card, count }) => {
     const picked = view === "forja" ? selected.filter(id => id === card.id).length : 0;
     return `<div class="card-tile">${cardFace(card, { action, count, compact: true, picked })}</div>`;
-  }).join("");
+  };
+  if (view !== "coleccion" || collectionGroup === "none") return items.map(tile).join("");
+  return collectionGroups(items).map(group => `<section class="collection-group">
+    <h3>${escape(group.label)}</h3>
+    <div class="card-grid">${group.items.map(tile).join("")}</div>
+  </section>`).join("");
 }
 
 function renderInventory() {
@@ -241,7 +301,12 @@ function renderInventory() {
     <div class="filters"><div class="tabs" aria-label="Filtrar por origen">
       ${[["all","Todas"], ...Object.entries(CATEGORIES).map(([id, item]) => [id, item.name]), ["normal","Cartas base"]].filter(([id]) => view !== "forja" || !["aberration","essence"].includes(id)).map(([id, name]) =>
         `<button class="tab" type="button" data-action="filter" data-id="${id}" aria-pressed="${category === id}">${name}</button>`).join("")}
-    </div><input type="search" class="search" id="search" aria-label="${category === "essence" ? "Buscar esencia o progenitor" : "Buscar carta o rasgo"}" placeholder="${category === "essence" ? "Buscar esencia o progenitor…" : "Buscar carta o rasgo…"}" value="${escape(query)}"></div>
+    </div><input type="search" class="search" id="search" aria-label="${category === "essence" ? "Buscar esencia o progenitor" : view === "coleccion" ? "Buscar carta, rasgo, especie o rol" : "Buscar carta o rasgo"}" placeholder="${category === "essence" ? "Buscar esencia o progenitor…" : view === "coleccion" ? "Buscar en la colección…" : "Buscar carta o rasgo…"}" value="${escape(query)}">
+    ${view === "coleccion" && category !== "essence" ? `<label class="group-control">Agrupar por
+      <select id="collection-group">
+        ${[["none", "Sin agrupar"], ["species", "Especie"], ["family", "Interpretación"], ["combination", "Combinación"]].map(([key, label]) =>
+          `<option value="${key}"${collectionGroup === key ? " selected" : ""}>${label}</option>`).join("")}
+      </select></label>` : ""}</div>
     <div class="card-grid ${category === "essence" ? "card-grid--essences" : ""}" id="card-grid">${collectionGrid()}</div>
   </section>`;
 }
@@ -350,8 +415,8 @@ function showRules() {
       <li><strong>Forja.</strong> Combina dos cartas y descubre el resultado tras confirmar. La forja consume óbolos y una copia de cada material.</li>
       <li><strong>Alquimia.</strong> Una fusión fallida produce una aberración. Reúne las aberraciones indicadas en Alquimia y conviértelas en una esencia que fusiona dos de sus progenitores al azar.</li>
       <li><strong>Afinidad.</strong> Suma puntos por orígenes distintos, especialidades complementarias o rasgos emparentados. Dos puntos pueden elevar la rareza media. Algunos pares tienen una fórmula propia.</li>
-      <li><strong>Ilustraciones.</strong> Cada pareja crea su propio retrato. Repite una fórmula para desbloquear las versiones refinada y magistral. Las mejoras son visuales.</li>
-      <li><strong>Poder.</strong> La rareza fija el total de atributos. La distribución depende de los materiales y la habilidad. Una quimera puede llegar hasta la generación ${MAX_GENERATION} y debe combinar linajes sin repetir.</li>
+      <li><strong>Variantes.</strong> Una misma pareja puede originar criaturas distintas. Volver a obtener la misma variante mejora su retrato cuando tiene versiones refinada y magistral.</li>
+      <li><strong>Linajes.</strong> Puedes fusionar dos copias de la misma carta, o cruzar quimeras con materiales de linajes distintos. Las quimeras pueden alcanzar la generación ${MAX_GENERATION}.</li>
       <li><strong>Expediciones.</strong> La puntuación combina el atributo de la misión, habilidades y afinidad con el terreno. La Senda siempre te permite ganar óbolos con una carta.</li>
       <li><strong>Sobres.</strong> Cada tipo tiene sus probabilidades y su propia garantía. Los óbolos se consiguen jugando.</li>
     </ul>`);
@@ -388,6 +453,51 @@ function showPortrait(card, portrait = getPortrait(card, state)) {
   ${card.parents.length ? `<p>${card.parents.map(id => escape(getCard(id, state)?.name ?? id)).join(" + ")}</p>` : ""}`);
 }
 
+function detailRows(rows) {
+  return `<dl class="creature-details">${rows.filter(([, value]) => value !== undefined && value !== "").map(([label, value]) =>
+    `<div><dt>${escape(label)}</dt><dd>${escape(value)}</dd></div>`).join("")}</dl>`;
+}
+
+function copyOrigins(card, count) {
+  if (card.category !== "fusion") return "Carta base";
+  const labels = { fusion: "Forja", essence: "Esencia quimérica", legacy: "Histórica" };
+  const copies = getFusionCopies(state, card.id);
+  const totals = new Map();
+  for (const { origin } of copies) totals.set(origin, (totals.get(origin) ?? 0) + 1);
+  if (count > copies.length) totals.set("legacy", count - copies.length);
+  return totals.size ? [...totals].map(([origin, amount]) => `${labels[origin]} ×${amount}`).join(" · ")
+    : labels[card.origin] ?? "Histórica";
+}
+
+function creatureProfile(card, portrait, count) {
+  const concept = getCreatureConcept(card);
+  const { combat, utility } = getCreatureProfiles(card);
+  return detailRows([
+    ["Especie", speciesName(card, concept)],
+    ["Interpretación", card.category === "fusion" ? interpretationName(card) : ""],
+    ["Generación", card.generation],
+    ["Rol", roleNames(combat).join(" / ")],
+    ["Origen", copyOrigins(card, count)],
+    ["Linaje", card.generation ? cardNames(card.lineage).join(", ") : ""],
+    ["Ilustración", portraitStatus(portrait) === "definitiva" ? "Definitiva" : "Provisional"],
+  ]) + `<details class="creature-profile">
+    <summary>Perfil estratégico</summary>
+    ${detailRows([
+      ["Naturaleza", CONCEPT_LABELS.nature[concept.nature]],
+      ["Anatomía", CONCEPT_LABELS.anatomy[concept.anatomy]],
+      ["Características", concept.features.join(", ")],
+      ["Calidad conceptual", card.family === "legacy" ? "" : VARIANT_QUALITY_LABELS[card.quality]],
+      ["Movilidad", MOBILITY_LABELS[combat.mobility]],
+      ["Afinidades", combat.affinities.join(", ")],
+      ["Presupuesto", combat.powerBudget],
+      ["Costo de despliegue", combat.deploymentCost],
+      ["Capacidades", combat.capabilities.map(id => CAPABILITY_FAMILIES[id]?.name).filter(Boolean).join(", ")],
+      ["Utilidad", utility.capabilities.map(id => UTILITY_FAMILIES[id]).filter(Boolean).join(", ")],
+      ...Object.entries(combat.stats).map(([id, value]) => [COMBAT_STATS[id], value]),
+    ])}
+  </details>`;
+}
+
 function showCard(id) {
   const card = getCard(id, state);
   if (!card) return;
@@ -397,8 +507,9 @@ function showCard(id) {
   showModal(card.name, `<div class="detail-layout">${cardFace(card, { compact: true, eager: true })}
     <div>${aberrant ? "" : `<p>${escape(card.description)}</p>`}${statList(card)}
     <div class="card-tags">${traits(card)}</div><div class="detail-ability">${ability(card, true)}</div>
-    <p>${count ? `Copias en inventario: ${count}` : "Sin copias en el inventario."}</p>
-    ${aberrant ? renderAberrationDetails({ state, card }) : card.parents?.length ? `<p>Materiales: ${card.parents.map(parent => escape(getCard(parent, state)?.name ?? parent)).join(" + ")}.</p>` : ""}</div></div>
+    <p>${count ? `${count} ${count === 1 ? "copia" : "copias"} en el inventario.` : "Sin copias en el inventario."}</p>
+    ${aberrant ? renderAberrationDetails({ state, card }) : card.parents.length ? `<p>Materiales · ${escape(cardNames(card.parents).join(" + "))}</p>` : ""}</div></div>
+    ${aberrant ? "" : creatureProfile(card, portrait, count)}
     <div class="modal-actions">
       ${portrait.src ? `<button class="button" data-action="portrait-card" data-id="${escape(id)}">Ver ilustración</button>` : ""}
       ${card.category === "fusion" ? `<button class="button" data-action="formula-card" data-id="${escape(id)}">Ver fórmula</button>` : ""}
@@ -429,7 +540,7 @@ function choose(id) {
   } else if (selected.length < 2) {
     selected.push(id);
   } else {
-    selected[1] = id;
+    selected[selected[1] === id ? 0 : 1] = id;
   }
   latestFusion = null;
 }
@@ -595,7 +706,9 @@ document.addEventListener("click", async event => {
       break;
     case "close": modal.close(); break;
     case "inventory": scrollToInventory(); break;
-    case "explain": showExplanation(); break;
+    case "explain":
+      if (latestFusion) showCard(latestFusion.card.id);
+      break;
     case "formula-card": showExplanation(getCard(id, state)); break;
     case "portrait-result": {
       if (latestFusion) showPortrait(latestFusion.card, resultPortrait(latestFusion));
@@ -620,7 +733,7 @@ document.addEventListener("click", async event => {
       break;
     case "use":
       modal.close();
-      if (!selected.includes(id)) choose(id);
+      if (selected.filter(cardId => cardId === id).length < state.inventory[id]) choose(id);
       location.hash = "forja";
       changeView();
       render();
@@ -699,8 +812,10 @@ document.addEventListener("click", async event => {
 });
 
 app.addEventListener("input", event => {
-  if (revealRunning || state.pendingReveal || event.target.id !== "search") return;
-  query = event.target.value.trim();
+  if (revealRunning || state.pendingReveal) return;
+  if (event.target.id === "search") query = event.target.value.trim();
+  else if (event.target.id === "collection-group") collectionGroup = event.target.value;
+  else return;
   const grid = document.querySelector("#card-grid");
   if (grid) {
     portraitObserver?.disconnect();

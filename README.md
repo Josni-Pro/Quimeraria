@@ -14,9 +14,9 @@ La partida pertenece al navegador y al origen desde el que se abre el juego. `do
 
 ## Forja, revelación y guardado
 
-La Forja muestra los materiales elegidos, el costo y la probabilidad de cada desenlace. Al confirmar, consume los dos materiales y los óbolos y sortea el resultado. La configuración inicial da un 95 % de éxito y un 5 % de probabilidad de aberración. Configuración permite completar la animación, reducirla o saltarla.
+La Forja muestra los materiales elegidos, el costo y las probabilidades de éxito y aberración. Al confirmar, consume los dos materiales y los óbolos. Tras un éxito sortea una variante compatible con la pareja y la revela en el ritual. Configuración permite completar la animación, reducirla o saltarla.
 
-El juego guarda el gasto, la carta nueva y la revelación pendiente juntos en LocalStorage antes de mostrar la animación. Al volver al juego después de una recarga, se reanuda la revelación del mismo resultado. La migración del guardado anterior conserva cartas, óbolos, fusiones, variantes de retratos y expediciones.
+El juego guarda el gasto, la carta nueva y la revelación pendiente juntos en LocalStorage antes de mostrar la animación. Al volver al juego después de una recarga, se reanuda la revelación del mismo resultado. La migración al formato 3 conserva los identificadores, los nombres y atributos guardados, los niveles de retrato y el progreso de las versiones 1 y 2. Las cartas antiguas conservan sus pilas y se identifican como históricas. Cada copia obtenida desde esta actualización recibe un identificador y registra si procede de la Forja o de una esencia.
 
 ## Aberraciones y esencias
 
@@ -25,7 +25,7 @@ Una fusión fallida produce una aberración con nombre, retrato e identificador 
 1. Selecciona manualmente cinco aberraciones en Alquimia. Puedes elegir varias copias de una misma carta.
 2. Destila la selección. La esencia consume las aberraciones y registra sus progenitores con el número de veces que aparece cada uno.
 3. Activa la esencia. El juego elige al azar una pareja válida entre los progenitores registrados, incluso de dos aberraciones distintas. Repetir un progenitor requiere dos registros del mismo. La recuperación respeta la rareza, el linaje, la generación y las recetas especiales de la Forja.
-4. La recuperación tiene éxito garantizado y consume únicamente la esencia. La nueva carta se descubre en su propia animación y queda en el historial alquímico.
+4. La recuperación tiene éxito garantizado y consume únicamente la esencia. Tras escoger los progenitores, se sortea una variante con los mismos pesos que en la Forja. La nueva carta se descubre en su propia animación y queda en el historial alquímico.
 
 ## Cómo se calcula una fusión
 
@@ -34,7 +34,7 @@ Una fusión fallida produce una aberración con nombre, retrato e identificador 
 3. La rareza normal parte de la media de las rarezas de los materiales, redondeada hacia abajo. Sube un grado si la afinidad llega a dos puntos. Una fórmula registrada puede fijar la rareza. El resultado queda a un grado como máximo por encima del mejor material y para una mítica hacen falta dos materiales épicos o míticos.
 4. El motor reparte el presupuesto de atributos de la rareza entre Fuerza, Guardia e Ingenio, ponderando las estadísticas de los dos materiales y la especialidad. Cada atributo recibe al menos 2 puntos y como máximo el 58 % del presupuesto, redondeado hacia arriba.
 5. La quimera conserva hasta tres rasgos. Tiene una habilidad activa, heredada de uno de los materiales o definida por su fórmula. La habilidad da hasta 3 puntos adicionales en expediciones del atributo correspondiente.
-6. Al confirmar se consumen dos cartas y se añade una. La tarifa se fija con la rareza del material de mayor nivel. Las cartas base son generación 0 y el máximo inicial de una quimera es generación 4. Si alguno de los materiales es una quimera, sus antepasados base deben ser distintos de los del otro material.
+6. Al confirmar se consumen dos cartas y se añade una. La tarifa se fija con la rareza del material de mayor nivel. Las cartas base son generación 0 y una quimera puede llegar a generación 4. Dos materiales distintos deben tener linajes separados si alguno es una quimera. Dos copias de la misma variante pueden fusionarse con éxito garantizado hasta el límite de generación. Las parejas que ya eran válidas mantienen el 95 % de éxito y el 5 % de aberración.
 
 | Rareza | Presupuesto de Fuerza, Guardia e Ingenio | Costo de forja si es la mayor rareza de los materiales |
 | --- | ---: | ---: |
@@ -45,6 +45,24 @@ Una fusión fallida produce una aberración con nombre, retrato e identificador 
 | Mítica | 24 | 48 óbolos |
 
 El **Arcanolobo** combina el olfato del Lobo con la especialidad del Alquimista. Su fórmula da prioridad a Ingenio y fija la habilidad Olfato alquímico, que añade 3 puntos al resolver expediciones de Ingenio. Su rareza es rara y cuesta 24 óbolos porque su material de mayor rareza, el Alquimista, es poco común.
+
+## Variantes, perfiles y diagnóstico
+
+Antes, cada pareja tenía una única fusión exitosa y repetirla podía mejorar su retrato. Ahora la fórmula original o fusión clásica sigue disponible y cada variante descubierta tiene su propio nivel de retrato. La combinación se identifica por los dos materiales ordenados. La especie permite agrupar cartas de distintos orígenes. La variante conserva sus progenitores y resulta siempre de una generación superior a ambos, incluso si comparte especie y arte con una carta base.
+
+La calidad conceptual reparte 55, 30, 12 y 3 puntos entre común, poco común, rara y excepcional. Si falta algún nivel, su peso se redistribuye proporcionalmente entre los niveles disponibles. Las variantes de un mismo nivel se reparten el peso de ese nivel. Estas probabilidades se aplican después de un éxito. La rareza y los atributos de expedición siguen las reglas anteriores.
+
+`docs/fusion-variants.js` registra las familias de hibridación, antropomorfización, linaje humanoide, transferencia de profesión, equipamiento, estructuras portátiles, transmutación, construcción viviente, manifestación elemental o divina y simbiosis. También incluye evoluciones y especies ancestrales, mitológicas y convergentes. Entre los resultados figuran Kitsune, Ortro, el lobo terrible y Dragón. Las 496 parejas de cartas base generan entre 2 y 8 opciones por pareja. Las generaciones posteriores se calculan a demanda.
+
+`docs/creature-concepts.js` registra los aportes del catálogo y limita la herencia a seis aportes inmediatos, con cupos por clase de rasgo. Las reglas filtran la compatibilidad con la anatomía y la función del resultado. `docs/creature-profiles.js` define los roles, las estadísticas y las familias de capacidades reutilizables. Un perfil de combate reparte entre seis atributos el presupuesto de la generación (200, 250, 300, 350 o 400), más 0 a 20 puntos por rareza. El rol principal, el secundario y la naturaleza ajustan la distribución dentro de límites comunes. El costo de despliegue orientativo va de 1 a 5 según la generación. La calidad conceptual queda fuera del cálculo.
+
+Para un futuro combate, `getCreatureProfiles(card).combat` expone roles, movilidad, afinidades, presupuesto, costo, estadísticas y capacidades. Las expediciones futuras pueden usar `getCreatureProfiles(card).utility` para suministro, transporte, investigación, protección u otras actividades. Los perfiles actuales son datos y las expediciones jugables siguen usando Fuerza, Guardia, Ingenio y las habilidades del catálogo.
+
+Abre `/diagnostics.html` en el mismo servidor local para inspeccionar combinaciones y variantes, probabilidades, linaje, perfiles y arte. Incluye 23 ejemplos, entre ellos Alquimista + Mamut, Herrera + Fénix, Arquitecta + Atenea, Lobo + Lobo y cruces con variantes de generaciones superiores. Puedes añadir cualquier resultado como progenitor y descargar el registro de ilustraciones de la pareja en JSON. La página usa una partida en memoria y no escribe en el guardado del jugador.
+
+Las variantes alternativas se representan con SVG locales que emplean siluetas, estructuras y rasgos anatómicos según el concepto. Las convergencias comparten el arte de la especie cuando coincide con el resultado. La fusión clásica y las históricas conservan las pinturas, los retratos WebP y los niveles que les corresponden. El catálogo genera únicamente las parejas consultadas y limita las cachés de variantes y retratos.
+
+La extensión del riesgo de aberración para fusiones de generaciones superiores queda pendiente para otra fase. La cobertura histórica se mantiene y el nuevo cruce de dos copias de una misma variante queda fuera de ese riesgo.
 
 ## Sobres y expediciones
 
@@ -113,6 +131,7 @@ node tests/portraits.mjs
 node tests/alchemy.mjs
 node tests/static.mjs
 node --test tests/ritual.mjs
+node --test tests/variants.mjs
 ```
 
 Las pruebas cubren probabilidades y progresión, ilustraciones y linajes, migración de partidas, consumo de recursos y recuperación de una revelación pendiente. Tras ajustar los costos, revisa la distribución de rarezas, la garantía de los sobres y la recuperación de moneda.

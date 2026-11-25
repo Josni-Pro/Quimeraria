@@ -65,7 +65,8 @@ function verifyQuoteAndRolls() {
     })
     assert.ok(resolved.ok)
     assert.equal(resolved.outcome, expected)
-    assert.equal(calls, 1)
+    assert.equal(calls, expected === 'success' ? 2 : 1,
+      'Solo una fusión exitosa debe tirar para elegir variante')
     assert.equal(resolved.state.coins, origin.coins - quote.cost)
     assert.equal(ownedCount(resolved.state, 'alquimista'), 0)
     assert.equal(ownedCount(resolved.state, 'lobo'), 0)
@@ -219,7 +220,8 @@ function verifyEssence() {
   assert.ok(!pairs.has(pairKey('mago', existing.card.id)), 'Persiste la regla de linajes solapados')
   const observed = new Set()
   for (let index = 0; index < pairs.size; index += 1) {
-    const recovered = useEssence(restored, essence.id, () => (index + 0.5) / pairs.size)
+    const rolls = [(index + 0.5) / pairs.size, 0]
+    const recovered = useEssence(restored, essence.id, () => rolls.shift())
     assert.ok(recovered.ok, recovered.error)
     assert.equal(recovered.outcome, 'success')
     assert.equal(recovered.reveal.kind, 'essence')
@@ -293,7 +295,14 @@ function verifyMigratedPortraitSave() {
     assert.deepEqual(upgraded[field], original[field], field)
   }
   for (const [name, value] of Object.entries(original.stats)) assert.deepEqual(upgraded.stats[name], value, name)
-  for (const [id, card] of Object.entries(original.fusions)) assert.deepEqual(getCard(id, upgraded), card)
+  for (const [id, card] of Object.entries(original.fusions)) {
+    const restored = getCard(id, upgraded)
+    assert.ok(restored)
+    for (const [field, value] of Object.entries(card)) {
+      assert.deepEqual(restored[field], value, `${id} conserva ${field}`)
+    }
+    assert.equal(restored.origin, 'legacy')
+  }
   assert.equal(upgraded.pendingReveal, null)
   assert.deepEqual(upgraded.essences, {})
   assert.deepEqual(upgraded.aberrations, {})
