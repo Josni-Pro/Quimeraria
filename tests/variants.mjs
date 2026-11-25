@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { test } from 'node:test'
 import { CARDS, RECIPES } from '../docs/catalog.js'
 import { CONCEPT_LIMITS, getCreatureConcept, inheritCreatureConcept } from '../docs/creature-concepts.js'
@@ -119,6 +119,10 @@ test('El catálogo completo genera variantes estables bajo demanda y perfiles de
   const familyCounts = new Map()
   const roleCounts = new Map()
   const capabilityCounts = new Map()
+  const distribution = [0, 0, 0]
+  const species = { mythology: new Set(), ancestral: new Set(), convergence: new Set() }
+  let exceptional = 0
+  let painted = 0
   for (const [index, firstBase] of CARDS.entries()) {
     const first = getCard(firstBase.id, state)
     verifyConcept(first)
@@ -129,6 +133,7 @@ test('El catálogo completo genera variantes estables bajo demanda y perfiles de
       assert.deepEqual(variants, inspect(state, second.id, first.id))
       poolSizes.add(variants.length)
       assert.ok(variants.length >= 1, `${first.id} + ${second.id}`)
+      distribution[Math.min(variants.length, 3) - 1]++
       const pair = [...new Set([first.id, second.id])].sort()
       const combination = variants[0].combinationId
       const probability = variants.reduce((sum, variant) => sum + variant.probability, 0)
@@ -148,6 +153,10 @@ test('El catálogo completo genera variantes estables bajo demanda y perfiles de
         verifyConcept(variant, [first, second])
         assert.ok(variant.identity.brief.silhouette && variant.identity.brief.sources.length === 2)
         const portrait = getPortrait(variant, state)
+        if (portrait.kind === 'painted') {
+          painted++
+          assert.ok(existsSync(new URL(portrait.src, new URL('../docs/', import.meta.url))), variant.id)
+        }
         if (portrait.format === 'svg') {
           assert.ok(!provisionalPortraits.has(portrait.src), `SVG repetido en ${combination}`)
           provisionalPortraits.add(portrait.src)
@@ -156,6 +165,8 @@ test('El catálogo completo genera variantes estables bajo demanda y perfiles de
         roleCounts.set(combat.role, (roleCounts.get(combat.role) ?? 0) + 1)
         assert.ok(Object.hasOwn(VARIANT_FAMILIES, variant.family))
         familyCounts.set(variant.family, (familyCounts.get(variant.family) ?? 0) + 1)
+        species[variant.family]?.add(variant.concept.speciesId)
+        if (variant.quality === 'exceptional') exceptional++
         for (const capability of combat.capabilities) {
           capabilityCounts.set(capability, (capabilityCounts.get(capability) ?? 0) + 1)
         }
@@ -165,7 +176,12 @@ test('El catálogo completo genera variantes estables bajo demanda y perfiles de
   assert.ok(poolSizes.size > 1, 'Las combinaciones no deben forzar una cantidad fija de variantes')
   assert.ok(roleCounts.size >= 5, 'Se esperan especializaciones distintas en el catálogo')
   assert.equal(serializeGame(state), initial, 'El diagnóstico no altera la partida')
-  console.log(JSON.stringify({ variants: allIds.size, poolSizes: [...poolSizes].sort(), roles: Object.fromEntries(roleCounts),
+  const pairs = distribution.reduce((total, count) => total + count, 0)
+  assert.equal(pairs, CARDS.length * (CARDS.length + 1) / 2)
+  console.log(JSON.stringify({ baseCards: CARDS.length, pairs, variants: allIds.size, distribution,
+    mean: allIds.size / pairs, exceptional, painted, provisional: allIds.size - painted,
+    recognizedSpecies: Object.fromEntries(Object.entries(species).map(([family, ids]) => [family, [...ids]])),
+    poolSizes: [...poolSizes].sort(), roles: Object.fromEntries(roleCounts),
     interpretations: Object.fromEntries(familyCounts), capabilities: Object.fromEntries(capabilityCounts) }))
 })
 
@@ -419,4 +435,101 @@ test('Una partida real del motor anterior conserva variantes fuera del sorteo fu
   assert.ok(!inspect(state, 'buho', 'buho').some(card => card.id === owlId))
   assert.equal(getPortrait(getCard(foxId, state), state).src, './assets/piloto/kitsune.webp')
   assert.deepEqual(loadGame(serializeGame(state)), state)
+})
+
+test('La ampliación da interpretaciones propias a cartas iguales y especies reconocibles', () => {
+  const state = stockedGame()
+  const forms = [
+    ['atenea', 'atenea', 'hundred-pieces', 'divine', /hilos tensados/],
+    ['esfinge', 'esfinge', 'echo-trial', 'evolution', /garganta/],
+    ['arquitecta', 'arquitecta', 'counterfort-archive', 'construct', /pasarela plegable/],
+    ['abogado', 'abogado', 'civic-table', 'construct', /sello sobre cera/],
+    ['velociraptor', 'velociraptor', 'utahraptor', 'ancestral', /garra/],
+    ['rinoceronte_lanudo', 'rinoceronte_lanudo', 'elasmotherium', 'ancestral', /cuerno/],
+    ['esfinge', 'mamut', 'smilodon', 'ancestral', /caninos/],
+    ['anubis', 'esfinge', 'aker', 'mythology', /disco solar/],
+    ['quetzalcoatl', 'thor', 'jormungandr', 'mythology', /propia cola/],
+    ['grifo', 'lobo', 'simurgh', 'mythology', /canino/],
+    ['ajolote', 'lobo', 'ahuizotl', 'mythology', /mano prensil/],
+  ]
+  for (const [a, b, key, family, feature] of forms) {
+    const card = inspect(state, a, b).find(variant => variant.variantKey === key)
+    assert.ok(card, key)
+    assert.equal(card.id, `variant(fusion(${[a, b].sort().join('+')});${key})`)
+    assert.equal(card.family, family)
+    assert.match(card.identity.brief.silhouette, feature)
+    assert.equal(inspect(state, b, a).find(variant => variant.variantKey === key).id, card.id)
+    verifyConcept(card, [getCard(a, state), getCard(b, state)])
+    verifyProfiles(card)
+    if (a === b) {
+      const result = forge(state, a, b, card)
+      assert.equal(result.state.inventory[a], state.inventory[a] - 2)
+      assert.deepEqual(result.card.parents, [a, a])
+      assert.ok(!previewFusion({ ...state, inventory: { ...state.inventory, [a]: 1 } }, a, a).ok)
+    }
+  }
+  assert.ok(!inspect(state, 'arquitecta', 'abogado').some(card => /counterfort-archive|civic-table/.test(card.variantKey)))
+})
+
+test('Adaptaciones e instituciones se generan en G2 a partir de conceptos inmediatos', () => {
+  let state = stockedGame()
+  const wolf = inspect(state, 'lobo', 'lobo').find(variant => variant.variantKey === 'trail-evolution')
+  state = close(forge(state, 'lobo', 'lobo', wolf))
+  const adapted = inspect(state, wolf.id, 'triceratops').find(card => card.variantKey === 'scent-vanguard')
+  assert.ok(adapted)
+  assert.equal(adapted.family, 'adaptation')
+  assert.equal(adapted.generation, 2)
+  assert.deepEqual(adapted.lineage, ['lobo', 'triceratops'])
+  assert.match(adapted.description, /Huella Fría/)
+  verifyConcept(adapted, [wolf, getCard('triceratops', state)])
+  verifyProfiles(adapted)
+  state = close(forge(state, wolf.id, 'triceratops', adapted))
+  assert.equal(state.inventory[wolf.id], undefined)
+  assert.deepEqual(getCard(adapted.id, loadGame(serializeGame(state))), getCard(adapted.id, state))
+
+  const master = inspect(state, 'arquitecta', 'arquitecta').find(variant => variant.variantKey === 'mastery')
+  for (let copy = 0; copy < 2; copy++) state = close(forge(state, 'arquitecta', 'arquitecta', master))
+  const archive = inspect(state, master.id, master.id).find(card => card.variantKey === 'counterfort-archive')
+  assert.ok(archive)
+  assert.equal(archive.generation, 2)
+  assert.equal(archive.concept.profession, 'arquitectura')
+  assert.equal(archive.identity.illustration.status, 'procedural SVG')
+  verifyConcept(archive, [master, master])
+  verifyProfiles(archive)
+  assert.equal(forge(state, master.id, master.id, archive).state.inventory[master.id], undefined)
+})
+
+test('Grifo y Esfinge convergen con arte de catálogo e impiden regresar a una especie del linaje', () => {
+  let state = stockedGame()
+  for (const [a, b, species] of [['buho', 'esfinge', 'grifo'], ['fenix', 'esfinge', 'grifo'], ['atenea', 'grifo', 'esfinge']]) {
+    const target = inspect(state, a, b).find(card => card.variantKey === species)
+    assert.ok(target)
+    const result = forge(state, a, b, target)
+    const { card } = result
+    assert.notEqual(card.id, species)
+    assert.equal(card.name, getCard(species, state).name)
+    assert.equal(card.generation, 1)
+    assert.deepEqual(card.parents, [a, b].sort())
+    assert.deepEqual(card.lineage, [a, b].sort())
+    assert.equal(card.origin, 'fusion')
+    assert.equal(getPortrait(card, result.state).src, assetPortrait(getCard(species, state).art))
+    assert.equal(result.state.inventory[species], state.inventory[species])
+    assert.deepEqual(getFusionCopies(result.state, card.id).map(copy => copy.origin), ['fusion'])
+    assert.deepEqual(getCard(card.id, loadGame(serializeGame(result.state))), card)
+    state = close(result)
+    const partner = species === 'grifo' ? 'atenea' : 'buho'
+    const ancestor = species === 'grifo' ? 'esfinge' : 'grifo'
+    assert.ok(!inspect(state, card.id, partner).some(option => option.variantKey === ancestor))
+  }
+
+  const owl = inspect(state, 'buho', 'buho').find(card => card.variantKey === 'evolution')
+  state = close(forge(state, 'buho', 'buho', owl))
+  const griffin = inspect(state, owl.id, 'esfinge').find(card => card.variantKey === 'grifo')
+  assert.ok(griffin)
+  const result = forge(state, owl.id, 'esfinge', griffin)
+  assert.equal(result.card.generation, 2)
+  assert.deepEqual(result.card.lineage, ['buho', 'esfinge'])
+  assert.equal(getPortrait(result.card, result.state).src, './assets/grifo.webp')
+  verifyConcept(result.card, [owl, getCard('esfinge', state)])
+  verifyProfiles(result.card)
 })

@@ -70,3 +70,38 @@ El lote suma **20 pinturas WebP de 768 × 768** y **3.173.666 bytes**. El regist
 | Búho de las Alturas | Búho + Búho | `variant(fusion(buho+buho);evolution)` | [buho-de-las-alturas.webp](docs/assets/lote-02/buho-de-las-alturas.webp) |
 | Sirena de las Corrientes | Sirena + Sirena | `variant(fusion(sirena+sirena);evolution)` | [sirena-de-las-corrientes.webp](docs/assets/lote-02/sirena-de-las-corrientes.webp) |
 | Foco de fuego · Ferroescama | Dragón + Obrero | `variant(fusion(dragon+obrero);elemental)` | [foco-fuego-ferroescama.webp](docs/assets/lote-02/foco-fuego-ferroescama.webp) |
+
+## Lote 03
+
+La galería `/lote-03.html` permite abrir cada WebP completo. Desde la raíz, sirve `docs` con `python3 -m http.server 8000 --directory docs`. El registro `docs/fusion-art-batch-03.js` añade la dirección de cada pintura a la ficha y a la exportación JSON del diagnóstico.
+
+La Cordillera Errante se lee de perfil en una cornisa abierta, con rayos que abandonan el cuerpo. El Mamut de Vetaclara entra en una caverna, con colmillos facetados y vetas de calor bajo el pelaje. El Archivo muestra cómo la pasarela transmite carga al suelo. La Estratega tensa los hilos con los que mueve el relieve del tablero. El Rastreador junta osteodermos y cola de maza con un hocico olfativo.
+
+Se precisaron el gesto y las herramientas de los oficios, la anatomía funcional y los aportes visibles de cada progenitor. Las diez variantes existentes conservan sus nombres y descripciones en el juego. El Barrio de Contrapeso conserva su pintura del lote 02. Las convergencias hacia Grifo y Esfinge usan sus retratos de catálogo.
+
+El lote incluye **20 pinturas WebP de 768 × 768** y **3.188.054 bytes**. El registro de primera generación suma 115 variantes con arte definitivo y 1.091 con arte provisional. La Esfinge del Eco y la Mesa de Pactos ya tienen fichas y representaciones provisionales. [Informe de cobertura y pendientes](AMPLIACION-FUSIONES-03.md)
+
+### Registro del lote 03
+
+| Criatura | Progenitores | Variante | Identificador | WebP | Bytes |
+| --- | --- | --- | --- | --- | ---: |
+| Oráculo del Voto · Abogado | Abogado + Anubis | Existente | `variant(fusion(abogado+anubis);divine)` | [oraculo-del-voto.webp](docs/assets/lote-03/oraculo-del-voto.webp) | 138.214 |
+| Cordillera Errante | Mamut + Thor | Existente | `variant(fusion(mamut+thor);divine-manifest)` | [cordillera-errante.webp](docs/assets/lote-03/cordillera-errante.webp) | 167.412 |
+| Guía de asentamientos · Lobo | Civil + Lobo | Existente | `variant(fusion(civil+lobo);field-kin)` | [guia-de-asentamientos-lobo.webp](docs/assets/lote-03/guia-de-asentamientos-lobo.webp) | 186.994 |
+| Taller itinerante de cartografía | Cartógrafa + Grifo | Existente | `variant(fusion(cartografa+grifo);workshop)` | [taller-cartografia-grifo.webp](docs/assets/lote-03/taller-cartografia-grifo.webp) | 145.214 |
+| Destilador de campo · Ajolote | Ajolote + Alquimista | Existente | `variant(fusion(ajolote+alquimista);trade-specialist)` | [destilador-campo-ajolote.webp](docs/assets/lote-03/destilador-campo-ajolote.webp) | 159.922 |
+| Oso pardo del Bastión | Oso pardo + Oso pardo | Existente | `variant(fusion(oso+oso);evolution)` | [oso-pardo-del-bastion.webp](docs/assets/lote-03/oso-pardo-del-bastion.webp) | 189.244 |
+| Colonia de Pulpo y Sirena | Pulpo + Sirena | Existente | `variant(fusion(pulpo+sirena);reef-colony)` | [colonia-pulpo-sirena.webp](docs/assets/lote-03/colonia-pulpo-sirena.webp) | 151.698 |
+| Rescatista de altura · Fénix | Fénix + Médica | Existente | `variant(fusion(fenix+medica);air-rescue)` | [rescatista-altura-fenix.webp](docs/assets/lote-03/rescatista-altura-fenix.webp) | 154.144 |
+| Mamut de Vetaclara | Alquimista + Mamut | Existente | `variant(fusion(alquimista+mamut);transmuted)` | [mamut-de-vetaclara.webp](docs/assets/lote-03/mamut-de-vetaclara.webp) | 156.462 |
+| Diseñador de refugios · Oso pardo | Arquitecta + Oso pardo | Existente | `variant(fusion(arquitecta+oso);trade-specialist)` | [disenador-refugios-oso.webp](docs/assets/lote-03/disenador-refugios-oso.webp) | 174.584 |
+| Aker | Anubis + Esfinge | Nueva | `variant(fusion(anubis+esfinge);aker)` | [aker.webp](docs/assets/lote-03/aker.webp) | 140.958 |
+| Jörmungandr | Quetzalcóatl + Thor | Nueva | `variant(fusion(quetzalcoatl+thor);jormungandr)` | [jormungandr.webp](docs/assets/lote-03/jormungandr.webp) | 139.848 |
+| Simurgh | Grifo + Lobo | Nueva | `variant(fusion(grifo+lobo);simurgh)` | [simurgh.webp](docs/assets/lote-03/simurgh.webp) | 152.198 |
+| Ahuízotl | Ajolote + Lobo | Nueva | `variant(fusion(ajolote+lobo);ahuizotl)` | [ahuizotl.webp](docs/assets/lote-03/ahuizotl.webp) | 125.628 |
+| Smilodon | Esfinge + Mamut | Nueva | `variant(fusion(esfinge+mamut);smilodon)` | [smilodon.webp](docs/assets/lote-03/smilodon.webp) | 168.382 |
+| Elasmotherium | Rinoceronte lanudo + Rinoceronte lanudo | Nueva | `variant(fusion(rinoceronte_lanudo+rinoceronte_lanudo);elasmotherium)` | [elasmotherium.webp](docs/assets/lote-03/elasmotherium.webp) | 150.046 |
+| Utahraptor | Velociraptor + Velociraptor | Nueva | `variant(fusion(velociraptor+velociraptor);utahraptor)` | [utahraptor.webp](docs/assets/lote-03/utahraptor.webp) | 163.244 |
+| Archivo de Contrafuertes | Arquitecta + Arquitecta | Nueva | `variant(fusion(arquitecta+arquitecta);counterfort-archive)` | [archivo-de-contrafuertes.webp](docs/assets/lote-03/archivo-de-contrafuertes.webp) | 206.202 |
+| Estratega de las Cien Piezas | Atenea + Atenea | Nueva | `variant(fusion(atenea+atenea);hundred-pieces)` | [estratega-de-las-cien-piezas.webp](docs/assets/lote-03/estratega-de-las-cien-piezas.webp) | 150.018 |
+| Rastreador de Coraza · Anquilosaurio | Anquilosaurio + Lobo | Nueva | `variant(fusion(anquilosaurio+lobo);scent-vanguard)` | [rastreador-coraza-anquilosaurio.webp](docs/assets/lote-03/rastreador-coraza-anquilosaurio.webp) | 167.642 |

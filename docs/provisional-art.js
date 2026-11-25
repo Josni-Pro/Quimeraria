@@ -134,6 +134,31 @@ const citadel = `<g><path d="M69 82h140v51H69zM79 130h25l-9 44H75zm49 0h27v47h-2
   <path d="M142 6l-12 24 16 1-13 32" fill="none" stroke="#d2e6fa" stroke-width="5"/>
   <path d="M132 111h17v27h-17z" fill="#fff4c8"/></g>`;
 
+// Siluetas del lote conceptual 03. Se usan como respaldo procedural.
+const horizonLions = `<g>
+  <path d="M68 112l-24-11 5-21 24-10 7 19 28 11h64l28-11 7-19 24 10 5 21-24 11-13 15-5 30h-15v-30H101v30H86l-5-30z" fill="url(#body)"/>
+  <path d="M68 75l16 15 16 21-30 8-16-20zm144 0-16 15-16 21 30 8 16-20z" fill="url(#accent)"/>
+  <circle cx="140" cy="68" r="25" fill="#ffe5a0"/>
+  <path d="M91 166h100" stroke="#ceac83" stroke-width="5"/></g>`;
+const seaCoil = `<g>
+  <path d="M208 94q-25-42-99-28-66 12-68 47-3 38 77 45 85 7 115-35 9-15-9-38" fill="none" stroke="url(#body)" stroke-width="20" stroke-linecap="round"/>
+  <path d="M212 92l-19-7 15-15 23-6 12 17-18 13zm-99 39-12-15 15-18 22-4 26 21-15 13z" fill="url(#accent)"/>
+  <path d="M187 33l-12 13 13 1-12 17m25 88 18-8m-165 8 22 10" stroke="#d6f4fc" stroke-width="3" fill="none"/>
+  <circle cx="225" cy="77" r="3" fill="#fff4c8"/></g>`;
+const walkingArchive = `<g>
+  <path d="M77 55h119l15 73H65zM75 126h24l-9 40H64zm44 0h20v40h-27zm44 0h18l9 40h-26zm28 0h20l13 40h-27z" fill="url(#body)"/>
+  <path d="M85 65h103v48H85zM138 114l83 52h-41l-51-49z" fill="url(#accent)"/>
+  <path d="M94 77h83m-83 12h83m-83 12h83m10 53 10 1m-31-12 11 1" stroke="#302234" stroke-width="4"/></g>`;
+const civicTable = `<g>
+  <path d="M71 94h133l24 23H57zm5 25h17l-9 42H68zm41 0h16l-5 34h-15zm40 0h17l4 36h-16zm33 0h18l9 42h-16z" fill="url(#body)"/>
+  <path d="M89 105q-21-16-16-38m117 38q24-16 17-39" fill="none" stroke="url(#accent)" stroke-width="9" stroke-linecap="round"/>
+  <path d="M61 63h23v13H61zm136-3h19v10h-19z" fill="#e2bf91"/></g>`;
+const warboard = `<g>
+  <path d="M100 45l16 14h48l16-14m-65 9 14 45m35-45-14 45" stroke="#fff0c9" fill="none" stroke-width="2"/>
+  <path d="M101 101l37-21 44 21 14 24-46 16-52-17z" fill="url(#accent)" stroke="#f4d396" stroke-width="3"/>
+  <path d="M114 113l17-14 8 10 13-6 23 10-16 7z" fill="#7c7360"/>
+  <circle cx="122" cy="115" r="4" fill="#fff4c8"/><circle cx="165" cy="116" r="4" fill="#fff4c8"/></g>`;
+
 function drawShape(shape, anatomy, head, speciesId, family) {
   const body = anatomy === "avian" ? avian(false)
     : ["aquatic", "cephalopod", "amphibian"].includes(anatomy) ? aquatic(anatomy === "cephalopod")
@@ -142,6 +167,26 @@ function drawShape(shape, anatomy, head, speciesId, family) {
   if (speciesId === "ortro") return secondHound + quadruped(head);
   if (speciesId === "kitsune") return sigil + foxTails + quadruped("fox");
   switch (shape) {
+    case "horizon-lions": return horizonLions;
+    case "sea-coil": return seaCoil;
+    case "walking-archive": return walkingArchive;
+    case "civic-table": return civicTable;
+    case "warboard": return construct + warboard;
+    case "healing-wing": return avian(false) + `<path d="M177 82l17 3 11 9-26 4-8-8z" fill="url(#body)"/>
+      <path d="M129 140q13-8 20-2-6 16-20 22l6-11z" fill="#fff4c8"/>`;
+    case "river-grip": return quadruped("wolf") + `<path d="M79 113q-32 3-38 22-8 20 22 21l8-14m-8 14 13 1m-13-1 10 7" fill="none"
+      stroke="url(#accent)" stroke-width="5" stroke-linecap="round"/><path d="M196 100l-10-17m11 20-15-10" stroke="#efacb8" stroke-width="4"/>`;
+    case "saber-cat": return quadruped("sphinx") + `<path d="M218 112l4 18 5-16m8-1 1 12 6-12" fill="#fff2d2"/>`;
+    case "single-horn": return quadruped("bear") + `<path d="M214 91q21-25 18-51 17 32 1 58z" fill="#ecd8aa"/>`;
+    case "feather-raptor": return `<path d="M28 137q36-4 60-34l38-10 30-22 26-10 35 6 18 15-15 8-29-4-18 31-36 16-19 25h-18l15-35-29 16z" fill="url(#body)"/>
+      <path d="M122 108l-17 31m40-13 10 32h22m-20-56 16 13 10-5m-80-13 10-15m-3 13 15-20"
+        fill="none" stroke="url(#accent)" stroke-width="6" stroke-linecap="round"/><circle cx="211" cy="76" r="3" fill="#fff4c8"/>`;
+    case "echo-gate": return `<path d="M53 157v-46a28 28 0 0 1 56 0v46m59 0v-46a29 29 0 0 1 58 0v46" fill="none" stroke="#bd987a" stroke-width="7"/>`
+      + quadruped("sphinx") + `<path d="M217 122h29m-31 6h22" stroke="#fce3a8" stroke-width="2"/>`;
+    case "scent-beacons": return body + `<path d="M217 98l14-5m-12 15 17-3" stroke="#fce3a8" stroke-width="4" stroke-linecap="round"/>
+      <path d="M217 145q16-13 28-11m-24 22q16-8 29-5" fill="none" stroke="#d5cab1" stroke-width="2" stroke-dasharray="4 4"/>`;
+    case "night-disc": return body + `<path d="M208 99l-13-20 19 8 9-19 5 19 19-8-8 17-8 17-17-3z" fill="url(#accent)"/>
+      <circle cx="224" cy="96" r="3" fill="#271a2e"/><path d="M250 83q13 11 3 23" fill="none" stroke="#c7acf8" stroke-width="2"/>`;
     case "shore-carrier": return body + cistern;
     case "winged-medic": return wings(false) + `<g transform="translate(282) scale(-1 1)">${wings(false)}</g>` + humanoid(head) + rescueHarness;
     case "cerberus": return `<g transform="translate(18 -9)">${secondHound}</g>` + secondHound + quadruped("wolf");

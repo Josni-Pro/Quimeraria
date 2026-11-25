@@ -5,6 +5,7 @@ import { test } from "node:test";
 import { createGame, inspectFusionVariants } from "../docs/engine.js";
 import { FUSION_ART_BATCH_01 } from "../docs/fusion-art-batch-01.js";
 import { FUSION_ART_BATCH_02 } from "../docs/fusion-art-batch-02.js";
+import { FUSION_ART_BATCH_03 } from "../docs/fusion-art-batch-03.js";
 import { getPortrait, illustrationRecord } from "../docs/illustrations.js";
 
 test("Los lotes se resuelven por ID de variante y contienen pinturas WebP distintas", () => {
@@ -13,7 +14,8 @@ test("Los lotes se resuelven por ID de variante y contienen pinturas WebP distin
   const digests = new Set();
   assert.equal(FUSION_ART_BATCH_01.length, 13);
   assert.equal(FUSION_ART_BATCH_02.length, 20);
-  for (const { id, parents, asset, direction } of [...FUSION_ART_BATCH_01, ...FUSION_ART_BATCH_02]) {
+  assert.equal(FUSION_ART_BATCH_03.length, 20);
+  for (const { id, parents, asset, direction } of [...FUSION_ART_BATCH_01, ...FUSION_ART_BATCH_02, ...FUSION_ART_BATCH_03]) {
     const result = inspectFusionVariants(state, ...parents);
     assert.ok(result.ok, result.error);
     const card = result.variants.find(variant => variant.id === id);
