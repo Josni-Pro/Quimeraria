@@ -3,8 +3,9 @@ import { getCreatureConcept, inheritCreatureConcept } from "./creature-concepts.
 
 import { additionalSpecies, divineOption, VOCATIONS } from "./fusion-interpretations.js";
 import { artStatus, buildArtBrief, resolvePortraitAsset } from "./fusion-art-registry.js";
+import { expansionOptions } from "./fusion-expansion.js";
 
-export const FUSION_RULES_VERSION = 2;
+export const FUSION_RULES_VERSION = 3;
 
 export const VARIANT_FAMILIES = Object.freeze({
   classic: "Quimérica", hybrid: "Hibridación", anthropomorphic: "Antropomorfización",
@@ -12,7 +13,7 @@ export const VARIANT_FAMILIES = Object.freeze({
   equipment: "Equipamiento", carrier: "Portadora de estructuras", transmutation: "Transmutación",
   construct: "Construcción viviente", element: "Manifestación elemental", symbiosis: "Simbiosis",
   divine: "Manifestación divina", evolution: "Evolutiva", ancestral: "Ancestral",
-  mythology: "Mitológica", convergence: "Convergente", legacy: "Histórica"
+  mythology: "Mitológica", adaptation: "Adaptación funcional", convergence: "Convergente", legacy: "Histórica"
 });
 export const VARIANT_QUALITY_WEIGHTS = Object.freeze({
   common: 55, uncommon: 30, rare: 12, exceptional: 3
@@ -323,7 +324,8 @@ function interpretations(a, b, classic) {
   const divine = divineOption(a, b, variant);
   if (divine) results.push(divine);
   results.push(...recognizedOptions(a, b, ac, bc),
-    ...additionalSpecies(a, b, id => species.get(id), getCreatureConcept, variant));
+    ...additionalSpecies(a, b, id => species.get(id), getCreatureConcept, variant),
+    ...expansionOptions(a, b, ac, bc, id => species.get(id), getCreatureConcept, variant));
   return results;
 }
 

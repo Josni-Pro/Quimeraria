@@ -17,7 +17,10 @@ const examples = [
   [[["mamut", "obrero"], "dragon"], "sirena"],
   [["lobo", "zorro"], ["lobo", "zorro"]],
   [{ parents: ["alquimista", "mamut"], key: "colossus", label: "Coloso Alquímico" }, "mago"],
-  ["medica", "buho"], ["pulpo", "mamut"], ["atenea", "thor"], ["musico", "pulpo"]
+  ["medica", "buho"], ["pulpo", "mamut"], ["atenea", "thor"], ["musico", "pulpo"],
+  ["anubis", "esfinge"], ["ajolote", "lobo"], ["velociraptor", "velociraptor"], ["atenea", "atenea"],
+  ["buho", "esfinge"], ["atenea", "grifo"],
+  [{ parents: ["lobo", "lobo"], key: "trail-evolution", label: "Lobo de Huella Fría" }, "triceratops"]
 ];
 
 const exampleSelect = document.querySelector("#example");
