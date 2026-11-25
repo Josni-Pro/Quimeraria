@@ -49,3 +49,4 @@ dd { margin: 0 0 .55rem; overflow-wrap: anywhere; }
 .art-batch .variant__art { aspect-ratio: 1; height: auto; }
 .art-batch .variant__name { margin-bottom: .4rem; }
 .art-batch code { overflow-wrap: anywhere; }
+.art-links { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .25rem 1rem; }

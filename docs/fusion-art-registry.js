@@ -1,12 +1,13 @@
 import { RECIPES } from "./catalog.js";
 import { CONCEPT_LABELS, getCreatureConcept } from "./creature-concepts.js";
 import { FUSION_ART_BATCH_01 } from "./fusion-art-batch-01.js";
+import { FUSION_ART_BATCH_02 } from "./fusion-art-batch-02.js";
 import { BAKED_FUSIONS } from "./fusion-bakes.js";
 import { fusionArtKey, PAINTED_FUSIONS, PORTRAIT_OVERRIDES } from "./fusion-paintings.js";
 import { PORTRAIT_PROFILES } from "./portrait-profiles.js";
 
 const recipes = new Map(RECIPES.map(recipe => [fusionArtKey(recipe.parents), recipe]));
-const batch = new Map(FUSION_ART_BATCH_01.map(entry => [entry.id, entry]));
+const batch = new Map([...FUSION_ART_BATCH_01, ...FUSION_ART_BATCH_02].map(entry => [entry.id, entry]));
 const dedicated = new Map([
   ["variant(fusion(alquimista+mamut);colossus)", ["piloto/coloso-alquimico"]],
   ["variant(fusion(zorro+zorro);kitsune)", ["piloto/kitsune"]]

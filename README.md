@@ -123,7 +123,7 @@ Configura `nameMotif` como `[raíz, forma, epíteto]` en una carta nueva para pe
 
 La comparación antes y después, los criterios artísticos y los dos retratos piloto están en [la auditoría de fusiones](AUDITORIA-FUSIONES.md).
 
-La [guía artística](GUIA-ARTISTICA.md) describe el estilo y el formato. En el servidor local, abre `/lote-01.html` para revisar las pinturas y sus fichas.
+La [guía artística](GUIA-ARTISTICA.md) describe el estilo y el formato. En el servidor local, abre `/lote-01.html` o `/lote-02.html` para revisar las pinturas y sus fichas.
 
 ## Comprobar cambios
 
