@@ -19,7 +19,7 @@ export function getPortrait(card, state, level = portraitLevelFor(card, state), 
   const asset = resolvePortraitAsset(card, level);
   if (asset) return { src: assetPortrait(asset.key), kind: asset.kind, level };
   if (card.category !== "fusion" && card.category !== "aberration") return { src: null, kind: "missing", level };
-  if (card.category === "aberration" && card.failureRulesVersion) {
+  if (card.category === "aberration") {
     return defer ? { src: null, kind: "generated", format: "svg", level, deferred: true }
       : { src: renderAberrationPortrait(card), kind: "generated", format: "svg", level };
   }

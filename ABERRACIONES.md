@@ -45,11 +45,11 @@ Ejemplos revisados además del piloto incluyen Reflejo de Retorno con Lobo y Gri
 
 En una prueba con fuentes G1, G2, G2, G3 y G4, las 20 parejas válidas dieron **20 éxitos** e incluyeron resultados G1 a G4. Se probaron los veinte intervalos de selección, incluido el cruce entre fuentes y la recuperación de dos copias referenciadas de una misma quimera.
 
-El guardado pasa al formato 4 y conserva fichas, inventario, linaje, óbolos, retratos y descubrimientos de las versiones 1 a 3. Se probó un guardado real de `main` con seis aberraciones, una esencia destilada y una revelación pendiente. Las aberraciones anteriores conservan su identificador, defecto y apariencia. Las nuevas tienen un identificador de variante con la pareja ordenada y el fallo, y un identificador de copia por operación. El guardado contiene la ficha descubierta completa y un número de versión de reglas. Una variante retirada del sorteo puede seguir existiendo en la colección. La colección normal incorpora solo las aberraciones obtenidas.
+El guardado pasa al formato 4 y conserva fichas, inventario, linaje, óbolos, retratos y descubrimientos de las versiones 1 a 3. Se probó un guardado real de `main` con seis aberraciones, una esencia destilada y una revelación pendiente. Las aberraciones anteriores conservan su identificador y su defecto. El registro gráfico aplica la revisión visual por ID. Las nuevas tienen un identificador de variante con la pareja ordenada y el fallo, y un identificador de copia por operación. El guardado contiene la ficha descubierta completa y un número de versión de reglas. Una variante retirada del sorteo puede seguir existiendo en la colección. La colección normal incorpora solo las aberraciones obtenidas.
 
 ## Revisión de las pinturas históricas
 
-Se examinaron ocho pinturas y las ocho siguen asociadas a las fichas históricas. La revisión conserva la continuidad de esas cartas.
+Los ocho archivos originales siguen en el repositorio. Tras la revisión estricta, Lobo + Mamut conserva la pintura activa y las otras siete fichas muestran un respaldo SVG corregido. La tabla recoge la lectura anterior. [Dictamen por pintura](REVISION-ABERRACIONES.md)
 
 | Progenitores | Lectura de la pintura |
 | --- | --- |
@@ -64,21 +64,21 @@ Se examinaron ocho pinturas y las ocho siguen asociadas a las fichas históricas
 
 ## Piloto artístico
 
-Se generaron ocho pinturas originales como WebP de **768 × 768**. Pesan **1.300.392 bytes** en conjunto. Las siete primeras son G1. Puntales Saturados surge de Crisomamut con Obrero y es G2. Las pinturas usan escala ambiental y un fallo visible, desde un apoyo bifurcado hasta dos corrientes que se encierran sobre la misma égida. Los retratos restantes usan SVG o Canvas histórico bajo demanda.
+Las ocho pinturas se regeneraron como WebP de **768 × 768** para mostrar obstrucciones corporales evidentes. Pesan **1.360.716 bytes** en conjunto. Las siete primeras son G1. Puntales Saturados surge de Crisomamut con Obrero y es G2. Las pinturas usan escala ambiental y una silueta físicamente inutilizable. Las fichas nuevas describen dos ejes de disfunción. Los retratos provisionales usan SVG bajo demanda. [Revisión estricta](REVISION-ABERRACIONES.md)
 
 | Criatura y progenitores | Identificador de variante | Retrato | Bytes |
 | --- | --- | --- | ---: |
-| Paso en Espejo · Lobo y Zorro | `aberration(lobo+zorro;axis-lock)` | [paso-en-espejo.webp](docs/assets/aberraciones/piloto/paso-en-espejo.webp) | 161.960 |
-| Eco de Retorno · Pulpo y Sirena | `aberration(pulpo+sirena;sensory-loop)` | [eco-de-retorno.webp](docs/assets/aberraciones/piloto/eco-de-retorno.webp) | 193.306 |
-| Contrafuerte Empotrado · Arquitecta y Tricerátops | `aberration(arquitecta+triceratops;load-bind)` | [contrafuerte-empotrado.webp](docs/assets/aberraciones/piloto/contrafuerte-empotrado.webp) | 173.384 |
-| Marea que se Apaga · Fénix y Sirena | `aberration(fenix+sirena;phase-bleed)` | [marea-que-se-apaga.webp](docs/assets/aberraciones/piloto/marea-que-se-apaga.webp) | 108.008 |
-| Mordaza sin Alcance · Herrera y Zorro | `aberration(herrera+zorro;blocked-craft)` | [mordaza-sin-alcance.webp](docs/assets/aberraciones/piloto/mordaza-sin-alcance.webp) | 144.886 |
-| Égida a Contraviento · Atenea y Quetzalcóatl | `aberration(atenea+quetzalcoatl;domain-knot)` | [egida-a-contraviento.webp](docs/assets/aberraciones/piloto/egida-a-contraviento.webp) | 225.068 |
-| Ribera a Medias · Ajolote y Zorro | `aberration(ajolote+zorro;interrupted)` | [ribera-a-medias.webp](docs/assets/aberraciones/piloto/ribera-a-medias.webp) | 130.218 |
-| Puntales Saturados · Crisomamut y Obrero | `aberration(fusion(alquimista+mamut)+obrero;overgrowth)` | [puntales-saturados.webp](docs/assets/aberraciones/piloto/puntales-saturados.webp) | 163.562 |
+| Paso en Espejo · Lobo y Zorro | `aberration(lobo+zorro;axis-lock)` | [paso-en-espejo.webp](docs/assets/aberraciones/piloto/paso-en-espejo.webp) | 161.774 |
+| Eco de Retorno · Pulpo y Sirena | `aberration(pulpo+sirena;sensory-loop)` | [eco-de-retorno.webp](docs/assets/aberraciones/piloto/eco-de-retorno.webp) | 174.280 |
+| Contrafuerte Empotrado · Arquitecta y Tricerátops | `aberration(arquitecta+triceratops;load-bind)` | [contrafuerte-empotrado.webp](docs/assets/aberraciones/piloto/contrafuerte-empotrado.webp) | 176.484 |
+| Marea que se Apaga · Fénix y Sirena | `aberration(fenix+sirena;phase-bleed)` | [marea-que-se-apaga.webp](docs/assets/aberraciones/piloto/marea-que-se-apaga.webp) | 163.982 |
+| Mordaza sin Alcance · Herrera y Zorro | `aberration(herrera+zorro;blocked-craft)` | [mordaza-sin-alcance.webp](docs/assets/aberraciones/piloto/mordaza-sin-alcance.webp) | 159.024 |
+| Égida a Contraviento · Atenea y Quetzalcóatl | `aberration(atenea+quetzalcoatl;domain-knot)` | [egida-a-contraviento.webp](docs/assets/aberraciones/piloto/egida-a-contraviento.webp) | 212.058 |
+| Ribera a Medias · Ajolote y Zorro | `aberration(ajolote+zorro;interrupted)` | [ribera-a-medias.webp](docs/assets/aberraciones/piloto/ribera-a-medias.webp) | 145.492 |
+| Puntales Saturados · Crisomamut y Obrero | `aberration(fusion(alquimista+mamut)+obrero;overgrowth)` | [puntales-saturados.webp](docs/assets/aberraciones/piloto/puntales-saturados.webp) | 167.622 |
 
 ## Acceso y validación
 
 Desde la raíz, ejecuta `python3 -m http.server 8000 --directory docs`. La galería de diagnóstico está en `http://localhost:8000/diagnostics.html`. Selecciona progenitores, compara ambos grupos, exporta sus fichas o añade cinco aberraciones al ensayo de esencia. El piloto está en `http://localhost:8000/aberraciones.html`. Ambas páginas se sirven desde `docs` y funcionan en memoria para el diagnóstico. GitHub Pages ofrecerá esas mismas rutas tras incorporar la rama y publicarla.
 
-`node --test tests/*.mjs` completó 33 pruebas de ocho suites. La inspección visual del piloto se realizó en las imágenes completas y a tamaño de tarjeta. En Chromium se verificaron los ocho archivos, el SVG, las exportaciones, el diagnóstico avanzado y el ensayo de esencia. Se comprobó la recarga durante el ritual completo y se reprodujeron las ocho revelaciones y el uso de esencia en emulación móvil a 393 px. Consola y red registraron cero errores. Los límites actuales del piloto son ocho pinturas nuevas y un muestreo de generaciones posteriores sobre resultados calculados a demanda.
+`node --test tests/*.mjs` completó 34 pruebas de ocho suites. La inspección visual del piloto se realizó en las imágenes completas y a tamaño de tarjeta. En Chromium se verificaron los ocho archivos, el SVG, las exportaciones, el diagnóstico avanzado y el ensayo de esencia. Se comprobó la recarga durante el ritual completo y se reprodujeron las ocho revelaciones y el uso de esencia en emulación móvil a 393 px. Consola y red registraron cero errores. Los límites actuales del piloto son ocho pinturas nuevas y un muestreo de generaciones posteriores sobre resultados calculados a demanda.

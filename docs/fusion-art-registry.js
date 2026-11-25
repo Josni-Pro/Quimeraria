@@ -6,7 +6,7 @@ import { FUSION_ART_BATCH_03 } from "./fusion-art-batch-03.js";
 import { BAKED_FUSIONS } from "./fusion-bakes.js";
 import { fusionArtKey, PAINTED_FUSIONS, PORTRAIT_OVERRIDES } from "./fusion-paintings.js";
 import { PORTRAIT_PROFILES } from "./portrait-profiles.js";
-import { aberrationPainting } from "./aberration-art-pilot.js";
+import { aberrationPainting, ARCHIVED_ABERRATION_PAINTINGS } from "./aberration-art-pilot.js";
 
 const recipes = new Map(RECIPES.map(recipe => [fusionArtKey(recipe.parents), recipe]));
 const batch = new Map([FUSION_ART_BATCH_01, FUSION_ART_BATCH_02, FUSION_ART_BATCH_03]
@@ -20,6 +20,7 @@ export function resolvePortraitAsset(card, level = 1) {
   if (!["fusion", "aberration"].includes(card.category)) {
     return card.art ? { key: card.art, kind: "painted" } : null;
   }
+  if (card.category === "aberration" && ARCHIVED_ABERRATION_PAINTINGS.has(card.id)) return null;
   const painting = batch.get(card.id);
   if (painting) return { key: painting.asset, kind: "painted" };
   const override = dedicated.get(card.id) ?? PORTRAIT_OVERRIDES.get(card.id);
