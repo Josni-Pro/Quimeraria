@@ -1,0 +1,322 @@
+.fusion-ritual {
+  --reveal-glow: #b78cfc;
+  --reveal-motive: #dbc0ff;
+  --ritual-duration: 4100ms;
+  width: min(760px, calc(100vw - 26px));
+  max-width: none;
+  max-height: min(90vh, 90dvh);
+  margin: auto;
+  border: 1px solid #674f87;
+  border-radius: 16px;
+  padding: 0;
+  overflow-x: hidden;
+  background: #120e1c;
+  color: #f5eefb;
+  box-shadow: 0 30px 100px #080510;
+}
+.fusion-ritual::backdrop { background: #07050eeb; }
+.fusion-ritual__header,
+.fusion-ritual__footer {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 11px;
+  padding: 17px 24px;
+}
+.fusion-ritual__header { border-bottom: 1px solid #b490e327; }
+.fusion-ritual__footer { min-height: 56px; border-top: 1px solid #b490e327; }
+.fusion-ritual__label { color: #d8b7f6; font-size: 10px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }
+.fusion-ritual__title { font: 700 clamp(26px, 5.6vw, 43px)/.96 var(--serif, Georgia, serif); margin: 5px 0 0; overflow-wrap: anywhere; }
+.fusion-ritual__title:focus { outline: none; }
+.fusion-ritual__summary { color: #d4c4e1; font-size: 12px; max-width: 58ch; }
+.fusion-ritual__summary:empty { display: none; }
+.fusion-ritual__skip { flex: 0 0 auto; min-height: 38px; font-size: 11px; white-space: nowrap; }
+.fusion-ritual__next { margin-left: auto; flex: 0 0 auto; }
+.fusion-ritual [hidden] { display: none; }
+
+.fusion-ritual__stage {
+  --card-width: clamp(94px, 25vw, 156px);
+  --flight: clamp(68px, 20vw, 170px);
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  height: clamp(270px, 57vh, 474px);
+  height: clamp(270px, 57dvh, 474px);
+  background: radial-gradient(ellipse at 50% 49%, #362050, #1b122b 54%, #0f0c17 100%);
+}
+.fusion-ritual__stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, #d9adff36 1px, transparent 2px) 0 0 / 29px 29px;
+  mask-image: radial-gradient(ellipse, #000 5%, transparent 69%);
+}
+.fusion-ritual__dial,
+.fusion-ritual__crucible,
+.fusion-ritual__reveal-sigil {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  translate: -50% -50%;
+  border-radius: 50%;
+  aspect-ratio: 1;
+  pointer-events: none;
+}
+.fusion-ritual__dial {
+  width: clamp(250px, 59vw, 410px);
+  border: 1px solid #c7a0ff36;
+  background: repeating-conic-gradient(from 8deg, #c6a6f844 0deg 1deg, transparent 1deg 22.5deg);
+  mask-image: radial-gradient(closest-side, transparent 92%, #000 94%);
+  animation: ritual-dial var(--ritual-duration) linear both;
+}
+.fusion-ritual__thread {
+  position: absolute;
+  top: 50%;
+  left: calc(50% - var(--flight));
+  width: var(--flight);
+  height: 3px;
+  opacity: 0;
+  background: linear-gradient(90deg, transparent, var(--material-primary), #fff3ff);
+  box-shadow: 0 0 13px var(--material-primary);
+  rotate: -7deg;
+  transform-origin: right center;
+  animation: ritual-thread var(--ritual-duration) ease-in-out both;
+}
+.fusion-ritual__thread--1 {
+  left: 50%;
+  rotate: 8deg;
+  transform-origin: left center;
+  background: linear-gradient(90deg, #fff3ff, var(--material-secondary), transparent);
+  box-shadow: 0 0 13px var(--material-secondary);
+}
+.fusion-ritual--essence .fusion-ritual__thread--0 { background: linear-gradient(90deg, transparent, #8be5cf, #fff3ff); }
+.fusion-ritual--essence .fusion-ritual__thread--1 { background: linear-gradient(90deg, #fff3ff, #b79dff, transparent); }
+.fusion-ritual__material {
+  --side: -1;
+  --angle: -8deg;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+  width: var(--card-width);
+  aspect-ratio: .72;
+  isolation: isolate;
+  animation: ritual-material var(--ritual-duration) cubic-bezier(.42, 0, .34, 1) both;
+}
+.fusion-ritual__material--1 { --side: 1; --angle: 8deg; }
+.fusion-ritual__shell {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--material-color);
+  border-radius: 10px;
+  background: linear-gradient(35deg, #241737, #3e295a);
+  box-shadow: 0 8px 23px #090510ad, inset 0 0 0 4px #f4dcff0d;
+}
+.fusion-ritual__shell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(0deg, #140c21f3, transparent 47%);
+  pointer-events: none;
+}
+.fusion-ritual__portrait { width: 100%; height: 100%; object-fit: cover; object-position: 50% 36%; }
+.fusion-ritual__mark {
+  display: grid;
+  place-items: center;
+  width: 68%;
+  aspect-ratio: 1;
+  border: 1px solid #f4dcff64;
+  border-radius: 50%;
+  color: var(--material-color);
+  font: 700 clamp(29px, 7vw, 47px)/1 var(--serif, Georgia, serif);
+  box-shadow: 0 0 17px #b891fe58, inset 0 0 18px #b891fe4e;
+}
+.fusion-ritual__name {
+  position: absolute;
+  z-index: 1;
+  inset: auto 4px 10px;
+  color: #fff4ff;
+  font: 700 clamp(16px, 3vw, 24px)/1 var(--serif, Georgia, serif);
+  text-shadow: 0 1px 6px #0c0517;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.fusion-ritual__halo {
+  position: absolute;
+  inset: -7px;
+  border: 1px solid var(--material-color);
+  border-radius: 15px;
+  opacity: 0;
+  box-shadow: 0 0 17px var(--material-color), inset 0 0 9px var(--material-color);
+  animation: ritual-halo var(--ritual-duration) ease-in-out both;
+}
+.fusion-ritual__crucible {
+  z-index: 1;
+  width: clamp(110px, 29vw, 220px);
+  display: grid;
+  place-items: center;
+  border: 1px solid #e5ccff9e;
+  background:
+    radial-gradient(circle, #fff4ff 0%, #dcc1ff 17%, #aa70f567 40%, transparent 65%),
+    conic-gradient(var(--material-primary), var(--material-secondary), var(--material-primary));
+  box-shadow: 0 0 0 18px #ad86ee28, 0 0 0 34px #b793f219, 0 0 64px #a46df8bb;
+  color: #5b3398;
+  font: 700 clamp(28px, 7vw, 52px)/1 var(--serif, Georgia, serif);
+  opacity: 0;
+  animation: ritual-crucible var(--ritual-duration) cubic-bezier(.28, .55, .27, 1) both;
+}
+.fusion-ritual__crucible::after {
+  content: "";
+  position: absolute;
+  inset: -17px;
+  border: 1px dashed #dec6fa9b;
+  border-radius: 50%;
+}
+.fusion-ritual--essence .fusion-ritual__crucible {
+  color: #27554e;
+  border-color: #c1f9e9ce;
+  background: radial-gradient(circle, #fff 0%, #c9ffec 18%, #8eead0 43%, #387f7a 66%, #1d534f 100%);
+  box-shadow: 0 0 0 16px #a1f3d830, 0 0 0 33px #98eec822, 0 0 59px #a5ffdf8a;
+}
+.fusion-ritual__flash {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  opacity: 0;
+  background: radial-gradient(ellipse at center, #fffaff 3%, #e2c5fd 19%, #ae82ef9e 41%, transparent 74%);
+  animation: ritual-flash var(--ritual-duration) ease-out both;
+}
+
+@keyframes ritual-material {
+  0% { opacity: 0; transform: translate3d(calc(var(--flight) * var(--side)), 23px, 0) rotate(var(--angle)) scale(.9); }
+  14%, 33% { opacity: 1; transform: translate3d(calc(var(--flight) * var(--side)), 0, 0) rotate(var(--angle)) scale(1); }
+  57% { opacity: 1; transform: translate3d(calc(var(--flight) * var(--side) * .52), -4px, 0) rotate(calc(var(--angle) * .35)) scale(.88); }
+  69% { opacity: .88; }
+  77%, 100% { opacity: 0; transform: translate3d(0, -4px, 0) rotate(0) scale(.28); }
+}
+@keyframes ritual-halo {
+  0%, 13%, 79%, 100% { opacity: 0; scale: .94; }
+  25% { opacity: .6; scale: 1; }
+  46% { opacity: .31; scale: 1.09; }
+  60% { opacity: .85; scale: 1.12; }
+}
+@keyframes ritual-thread {
+  0%, 35% { opacity: 0; scale: .3 1; transform: translateY(7px); }
+  49% { opacity: .5; scale: 1 1; }
+  68% { opacity: .9; scale: .95 1.45; transform: translateY(-5px); }
+  78%, 100% { opacity: 0; scale: .2 1; }
+}
+@keyframes ritual-crucible {
+  0%, 51% { opacity: 0; transform: rotate(-22deg) scale(.12); }
+  64% { opacity: .8; transform: rotate(-12deg) scale(.45); }
+  77% { opacity: 1; transform: rotate(6deg) scale(.85); }
+  88% { opacity: 1; transform: rotate(13deg) scale(1.12); }
+  97%, 100% { opacity: 0; transform: rotate(21deg) scale(1.5); }
+}
+@keyframes ritual-dial { from { transform: rotate(-22deg); opacity: .5; } to { transform: rotate(52deg); opacity: 1; } }
+@keyframes ritual-flash {
+  0%, 85% { opacity: 0; transform: scale(.68); }
+  93% { opacity: .75; transform: scale(1.06); }
+  100% { opacity: 0; transform: scale(1.13); }
+}
+
+.fusion-ritual--revealed .fusion-ritual__stage {
+  display: grid;
+  place-items: center;
+  background: radial-gradient(ellipse at center, color-mix(in srgb, var(--reveal-glow) 28%, #1a102c), #171023 62%, #0f0b16);
+}
+.fusion-ritual--revealed .fusion-ritual__label { color: var(--reveal-glow); }
+.fusion-ritual__reveal-card {
+  position: relative;
+  z-index: 1;
+  width: clamp(155px, 35vw, 250px);
+  max-width: 85%;
+  border-radius: 12px;
+  box-shadow: 0 0 32px color-mix(in srgb, var(--reveal-glow) 54%, transparent);
+  animation: ritual-bloom .65s cubic-bezier(.2, .72, .31, 1) both;
+}
+.fusion-ritual__reveal-card > .card { min-height: clamp(204px, 37vh, 335px); padding: 13px; border-color: var(--reveal-glow); }
+.fusion-ritual__reveal-card .card-name { font-size: clamp(21px, 4vw, 31px); }
+.fusion-ritual__reveal-sigil {
+  width: clamp(255px, 62%, 420px);
+  border: 1px dashed color-mix(in srgb, var(--reveal-glow) 56%, transparent);
+  background: radial-gradient(circle at center, transparent 52%, color-mix(in srgb, var(--reveal-motive) 39%, transparent) 61%, transparent 70%);
+  box-shadow: 0 0 32px color-mix(in srgb, var(--reveal-glow) 38%, transparent);
+  animation: ritual-rays .9s ease-out both;
+}
+.fusion-ritual__reveal-sigil::before {
+  content: "";
+  position: absolute;
+  inset: -14px;
+  border-radius: inherit;
+  background: radial-gradient(circle, var(--reveal-motive) 1px, transparent 2px) 0 0 / 20px 20px;
+  mask-image: radial-gradient(closest-side, transparent 56%, #000 67%, transparent 100%);
+}
+.fusion-ritual--brilliant .fusion-ritual__reveal-sigil::after {
+  content: "";
+  position: absolute;
+  inset: -24px;
+  border-radius: inherit;
+  background: repeating-conic-gradient(from 13deg, var(--reveal-glow) 0deg 1deg, transparent 1deg 22.5deg);
+  mask-image: radial-gradient(closest-side, transparent 73%, #000 79%, transparent 99%);
+}
+.fusion-ritual--unstable .fusion-ritual__stage { background: radial-gradient(ellipse, #572c45, #241728 59%, #130d1d); }
+.fusion-ritual--unstable .fusion-ritual__reveal-sigil {
+  border: 0;
+  border-radius: 0;
+  background: repeating-conic-gradient(from 9deg, #fa92a3bf 0deg 5deg, transparent 5deg 23deg, #d5eacb92 23deg 25deg, transparent 25deg 37deg);
+  mask-image: radial-gradient(closest-side, transparent 46%, #000 64%, #000 74%, transparent 100%);
+  animation: ritual-fracture .88s ease-out both;
+}
+.fusion-ritual--unstable .fusion-ritual__reveal-card { animation: ritual-distort .62s ease-out both; }
+
+@keyframes ritual-bloom { from { opacity: 0; transform: translateY(14px) scale(.91); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes ritual-rays { from { opacity: .12; transform: rotate(-13deg) scale(.6); } to { opacity: .77; transform: rotate(8deg) scale(1); } }
+@keyframes ritual-fracture {
+  0% { opacity: .22; transform: rotate(-8deg) scale(.62); }
+  24% { opacity: .83; transform: rotate(9deg) skewX(9deg) scale(1.08); }
+  43% { opacity: .57; transform: rotate(-4deg) skewX(-7deg) scale(.93); }
+  62% { opacity: .8; transform: rotate(4deg) skewX(4deg) scale(1.04); }
+  100% { opacity: .68; transform: rotate(0) scale(1); }
+}
+@keyframes ritual-distort {
+  0% { transform: translateX(-8px) skewX(-9deg) scale(.94); opacity: .3; }
+  28% { transform: translateX(5px) skewX(5deg) scale(1.02); opacity: .85; }
+  52% { transform: translateX(-3px) skewX(-2deg) scale(1); opacity: .94; }
+  100% { transform: translateX(0) skewX(0) scale(1); opacity: 1; }
+}
+
+.fusion-ritual--reduced .fusion-ritual__dial,
+.fusion-ritual--reduced .fusion-ritual__thread,
+.fusion-ritual--reduced .fusion-ritual__flash,
+.fusion-ritual--reduced .fusion-ritual__halo { animation: none; }
+.fusion-ritual--reduced .fusion-ritual__material {
+  transform: translateX(calc(var(--flight) * var(--side) * .96));
+  animation: ritual-fade-material var(--ritual-duration) ease-out both;
+}
+.fusion-ritual--reduced .fusion-ritual__crucible {
+  opacity: 0;
+  animation: ritual-fade-core var(--ritual-duration) ease-out both;
+}
+.fusion-ritual--reduced .fusion-ritual__reveal-card,
+.fusion-ritual--reduced .fusion-ritual__reveal-sigil { animation: ritual-fade-in .28s ease-out both; }
+.fusion-ritual--static * { animation: none !important; }
+@keyframes ritual-fade-material { 0%, 44% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes ritual-fade-core { 0%, 44% { opacity: 0; } 100% { opacity: .56; } }
+@keyframes ritual-fade-in { from { opacity: .32; } to { opacity: 1; } }
+
+@media (max-width: 530px) {
+  .fusion-ritual { width: calc(100vw - 16px); border-radius: 11px; }
+  .fusion-ritual__header, .fusion-ritual__footer { padding: 12px; gap: 7px; }
+  .fusion-ritual__skip { padding-inline: 8px; }
+  .fusion-ritual__summary { font-size: 11px; }
+}
+@media (orientation: landscape) and (max-height: 580px) {
+  .fusion-ritual__stage { height: max(150px, 48dvh); --card-width: clamp(79px, 24vh, 115px); }
+  .fusion-ritual__reveal-card { width: clamp(120px, 36vh, 170px); }
+  .fusion-ritual__reveal-card > .card { min-height: clamp(135px, 43vh, 250px); }
+}
