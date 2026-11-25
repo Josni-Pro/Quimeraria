@@ -13,6 +13,7 @@ import {
 import { selectVariant, VARIANT_FAMILIES } from '../docs/fusion-variants.js'
 import { ALCHEMY } from '../docs/game-config.js'
 import { assetPortrait, getPortrait, illustrationRecord } from '../docs/illustrations.js'
+import { renderProvisionalPortrait } from '../docs/provisional-art.js'
 
 function stockedGame() {
   return {
@@ -395,7 +396,7 @@ test('Registro, fichas y retratos comparten referencias reales', () => {
   const carrier = inspect(state, 'pulpo', 'mamut').find(card => card.variantKey === 'shore-carrier')
   assert.equal(carrier.identity.bodySource, 'mamut')
   assert.equal(carrier.concept.anatomy, 'quadruped')
-  assert.ok(decodeURIComponent(getPortrait(carrier, state).src).includes('fill="#2c777f"'))
+  assert.ok(decodeURIComponent(renderProvisionalPortrait(carrier, 1)).includes('fill="#2c777f"'))
   const classic = inspect(state, 'alquimista', 'mamut')[0]
   assert.equal(classic.identity.illustration.final, 'fusiones/alquimista--mamut')
   assert.equal(illustrationRecord(classic, getPortrait(classic, state)).status, classic.identity.illustration.status)
