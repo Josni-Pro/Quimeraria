@@ -113,6 +113,27 @@ const stoneMammoth = `<g><path d="M72 113l-10-16 23-29 41-12 54 6 36 16 18 9 14 
   <path d="M219 115q23 15 38-2-6 32-32 14z" fill="#faf0c9"/>
   <path d="M94 129l19 14m37-4 25-29m29 21-19 10m21-54-19 22" fill="none" stroke="#2d2239" stroke-width="3"/></g>`;
 
+const cistern = `<g><path d="M99 84h86l-8 24H103z" fill="#a86f53"/>
+  <path d="M116 50h49v37h-49z" fill="#2c777f" stroke="#e7d1a1" stroke-width="3"/>
+  <path d="M119 72q14-15 20 0t23 0V57h-43z" fill="#9dd9cc"/>
+  <path d="M120 82q8-22 15-1m9-2q12-25 17 2" fill="none" stroke="#39416b" stroke-width="4"/></g>`;
+const rescueHarness = `<g><path d="M111 122L77 163m85-41 25 41" stroke="#f4d396" stroke-width="3"/>
+  <path d="M72 162h118l-13 14h-92z" fill="#b89164"/>
+  <path d="M126 138h16m-8-8v16" stroke="#f6e7c9" stroke-width="4"/></g>`;
+
+const wyvern = `<g>${wings(true)}
+  <g transform="translate(270 -8) scale(-1 .9)">${wings(true)}</g>
+  <path d="M61 133q40 5 61-28l43-13 17-28 25-9 17 15-12 15-19 4-11 29-27 14-4 28h-14l3-29-20 7-15 25H94l12-26q-29 16-59 5z" fill="url(#body)"/>
+  <circle cx="207" cy="71" r="3" fill="#fff4c8"/></g>`;
+const windLoom = `<g>${wings(false)}
+  <path d="M45 132Q72 79 106 116T171 117Q200 108 200 78l12-16 16 8-16 20q-4 44-40 45-24 13-64-4t-63 1z" fill="url(#body)"/>
+  <path d="M91 105v58h38v-46m19 8v37h32v-35" fill="url(#accent)" stroke="#ead5ad" stroke-width="3"/>
+  <path d="M98 113v40m9-37v37m9-34v34m39-22v23m9-24v24m8-26v26" stroke="#382c4f" stroke-width="2"/></g>`;
+const citadel = `<g><path d="M69 82h140v51H69zM79 130h25l-9 44H75zm49 0h27v47h-29zm49 0h23l13 44h-23z" fill="url(#body)"/>
+  <path d="M66 88q73-102 148 0q-70 38-148 0z" fill="url(#accent)" stroke="#e6cd95" stroke-width="3"/>
+  <path d="M142 6l-12 24 16 1-13 32" fill="none" stroke="#d2e6fa" stroke-width="5"/>
+  <path d="M132 111h17v27h-17z" fill="#fff4c8"/></g>`;
+
 function drawShape(shape, anatomy, head, speciesId, family) {
   const body = anatomy === "avian" ? avian(false)
     : ["aquatic", "cephalopod", "amphibian"].includes(anatomy) ? aquatic(anatomy === "cephalopod")
@@ -121,6 +142,14 @@ function drawShape(shape, anatomy, head, speciesId, family) {
   if (speciesId === "ortro") return secondHound + quadruped(head);
   if (speciesId === "kitsune") return sigil + foxTails + quadruped("fox");
   switch (shape) {
+    case "shore-carrier": return body + cistern;
+    case "winged-medic": return wings(false) + `<g transform="translate(282) scale(-1 1)">${wings(false)}</g>` + humanoid(head) + rescueHarness;
+    case "cerberus": return `<g transform="translate(18 -9)">${secondHound}</g>` + secondHound + quadruped("wolf");
+    case "cave-bear": return `<path d="M41 176V109Q45 29 141 29q85 0 104 81v66" fill="#352e37" stroke="#9c8068" stroke-width="9"/>${quadruped("bear")}
+      <path d="M80 174l-14 7m42-9-9 9m115-5 9 6" stroke="#e9c99c" stroke-width="3"/>`;
+    case "wyvern": return wyvern;
+    case "wind-loom": return windLoom;
+    case "citadel": return citadel;
     case "humanoid": return humanoid(head, family === "kin");
     case "laboratory": return quadruped(head) + laboratory;
     case "artillery": return quadruped(head) + artillery;
@@ -137,11 +166,29 @@ function drawShape(shape, anatomy, head, speciesId, family) {
   }
 }
 
+const occupationalTools = {
+  medicina: '<rect x="89" y="104" width="25" height="27" rx="4"/><path d="M94 117h15m-8-7v15" stroke="#381f2b" stroke-width="3"/>',
+  "oficios civiles": '<path d="M93 89h17l8 32-22 9-12-21z"/><path d="M86 106h29" stroke="#362837" stroke-width="3"/>',
+  construcción: '<path d="M81 145l18-64h7l-18 64zm10-40h20v6H91z"/>',
+  alquimia: '<path d="M96 105h10v15l9 15q1 9-13 9t-15-9l9-15z"/>',
+  "magia rúnica": '<path d="M91 145l19-51 4 1-17 50zM107 95l2-12 12 2-3 12z"/>',
+  abogacía: '<path d="M97 95h4v36h-4zM81 100l37 3v4l-37-3zm0 18 7-12 7 12zm25 2 7-12 7 12z"/>',
+  herrería: '<path d="M85 133l20-41 6 3-20 42zm12-46 23 12 5-11-23-11z"/>',
+  cartografía: '<path d="M82 108l33-7 5 30-33 7z"/><circle cx="101" cy="119" r="8" fill="#392b48"/>',
+  música: '<path d="M84 94q-8 37 16 43 20-4 15-40l-5 2q5 26-10 31-16-6-10-35zM92 101h19v4H92z"/>',
+  arquitectura: '<path d="M87 140l14-44 16 43h-5l-12-33-8 34z"/><circle cx="101" cy="96" r="5"/>'
+};
+
+function drawProfession(card) {
+  const tools = card.concept?.profession?.split(" y ").map(job => occupationalTools[job]).filter(Boolean) ?? [];
+  return tools.map((tool, index) => `<g fill="url(#accent)" transform="translate(${index * 90})">${tool}</g>`).join("");
+}
+
 export function renderProvisionalPortrait(card, level) {
   const cacheKey = `${card.id}#${level}`;
   if (portraitCache.has(cacheKey)) return portraitCache.get(cacheKey);
   const profiles = card.lineage.map(id => PORTRAIT_PROFILES[id]).filter(Boolean);
-  const animal = profiles.find(profile => profile.face === "elephant")
+  const animal = PORTRAIT_PROFILES[card.identity.bodySource] ?? profiles.find(profile => profile.face === "elephant")
     ?? profiles.find(profile => profile.face !== "human");
   const colors = animal?.colors ?? profiles[0]?.colors ?? ["#805f93", "#47304f", "#e6ba99"];
   const accent = isHex(card.identity.accent) ? card.identity.accent : profiles.find(profile => profile !== animal)?.accent
@@ -160,7 +207,7 @@ export function renderProvisionalPortrait(card, level) {
     <path d="M0 142l42-20 30 14 35-24 42 22 43-29 33 23 55-17v89H0z" fill="#a59ec9" opacity=".14"/>
     <path d="M0 173l57-21 23 7 37-12 31 14 61-11 71 21v29H0z" fill="#0c0e18"/>
     <path d="M22 46l13-4m9 18 7-1m187 17 13-3M27 161l21-5m185 4 14 5" stroke="#f8eac7" stroke-linecap="round" opacity=".35"/>
-    ${shape}${finish}
+    ${shape}${["humanoid", "kin"].includes(card.identity.shape) ? drawProfession(card) : ""}${finish}
   </svg>`;
   const src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
   portraitCache.set(cacheKey, src);

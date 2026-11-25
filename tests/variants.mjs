@@ -12,7 +12,7 @@ import {
 } from '../docs/engine.js'
 import { selectVariant, VARIANT_FAMILIES } from '../docs/fusion-variants.js'
 import { ALCHEMY } from '../docs/game-config.js'
-import { assetPortrait, getPortrait } from '../docs/illustrations.js'
+import { assetPortrait, getPortrait, illustrationRecord } from '../docs/illustrations.js'
 
 function stockedGame() {
   return {
@@ -127,12 +127,13 @@ test('El catálogo completo genera variantes estables bajo demanda y perfiles de
       const variants = inspect(state, first.id, second.id)
       assert.deepEqual(variants, inspect(state, second.id, first.id))
       poolSizes.add(variants.length)
-      assert.ok(variants.length >= 2, `${first.id} + ${second.id}`)
+      assert.ok(variants.length >= 1, `${first.id} + ${second.id}`)
       const pair = [...new Set([first.id, second.id])].sort()
       const combination = variants[0].combinationId
       const probability = variants.reduce((sum, variant) => sum + variant.probability, 0)
       assert.ok(Math.abs(probability - 1) < 1e-12)
       const concepts = new Set()
+      const provisionalPortraits = new Set()
       for (const variant of variants) {
         assert.ok(variant.probability > 0 && variant.probability <= 1)
         assert.equal(variant.combinationId, combination)
@@ -144,6 +145,12 @@ test('El catálogo completo genera variantes estables bajo demanda y perfiles de
         assert.deepEqual(variant.parents, [first.id, second.id].sort())
         assert.deepEqual(variant.lineage, pair)
         verifyConcept(variant, [first, second])
+        assert.ok(variant.identity.brief.silhouette && variant.identity.brief.sources.length === 2)
+        const portrait = getPortrait(variant, state)
+        if (portrait.format === 'svg') {
+          assert.ok(!provisionalPortraits.has(portrait.src), `SVG repetido en ${combination}`)
+          provisionalPortraits.add(portrait.src)
+        }
         const combat = verifyProfiles(variant)
         roleCounts.set(combat.role, (roleCounts.get(combat.role) ?? 0) + 1)
         assert.ok(Object.hasOwn(VARIANT_FAMILIES, variant.family))
@@ -300,7 +307,7 @@ test('Las recetas especiales conservan identidad e ilustraciones', () => {
     assert.equal(original.name, recipe.name)
     assert.equal(original.art, recipe.art)
     assert.equal(selectVariant(variants, 0).id, original.id)
-    assert.ok(variants.some(variant => variant.id !== original.id && variant.art !== original.art))
+    assert.ok(variants.slice(1).every(variant => variant.id !== original.id && variant.art !== original.art))
     assert.equal(getPortrait(original, state).src, assetPortrait(recipe.art))
   }
 })
@@ -353,4 +360,62 @@ test('El guardado histórico mantiene las cartas exactas y nunca almacena el con
     assert.doesNotMatch(serializeGame(state), /data:image\//)
     assert.deepEqual(loadGame(serializeGame(state)), state)
   }
+})
+
+test('El refinamiento distingue vuelo, profesión y manifestación divina', () => {
+  const state = stockedGame()
+  const owls = inspect(state, 'buho', 'buho')
+  assert.equal(owls.filter(card => card.identity.shape === 'aerial').length, 1)
+  assert.ok(!owls.some(card => card.variantKey === 'aerial'))
+  const medic = inspect(state, 'medica', 'buho').find(card => card.variantKey === 'air-rescue')
+  assert.equal(getCreatureProfiles(medic).combat.role, 'healer')
+  assert.equal(getCreatureProfiles(medic).combat.mobility, 'aerial')
+  assert.ok(getCreatureProfiles(medic).utility.capabilities.includes('transport'))
+  assert.doesNotMatch(medic.name, /Planeador/)
+  const gods = inspect(state, 'atenea', 'thor').find(card => card.quality === 'exceptional')
+  assert.equal(gods.name, 'Égida del Trueno')
+  assert.equal(gods.concept.anatomy, 'construct')
+  assert.match(gods.description, /escudo de Atenea.*martillo de Thor/)
+  assert.equal(inspect(state, 'atenea', 'lobo').some(card => card.quality === 'exceptional'), false)
+})
+
+test('Registro, fichas y retratos comparten referencias reales', () => {
+  const state = stockedGame()
+  const recognized = [
+    ['musico', 'pulpo', 'sirena'],
+    ['buho', 'dragon', 'fenix'],
+  ]
+  for (const [first, second, species] of recognized) {
+    const output = inspect(state, first, second).find(card => card.variantKey === species)
+    const portrait = getPortrait(output, state)
+    assert.equal(portrait.src, assetPortrait(getCard(species, state).art))
+    assert.equal(output.identity.illustration.final, species)
+    assert.equal(output.generation, 1)
+  }
+  const carrier = inspect(state, 'pulpo', 'mamut').find(card => card.variantKey === 'shore-carrier')
+  assert.equal(carrier.identity.bodySource, 'mamut')
+  assert.equal(carrier.concept.anatomy, 'quadruped')
+  assert.ok(decodeURIComponent(getPortrait(carrier, state).src).includes('fill="#2c777f"'))
+  const classic = inspect(state, 'alquimista', 'mamut')[0]
+  assert.equal(classic.identity.illustration.final, 'fusiones/alquimista--mamut')
+  assert.equal(illustrationRecord(classic, getPortrait(classic, state)).status, classic.identity.illustration.status)
+  assert.equal(getPortrait(classic, state).src, assetPortrait(classic.identity.illustration.final))
+  assert.match(classic.identity.brief.silhouette, /trompa/)
+  assert.equal(classic.identity.brief.sources.length, 2)
+  const colossus = inspect(state, 'alquimista', 'mamut').at(-1)
+  assert.equal(getPortrait(colossus, state).src, './assets/piloto/coloso-alquimico.webp')
+  assert.ok(readFileSync(new URL('../docs/assets/piloto/coloso-alquimico.webp', import.meta.url)).length > 0)
+})
+
+test('Una partida real del motor anterior conserva variantes fuera del sorteo futuro', () => {
+  const prior = JSON.parse(readFileSync(new URL('./fixtures/quimeraria-v3-before-refinement.json', import.meta.url)))
+  const state = loadGame(prior)
+  assert.deepEqual(state, prior)
+  const owlId = 'variant(fusion(buho+buho);aerial)'
+  const foxId = 'variant(fusion(zorro+zorro);kitsune)'
+  assert.equal(state.inventory[owlId], 1)
+  assert.equal(getCard(owlId, state).name, 'Planeador de Búho')
+  assert.ok(!inspect(state, 'buho', 'buho').some(card => card.id === owlId))
+  assert.equal(getPortrait(getCard(foxId, state), state).src, './assets/piloto/kitsune.webp')
+  assert.deepEqual(loadGame(serializeGame(state)), state)
 })

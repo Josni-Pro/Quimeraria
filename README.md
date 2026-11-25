@@ -52,13 +52,13 @@ Antes, cada pareja tenía una única fusión exitosa y repetirla podía mejorar 
 
 La calidad conceptual reparte 55, 30, 12 y 3 puntos entre común, poco común, rara y excepcional. Si falta algún nivel, su peso se redistribuye proporcionalmente entre los niveles disponibles. Las variantes de un mismo nivel se reparten el peso de ese nivel. Estas probabilidades se aplican después de un éxito. La rareza y los atributos de expedición siguen las reglas anteriores.
 
-`docs/fusion-variants.js` registra las familias de hibridación, antropomorfización, linaje humanoide, transferencia de profesión, equipamiento, estructuras portátiles, transmutación, construcción viviente, manifestación elemental o divina y simbiosis. También incluye evoluciones y especies ancestrales, mitológicas y convergentes. Entre los resultados figuran Kitsune, Ortro, el lobo terrible y Dragón. Las 496 parejas de cartas base generan entre 2 y 8 opciones por pareja. Las generaciones posteriores se calculan a demanda.
+`docs/fusion-variants.js` registra las familias de hibridación, antropomorfización, linaje humanoide, transferencia de profesión, equipamiento, estructuras portátiles, transmutación, construcción viviente, manifestación elemental o divina y simbiosis. También incluye evoluciones y especies ancestrales, mitológicas y convergentes. Entre los resultados figuran Kitsune, Ortro, el lobo terrible y Dragón. Las 496 parejas de cartas base generan entre 1 y 8 opciones por pareja. Las generaciones posteriores se calculan a demanda.
 
 `docs/creature-concepts.js` registra los aportes del catálogo y limita la herencia a seis aportes inmediatos, con cupos por clase de rasgo. Las reglas filtran la compatibilidad con la anatomía y la función del resultado. `docs/creature-profiles.js` define los roles, las estadísticas y las familias de capacidades reutilizables. Un perfil de combate reparte entre seis atributos el presupuesto de la generación (200, 250, 300, 350 o 400), más 0 a 20 puntos por rareza. El rol principal, el secundario y la naturaleza ajustan la distribución dentro de límites comunes. El costo de despliegue orientativo va de 1 a 5 según la generación. La calidad conceptual queda fuera del cálculo.
 
 Para un futuro combate, `getCreatureProfiles(card).combat` expone roles, movilidad, afinidades, presupuesto, costo, estadísticas y capacidades. Las expediciones futuras pueden usar `getCreatureProfiles(card).utility` para suministro, transporte, investigación, protección u otras actividades. Los perfiles actuales son datos y las expediciones jugables siguen usando Fuerza, Guardia, Ingenio y las habilidades del catálogo.
 
-Abre `/diagnostics.html` en el mismo servidor local para inspeccionar combinaciones y variantes, probabilidades, linaje, perfiles y arte. Incluye 23 ejemplos, entre ellos Alquimista + Mamut, Herrera + Fénix, Arquitecta + Atenea, Lobo + Lobo y cruces con variantes de generaciones superiores. Puedes añadir cualquier resultado como progenitor y descargar el registro de ilustraciones de la pareja en JSON. La página usa una partida en memoria y no escribe en el guardado del jugador.
+Abre `/diagnostics.html` en el mismo servidor local para inspeccionar combinaciones y variantes, probabilidades, linaje, perfiles y arte. Incluye 27 ejemplos, entre ellos Alquimista + Mamut, Herrera + Fénix, Arquitecta + Atenea, Lobo + Lobo y cruces con variantes de generaciones superiores. Puedes añadir cualquier resultado como progenitor y descargar el registro de ilustraciones de la pareja en JSON. La página usa una partida en memoria y no escribe en el guardado del jugador.
 
 Las variantes alternativas se representan con SVG locales que emplean siluetas, estructuras y rasgos anatómicos según el concepto. Las convergencias comparten el arte de la especie cuando coincide con el resultado. La fusión clásica y las históricas conservan las pinturas, los retratos WebP y los niveles que les corresponden. El catálogo genera únicamente las parejas consultadas y limita las cachés de variantes y retratos.
 
@@ -120,6 +120,8 @@ Guarda la ilustración de la carta base en `docs/assets/<id>.webp`. Una fórmula
 Para añadir una pintura a un cruce existente, registra el identificador de la carta y las claves de archivo en `PORTRAIT_OVERRIDES` de `docs/fusion-paintings.js`. Si amplías el catálogo base, puedes volver a preparar sus retratos WebP con `node scripts/bake-portraits.mjs`. El comando opcional requiere `@napi-rs/canvas` en el equipo de desarrollo. `QUIMERARIA_CANVAS` admite la ruta de una instalación local de ese módulo.
 
 Configura `nameMotif` como `[raíz, forma, epíteto]` en una carta nueva para personalizar las palabras que aporta al generador de nombres. Cuando falta, el generador usa el nombre y los rasgos de la carta.
+
+La comparación antes y después, los criterios artísticos y los dos retratos piloto están en [la auditoría de fusiones](AUDITORIA-FUSIONES.md).
 
 ## Comprobar cambios
 

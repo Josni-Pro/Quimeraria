@@ -104,7 +104,7 @@ function observePortraits(root = app) {
 }
 
 function visualTraits(card) {
-  if (card.identity?.visual && card.identity.shape !== "classic") return card.identity.visual;
+  if (card.identity?.visual && (card.identity.brief || card.identity.shape !== "classic")) return card.identity.visual;
   if (card.category !== "fusion" && card.category !== "aberration") return PORTRAIT_PROFILES[card.id]?.visual ?? "";
   return describeFusionPortrait(card, state);
 }
@@ -479,7 +479,7 @@ function creatureProfile(card, portrait, count) {
     ["Rol", roleNames(combat).join(" / ")],
     ["Origen", copyOrigins(card, count)],
     ["Linaje", card.generation ? cardNames(card.lineage).join(", ") : ""],
-    ["Ilustración", portraitStatus(portrait) === "definitiva" ? "Definitiva" : "Provisional"],
+    ["Ilustración", portraitStatus(portrait)],
   ]) + `<details class="creature-profile">
     <summary>Perfil estratégico</summary>
     ${detailRows([
