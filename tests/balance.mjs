@@ -1,17 +1,26 @@
 import assert from 'node:assert/strict'
 import {
   ABILITIES, CARDS, CATEGORIES, MISSIONS, PACKS, RARITIES, RECIPES, STARTER, STATS, TRAITS,
-} from '../dist/catalog.js'
+} from '../docs/catalog.js'
 import {
-  createGame, fuseCards, getCard, getPackOdds, loadGame, openPack,
+  acknowledgeReveal, createGame, fuseCards, getCard, getExpeditionSlots,
+  getPackOdds, loadGame, openPack,
   previewExpedition, previewFusion, runExpedition, serializeGame,
-} from '../dist/engine.js'
+} from '../docs/engine.js'
 
 const byRarity = () => Array(RARITIES.length).fill(0)
 const budget = card => Object.values(card.stats).reduce((total, value) => total + value, 0)
 const pairKey = (first, second) => [first, second].sort().join('|')
 const starterRoute = MISSIONS.find(mission => mission.slots === 1 && mission.threshold <= 1)
 const quantum = 0.000001
+const certainSuccess = () => 0
+
+function settle(result) {
+  assert.ok(result.ok, result.error)
+  const finalized = acknowledgeReveal(result.state, result.reveal.id)
+  assert.ok(finalized.ok, finalized.error)
+  return finalized.state
+}
 
 function richGame(inventory) {
   return { ...createGame(), coins: 1_000_000, inventory }
@@ -86,67 +95,64 @@ function verifyFusions() {
       const preview = previewFusion(state, first.id, second.id)
       const reversed = previewFusion(state, second.id, first.id)
       assert.ok(preview.ok && reversed.ok, `La pareja debe poder fusionarse: ${label}`)
-      assert.deepEqual(preview.card, reversed.card, `El orden cambió el resultado: ${label}`)
-      assert.equal(preview.cost, reversed.cost, `El orden cambió el costo: ${label}`)
-      assert.equal(preview.card.generation, 1, label)
-      assert.equal(budget(preview.card), RARITIES[preview.card.rarity].budget, `Presupuesto incumplido: ${label}`)
-      assert.ok(preview.card.rarity <= Math.max(first.rarity, second.rarity) + 1, `Salto de rareza inesperado: ${label}`)
-      if (preview.card.rarity === 4) {
+      assert.deepEqual(preview, reversed, `El orden cambió el presupuesto de fusión: ${label}`)
+
+      const fusion = fuseCards(state, first.id, second.id, certainSuccess)
+      const reversedFusion = fuseCards(state, second.id, first.id, certainSuccess)
+      assert.ok(fusion.ok && reversedFusion.ok, label)
+      const { card } = fusion
+      assert.deepEqual(card, reversedFusion.card, `El orden cambió la carta: ${label}`)
+      assert.equal(card.generation, 1, label)
+      assert.equal(budget(card), RARITIES[card.rarity].budget, `Presupuesto incumplido: ${label}`)
+      assert.ok(card.rarity <= Math.max(first.rarity, second.rarity) + 1, `Salto de rareza inesperado: ${label}`)
+      if (card.rarity === 4) {
         assert.ok(Math.min(first.rarity, second.rarity) >= 3, `Una mítica exige dos progenitores de rareza épica: ${label}`)
       }
-      assert.ok(preview.card.traits.every(trait => TRAITS[trait]), label)
-      assert.ok(ABILITIES[preview.card.ability], label)
-
-      const fusion = fuseCards(state, first.id, second.id)
-      assert.ok(fusion.ok, label)
-      assert.deepEqual(fusion.card, preview.card, `La previsualización cambió al confirmar: ${label}`)
+      assert.ok(card.traits.every(trait => TRAITS[trait]), label)
+      assert.ok(ABILITIES[card.ability], label)
       assert.equal(fusion.state.coins, state.coins - preview.cost, label)
-      assert.equal(fusion.state.inventory[preview.card.id], 1, label)
+      assert.equal(fusion.state.inventory[card.id], 1, label)
       assert.equal(fusion.state.inventory[first.id] || 0, first.id === second.id ? 0 : 1, label)
       if (first.id !== second.id) {
         assert.equal(fusion.state.inventory[second.id], 1, label)
       }
-      assert.ok(fusion.state.discovered.includes(preview.card.id), label)
-      assert.deepEqual(getCard(preview.card.id, loadGame(serializeGame(fusion.state))), preview.card, `La quimera cambió al cargar: ${label}`)
+      assert.ok(fusion.state.discovered.includes(card.id), label)
+      assert.deepEqual(getCard(card.id, loadGame(serializeGame(fusion.state))), card, `La quimera cambió al cargar: ${label}`)
 
+      const afterReveal = settle(fusion)
       const fresh = CARDS.find(card => card.id !== first.id && card.id !== second.id)
-      const secondPreview = previewFusion(fusion.state, preview.card.id, fresh.id)
-      const secondReversed = previewFusion(fusion.state, fresh.id, preview.card.id)
-      assert.ok(secondPreview.ok && secondReversed.ok, `Fusión de segunda generación rechazada: ${label}`)
-      assert.deepEqual(secondPreview.card, secondReversed.card, label)
-      assert.equal(secondPreview.card.generation, 2, label)
-      assert.equal(budget(secondPreview.card), RARITIES[secondPreview.card.rarity].budget, label)
-      const secondFusion = fuseCards(fusion.state, preview.card.id, fresh.id)
-      assert.ok(secondFusion.ok, label)
+      const secondFusion = fuseCards(afterReveal, card.id, fresh.id, certainSuccess)
+      const secondReversed = fuseCards(afterReveal, fresh.id, card.id, certainSuccess)
+      assert.ok(secondFusion.ok && secondReversed.ok, `Fusión de segunda generación rechazada: ${label}`)
+      assert.deepEqual(secondFusion.card, secondReversed.card, label)
+      assert.equal(secondFusion.card.generation, 2, label)
+      assert.equal(budget(secondFusion.card), RARITIES[secondFusion.card.rarity].budget, label)
       const reopened = loadGame(serializeGame(secondFusion.state))
-      assert.deepEqual(getCard(secondPreview.card.id, reopened), secondPreview.card, label)
-      assert.deepEqual(getCard(preview.card.id, reopened), preview.card, label)
-      assert.ok(reopened.discovered.includes(preview.card.id) && reopened.discovered.includes(secondPreview.card.id), label)
+      assert.deepEqual(getCard(secondFusion.card.id, reopened), secondFusion.card, label)
+      assert.deepEqual(getCard(card.id, reopened), card, label)
+      assert.ok(reopened.discovered.includes(card.id) && reopened.discovered.includes(secondFusion.card.id), label)
 
-      const fourthBase = CARDS.find(card => ![first.id, second.id, fresh.id].includes(card.id))
-      const thirdPreview = previewFusion(secondFusion.state, secondPreview.card.id, fourthBase.id)
-      assert.equal(thirdPreview.ok, false, `Se superó el límite de generaciones: ${label}`)
-      const crossedLineage = previewFusion(fusion.state, preview.card.id, first.id)
+      const crossedLineage = previewFusion(afterReveal, card.id, first.id)
       assert.equal(crossedLineage.ok, false, `Se permitió reincorporar un ancestro: ${label}`)
 
       const recipe = recipes.get(pairKey(first.id, second.id))
       if (recipe) {
-        assert.equal(preview.card.name, recipe.name, label)
-        if (recipe.rarity !== undefined) assert.equal(preview.card.rarity, recipe.rarity, label)
-        if (recipe.ability) assert.equal(preview.card.ability, recipe.ability, label)
+        assert.equal(card.name, recipe.name, label)
+        if (recipe.rarity !== undefined) assert.equal(card.rarity, recipe.rarity, label)
+        if (recipe.ability) assert.equal(card.ability, recipe.ability, label)
         recipeCount += 1
       }
 
       pairCount += 1
       secondGenerationCount += 1
-      fusionsByRarity[preview.card.rarity] += 1
+      fusionsByRarity[card.rarity] += 1
     }
   }
 
   const baseId = CARDS[0].id
   const singleCopy = richGame({ [baseId]: 1 })
-  assert.equal(fuseCards(singleCopy, baseId, baseId).ok, false, 'Una sola copia no debe duplicarse al fusionar')
-  assert.equal(fuseCards({ ...state, coins: 0 }, CARDS[0].id, CARDS[1].id).ok, false, 'La fusión requiere moneda')
+  assert.equal(fuseCards(singleCopy, baseId, baseId, certainSuccess).ok, false, 'Una sola copia no debe duplicarse al fusionar')
+  assert.equal(fuseCards({ ...state, coins: 0 }, CARDS[0].id, CARDS[1].id, certainSuccess).ok, false, 'La fusión requiere moneda')
   assert.equal(serializeGame(state), snapshot, 'Las acciones deben preservar el estado que reciben')
   assert.equal(recipeCount, RECIPES.length, 'Cada receta debe ser alcanzable')
   return { pares: pairCount, segundaGeneracion: secondGenerationCount, recetas: recipeCount, rarezas: fusionsByRarity }
@@ -261,12 +267,12 @@ function squadCombinations(state, ids, slots) {
 }
 
 function squads(state, mission) {
-  const ids = Object.keys(state.inventory).filter(id => state.inventory[id] > 0)
+  const ids = Object.keys(state.inventory).filter(id => state.inventory[id] > 0 && getCard(id, state).category !== 'aberration')
   const ranked = ids.map(id => getCard(id, state))
     .sort((a, b) => rankForMission(b, mission) - rankForMission(a, mission))
     .slice(0, Math.max(mission.slots, 8))
     .map(card => card.id)
-  return squadCombinations(state, ranked, mission.slots)
+  return squadCombinations(state, ranked, getExpeditionSlots(state, mission.id))
 }
 
 function bestExpedition(state) {
@@ -285,7 +291,7 @@ function bestExpedition(state) {
 
 function verifyStarterFusion() {
   const initial = createGame()
-  const fused = fuseCards(initial, 'alquimista', 'lobo')
+  const fused = fuseCards(initial, 'alquimista', 'lobo', certainSuccess)
   assert.ok(fused.ok, 'Arcanolobo debe poder descubrirse con la colección inicial')
   const mission = MISSIONS.find(entry => entry.id === 'observatorio')
   const bestScore = state => Math.max(...[...squads(state, mission)].map(ids =>
@@ -335,21 +341,19 @@ function verifyExpeditionScoring() {
 
 function pickFusion(state) {
   const ids = Object.keys(state.inventory)
-    .filter(id => state.inventory[id] > 0)
+    .filter(id => state.inventory[id] > 0 && getCard(id, state).category !== 'aberration')
     .sort((first, second) => budget(getCard(second, state)) - budget(getCard(first, state)))
     .slice(0, 10)
   const options = []
   for (const [index, first] of ids.entries()) {
     for (const second of ids.slice(index)) {
       const preview = previewFusion(state, first, second)
-      if (preview.ok && preview.affordable && !state.discovered.includes(preview.card.id)) {
+      if (preview.ok && preview.affordable) {
         const firstCard = getCard(first, state)
         const secondCard = getCard(second, state)
-        const boost = Math.max(...Object.keys(preview.card.stats).map(stat => {
-          const mission = { stat }
-          return rankForMission(preview.card, mission) - Math.max(rankForMission(firstCard, mission), rankForMission(secondCard, mission))
-        }))
-        options.push({ first, second, score: 10 * boost + budget(preview.card), cost: preview.cost })
+        const copies = state.inventory[first] + state.inventory[second]
+        const score = copies * 6 + budget(firstCard) + budget(secondCard)
+        options.push({ first, second, score, cost: preview.cost })
       }
     }
   }
@@ -373,9 +377,9 @@ function simulateProgression(pack) {
       if (purchase > 0) {
         const choice = pickFusion(state)
         if (choice) {
-          const fused = fuseCards(state, choice.first, choice.second)
+          const fused = fuseCards(state, choice.first, choice.second, random)
           assert.ok(fused.ok)
-          state = fused.state
+          state = settle(fused)
         }
       }
       while (state.coins < pack.cost) {

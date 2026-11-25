@@ -8,6 +8,8 @@
   <title>Quimeraria · Forja de cartas</title>
   <link rel="icon" href="./assets/sigil.png">
   <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./alchemy.css">
+  <link rel="stylesheet" href="./ritual.css">
   <script type="module" src="./app.js"></script>
 </head>
 <body>
@@ -18,13 +20,14 @@
       </a>
       <nav class="navigation" aria-label="Secciones del juego">
         <a href="#forja" data-view="forja"><span aria-hidden="true">✦</span> Forja</a>
+        <a href="#alquimia" data-view="alquimia"><span aria-hidden="true">⚗</span> Alquimia</a>
         <a href="#coleccion" data-view="coleccion"><span aria-hidden="true">▤</span> Colección</a>
         <a href="#sobres" data-view="sobres"><span aria-hidden="true">◈</span> Sobres</a>
         <a href="#expediciones" data-view="expediciones"><span aria-hidden="true">⌖</span> Expediciones</a>
       </nav>
       <div class="account">
         <button class="wallet" data-action="rules" aria-label="Óbolos y reglas"><span class="coin" aria-hidden="true">◈</span><strong id="wallet">—</strong><span class="wallet-name">óbolos</span></button>
-        <button class="help-button" data-action="rules" aria-label="Cómo jugar">?</button>
+        <button class="help-button" data-action="settings" aria-label="Configuración" title="Configuración">⚙</button>
       </div>
     </div>
   </header>
