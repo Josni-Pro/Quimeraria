@@ -2,6 +2,7 @@ import { RECIPES } from "./catalog.js";
 import { BAKED_FUSIONS } from "./fusion-bakes.js";
 import { fusionArtKey, PAINTED_FUSIONS, PORTRAIT_OVERRIDES } from "./fusion-paintings.js";
 import { renderFusionPortrait } from "./fusion-art.js";
+import { renderProvisionalPortrait } from "./provisional-art.js";
 
 const library = new Map(RECIPES.map(recipe => [fusionArtKey(recipe.parents), recipe]));
 const finishes = ["", "", "Refinada", "Magistral"];
@@ -25,6 +26,12 @@ export function getPortrait(card, state, level = portraitLevelFor(card, state), 
     return { src: assetPortrait(override[level - 1] ?? override.at(-1)), kind: "painted", level };
   }
   if (card.category === "fusion") {
+    const assigned = card.identity?.illustration?.final;
+    if (assigned && card.identity.shape !== "classic") return { src: assetPortrait(assigned), kind: "painted", level };
+    if (card.identity?.shape && card.identity.shape !== "classic") {
+      if (defer) return { src: null, kind: "generated", level, deferred: true };
+      return { src: renderProvisionalPortrait(card, level), kind: "generated", level };
+    }
     const pair = fusionArtKey(card.parents);
     const recipe = library.get(pair);
     if (recipe?.art) {
@@ -40,4 +47,8 @@ export function getPortrait(card, state, level = portraitLevelFor(card, state), 
 
 export function portraitFinish(level) {
   return finishes[level] ?? "";
+}
+
+export function portraitStatus(portrait) {
+  return portrait.kind === "painted" ? "definitiva" : "provisional";
 }

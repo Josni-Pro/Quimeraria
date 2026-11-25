@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#17131e">
+  <link rel="icon" href="./assets/sigil.png">
+  <link rel="stylesheet" href="./diagnostics.css">
+  <script type="module" src="./diagnostics.js"></script>
+  <title>Diagnóstico de fusiones · Quimeraria</title>
+</head>
+<body>
+  <header class="shell header">
+    <a href="./index.html" class="brand">Quimeraria</a>
+    <a href="./index.html" class="back">Volver al juego</a>
+  </header>
+  <main class="shell">
+    <div class="intro">
+      <h1>Diagnóstico de fusiones</h1>
+      <p>Elige dos progenitores para explorar las variantes de una fusión exitosa. Las pruebas de esta galería quedan en memoria y no modifican la partida.</p>
+    </div>
+    <div class="layout">
+      <aside class="controls" aria-label="Selección de progenitores">
+        <label for="example">Combinaciones de referencia</label>
+        <select id="example"></select>
+        <label for="parent-a">Primer progenitor</label>
+        <select id="parent-a"></select>
+        <label for="parent-b">Segundo progenitor</label>
+        <select id="parent-b"></select>
+        <p id="compatible" class="note"></p>
+        <p class="note">Para explorar generaciones posteriores, añade una variante a la lista de progenitores.</p>
+      </aside>
+      <section class="results" aria-labelledby="pair-title">
+        <h2 id="pair-title"></h2>
+        <p id="pair-summary" role="status"></p>
+        <button type="button" id="export-registry" hidden>Descargar registro (JSON)</button>
+        <div id="variants" class="variants"></div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

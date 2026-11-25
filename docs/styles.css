@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap');
-
 :root {
   color-scheme: dark;
   --ground: #0b0912;
@@ -254,6 +252,7 @@ dialog::backdrop { background: #07050bbd; backdrop-filter: blur(3px); }
 .portrait-image { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; object-fit: cover; color: transparent; }
 .card-art .portrait-image { object-position: 50% 34%; }
 .card--generated .card-art .portrait-image { object-position: 50% 44%; }
+.card-art .portrait-image[src^="data:image/svg+xml"] { object-fit: contain; object-position: center 25%; }
 .result-art .portrait-image { object-position: 61% 30%; }
 .result--generated .result-art .portrait-image { object-position: 50% 39%; }
 .result--generated::after { background: linear-gradient(0deg,#130c1efe,#150e20f7 26%,#150e208c 51%,transparent 77%); }
@@ -322,6 +321,16 @@ dialog::backdrop { background: #07050bbd; backdrop-filter: blur(3px); }
 .result--aberration { border-color: #ad50706b; }
 .result--aberration::after { background: linear-gradient(0deg,#200c1b 0%,#210d1cf1 27%,#210d1c65 49%,transparent 78%); }
 .card-grid--essences { display: block; }
+.group-control { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 12px; }
+.group-control select { color: var(--text); background: var(--panel); border: 1px solid var(--line-bright); border-radius: 6px; padding: 6px 8px; }
+.collection-group { grid-column: 1 / -1; min-width: 0; }
+.collection-group h3 { margin-bottom: 7px; font: 700 22px/1.1 var(--serif); }
+.creature-details { display: grid; gap: 8px; margin: 14px 0 0; }
+.creature-details > div { display: grid; grid-template-columns: minmax(95px, 1fr) minmax(0, 2fr); gap: 8px; align-items: baseline; }
+.creature-details dt { color: var(--muted); font-size: 12px; }
+.creature-details dd { margin: 0; overflow-wrap: anywhere; }
+.creature-profile { margin-top: 14px; border-top: 1px solid var(--line-bright); padding-top: 12px; }
+.creature-profile summary { font-weight: 700; }
 @media (max-width: 780px) {
   .navigation a { flex: 1 1 auto; }
   .result-mystery { min-height: 287px; }

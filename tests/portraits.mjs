@@ -211,12 +211,10 @@ function verifyCurrentSaveMigration() {
   for (const [id, old] of Object.entries(fixture.fusions)) {
     const card = getCard(id, loaded)
     assert.ok(card, `Se perdió la carta ${old.name}`)
-    for (const key of ['id', 'category', 'rarity', 'stats', 'ability', 'traits', 'generation', 'parents', 'lineage']) {
+    for (const key of ['id', 'name', 'description', 'art', 'category', 'rarity', 'stats', 'ability', 'traits', 'generation', 'parents', 'lineage']) {
       assert.deepEqual(card[key], old[key], `La actualización cambió ${key} de ${old.name}`)
     }
     if (old.name.includes(' × ')) {
-      assertOriginalName(card)
-      assert.notEqual(card.name, old.name)
       assert.equal(getPortrait(card, loaded).level, 1, 'La quimera anterior debe conservar su retrato de nivel inicial')
     } else {
       assert.equal(card.name, old.name, 'La receta especial debe conservar su nombre')

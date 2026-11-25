@@ -3,8 +3,9 @@ import {
 } from "./catalog.js";
 import { nameFusion } from "./fusion-names.js";
 import { ABERRATION_DEFECTS, ALCHEMY, ANIMATION_MODES } from "./game-config.js";
+import { decorateClassicFusion, selectVariant, variantIdentity, variantsFor } from "./fusion-variants.js";
 
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 export const MAX_GENERATION = ALCHEMY.maxGeneration;
 
 const STAT_KEYS = Object.keys(STATS);
@@ -12,6 +13,7 @@ const RARITY_CAP = RARITIES.length - 1;
 const MAX_ABILITY_BONUS = 3;
 const MAX_HISTORY = 24;
 const MAX_PORTRAIT_LEVEL = 3;
+const SAVED_CONCEPT_LISTS = ["tags", "features", "habitat", "knowledge", "tools", "materials", "affinities", "capabilities", "utility"];
 const BASE_CARDS = new Map(CARDS.map(card => [card.id, {
   ...card, generation: 0, parents: [], lineage: [card.id]
 }]));
@@ -75,6 +77,7 @@ export function createGame() {
     coins: ECONOMY.startingCoins,
     pity: {},
     inventory: { ...STARTER },
+    fusionCopies: {},
     fusions: {},
     aberrations: {},
     portraits: {},
@@ -91,6 +94,10 @@ export function createGame() {
 
 export function getCard(id, state) {
   return BASE_CARDS.get(id) ?? owns(state?.fusions, id) ?? owns(state?.aberrations, id);
+}
+
+export function getFusionCopies(state, id) {
+  return owns(state?.fusionCopies, id) ?? [];
 }
 
 function functional(card) {
@@ -118,13 +125,15 @@ function sameLineage(a, b) {
   return (a.generation > 0 || b.generation > 0) && a.lineage.some(id => b.lineage.includes(id));
 }
 
-function checkParents(a, b) {
+function checkParents(a, b, { allowIdenticalFusion = false } = {}) {
   if (!a || !b) return "Selecciona dos cartas para realizar una fusión.";
   if (!functional(a) || !functional(b)) return "Las aberraciones se usan en Alquimia.";
   if (Math.max(a.generation, b.generation) >= MAX_GENERATION) {
     return `Las quimeras de generación ${MAX_GENERATION} alcanzaron el límite de fusión.`;
   }
-  if (sameLineage(a, b)) return "Una quimera requiere materiales que no repitan sus linajes.";
+  if (sameLineage(a, b) && !(allowIdenticalFusion && a.id === b.id)) {
+    return "Una quimera requiere materiales que no repitan sus linajes.";
+  }
   return null;
 }
 
@@ -248,6 +257,9 @@ export function describeDiscoveredFusion(state, cardId) {
   const [a, b] = card.parents.map(id => getCard(id, state));
   if (!a || !b) return null;
   const generated = createFusion(a, b);
+  if (card.id !== generated.card.id) {
+    return { synergy: generated.synergy, explanation: [card.description] };
+  }
   const current = card.rarity === generated.card.rarity && card.ability === generated.card.ability;
   const { synergy, explanation } = current ? generated : createFusion(a, b, card);
   return { synergy, explanation };
@@ -284,14 +296,44 @@ function createAberration(a, b) {
 
 export function previewFusion(state, idA, idB) {
   const [a, b] = [idA, idB].map(id => getCard(id, state));
-  const invalid = checkParents(a, b);
+  const invalid = checkParents(a, b, { allowIdenticalFusion: true });
   if (invalid) return error(invalid);
   if (!hasSelection(state, [idA, idB])) return error("Necesitas una copia disponible por cada material.");
   const cost = ECONOMY.fusionCosts[Math.max(a.rarity, b.rarity)];
+  const identicalFusion = idA === idB && a.generation > 0;
   return {
-    ok: true, cost, affordable: state.coins >= cost, successRate: ALCHEMY.successRate,
-    aberrationRate: ALCHEMY.aberrationRate
+    ok: true, cost, affordable: state.coins >= cost,
+    successRate: identicalFusion ? 1 : ALCHEMY.successRate,
+    aberrationRate: identicalFusion ? 0 : ALCHEMY.aberrationRate
   };
+}
+
+export function inspectFusionVariants(state, idA, idB) {
+  const [a, b] = [idA, idB].sort().map(id => getCard(id, state));
+  const invalid = checkParents(a, b, { allowIdenticalFusion: true });
+  if (invalid) return error(invalid);
+  return { ok: true, variants: variantsFor(a, b, createFusion(a, b).card) };
+}
+
+function successfulFusion(state, a, b, rng, origin) {
+  const original = createFusion(a, b);
+  const selected = selectVariant(variantsFor(a, b, original.card), sample(rng));
+  const { probability, ...card } = selected;
+  return { ...original, card: getCard(card.id, state) ?? { ...card, origin } };
+}
+
+function updateFusionCopies(state, materials, card, copy) {
+  const copies = { ...state.fusionCopies };
+  for (const [id, count] of countSelections(materials)) {
+    const stack = getFusionCopies(state, id);
+    if (!stack.length) continue;
+    // Consume untracked historical copies first, then the oldest tracked copies.
+    const trackedToRemove = Math.max(0, count - (state.inventory[id] - stack.length));
+    if (trackedToRemove >= stack.length) delete copies[id];
+    else if (trackedToRemove) copies[id] = stack.slice(trackedToRemove);
+  }
+  if (copy) copies[card.id] = [...(copies[card.id] ?? []), copy];
+  return copies;
 }
 
 function commitFusion(state, result, { materials = [], paid = 0, essenceId = null }) {
@@ -300,18 +342,21 @@ function commitFusion(state, result, { materials = [], paid = 0, essenceId = nul
   const outcome = failed ? "aberration" : "success";
   const portraitLevel = failed ? 1 : Math.min(MAX_PORTRAIT_LEVEL, (state.portraits[card.id] ?? 0) + 1);
   const sequence = state.sequence + 1;
+  const copy = failed ? null : { id: `copy-${sequence}`, origin: essenceId ? "essence" : "fusion" };
   const reveal = {
     id: `reveal-${sequence}`, kind: essenceId ? "essence" : "fusion", outcome,
     cardId: card.id, parents: card.parents, portraitLevel, paid
   };
   const entry = {
     kind: failed ? "aberration" : essenceId ? "recovered" : "fusion",
-    cardId: card.id, parents: card.parents, paid, ...(essenceId ? { essenceId } : {})
+    cardId: card.id, parents: card.parents, paid,
+    ...(copy ? { copyId: copy.id } : {}), ...(essenceId ? { essenceId } : {})
   };
   const next = {
     ...state,
     coins: state.coins - paid,
     inventory: inventoryAfter(state, materials, [card.id]),
+    fusionCopies: updateFusionCopies(state, materials, card, copy),
     ...(failed ? { aberrations: { ...state.aberrations, [card.id]: card } } : {
       fusions: { ...state.fusions, [card.id]: card },
       portraits: { ...state.portraits, [card.id]: portraitLevel }
@@ -338,8 +383,8 @@ export function fuseCards(state, idA, idB, rng = Math.random) {
 
   const materials = [idA, idB].sort();
   const [a, b] = materials.map(id => getCard(id, state));
-  const result = sample(rng) < ALCHEMY.successRate
-    ? createFusion(a, b, getCard(fusionId(a.id, b.id), state))
+  const result = preview.aberrationRate === 0 || sample(rng) < preview.successRate
+    ? successfulFusion(state, a, b, rng, "fusion")
     : { card: getCard(pairId("aberration", a.id, b.id), state) ?? createAberration(a, b) };
   return commitFusion(state, result, { materials, paid: preview.cost });
 }
@@ -410,7 +455,7 @@ export function useEssence(state, essenceId, rng = Math.random) {
   if (!pairs.length) return error("Esta esencia no conserva una pareja compatible.");
 
   const [a, b] = pairs[Math.floor(sample(rng) * pairs.length)];
-  const result = createFusion(a, b, getCard(fusionId(a.id, b.id), state));
+  const result = successfulFusion(state, a, b, rng, "essence");
   const essences = { ...state.essences };
   delete essences[essenceId];
   return commitFusion({ ...state, essences }, result, { essenceId });
@@ -581,6 +626,26 @@ function cleanCounts(source, allow) {
   return clean;
 }
 
+function restoreVariantFields(snapshot, parents, id) {
+  const { variantKey, fusionRulesVersion, family, quality, identity, concept, origin } = snapshot;
+  if (typeof variantKey !== "string" || !/^[a-z0-9_-]{1,80}$/.test(variantKey)) return null;
+  const key = variantIdentity(parents, variantKey);
+  if (id !== key.id
+      || natural(fusionRulesVersion) === 0 || typeof family !== "string" || typeof quality !== "string"
+      || !isRecord(identity) || !isRecord(concept) || typeof concept.speciesId !== "string") return null;
+  for (const field of SAVED_CONCEPT_LISTS) {
+    const list = concept[field];
+    if (!Array.isArray(list) || list.some(value => typeof value !== "string")) return null;
+  }
+  if (!Array.isArray(concept.inheritance)
+      || concept.inheritance.some(item => !isRecord(item) || !parents.includes(item.parentId)
+          || typeof item.field !== "string" || typeof item.value !== "string")) return null;
+  return {
+    ...key, variantKey, fusionRulesVersion, family, quality, identity, concept,
+    origin: origin === "fusion" || origin === "essence" ? origin : "legacy"
+  };
+}
+
 function restoreFusions(source) {
   const fusions = {};
   if (!isRecord(source)) return fusions;
@@ -589,20 +654,16 @@ function restoreFusions(source) {
     .sort(([, a], [, b]) => a.generation - b.generation);
   for (const [id, snapshot] of snapshots) {
     const parents = savedParents(snapshot);
-    if (!parents || id !== fusionId(...parents)) continue;
+    if (!parents) continue;
     const [a, b] = parents.map(parent => getCard(parent, { fusions }));
-    if (!a || !b || snapshot.generation !== Math.max(a.generation, b.generation) + 1 || sameLineage(a, b)) continue;
+    if (checkParents(a, b, { allowIdenticalFusion: true })
+        || snapshot.generation !== Math.max(a.generation, b.generation) + 1) continue;
 
     const fallback = createFusion(a, b).card;
-    const oldParentNames = [a, b].map(parent => {
-      const oldName = owns(source, parent.id)?.name;
-      return typeof oldName === "string" ? oldName : parent.name;
-    });
-    const legacyName = oldParentNames.join(" × ");
-    const legacyDescription = `Quimera que combina los rasgos de ${oldParentNames[0]} y ${oldParentNames[1]}.`;
-    const savedName = typeof snapshot.name === "string" && snapshot.name !== legacyName && snapshot.name.trim();
-    const savedDescription = typeof snapshot.description === "string"
-      && snapshot.description !== legacyDescription && snapshot.description.trim();
+    const variant = restoreVariantFields(snapshot, parents, id);
+    if (!variant && id !== fallback.id) continue;
+    const savedName = typeof snapshot.name === "string" && snapshot.name.trim();
+    const savedDescription = typeof snapshot.description === "string" && snapshot.description.trim();
     // Keep a discovered card's attributes when later versions change its recipe.
     const tier = Number.isInteger(snapshot.rarity) ? RARITIES[snapshot.rarity] : null;
     const stats = isRecord(snapshot.stats) ? STAT_KEYS.map(stat => natural(snapshot.stats[stat])) : [];
@@ -614,14 +675,21 @@ function restoreFusions(source) {
     const savedTraits = Array.isArray(snapshot.traits)
       ? unique(snapshot.traits.filter(trait => typeof trait === "string" && owns(TRAITS, trait))).slice(0, 3) : [];
     const savedAbility = typeof snapshot.ability === "string" && owns(ABILITIES, snapshot.ability);
-    fusions[id] = {
-      ...fallback,
-      name: savedName ? snapshot.name.slice(0, 180) : fallback.name,
-      description: savedDescription ? snapshot.description.slice(0, 400) : fallback.description,
+    const restored = {
+      ...fallback, id,
+      name: savedName ? snapshot.name : fallback.name,
+      description: savedDescription ? snapshot.description : fallback.description,
+      art: snapshot.art === null || typeof snapshot.art === "string" ? snapshot.art : fallback.art,
       ...(hasBudget && validRarity ? { rarity: snapshot.rarity, stats: Object.fromEntries(STAT_KEYS.map((stat, index) => [stat, stats[index]])) } : {}),
       traits: savedTraits.length > 0 ? savedTraits : fallback.traits,
       ability: savedAbility || snapshot.ability === null ? snapshot.ability : fallback.ability
     };
+    if (variant) {
+      fusions[id] = { ...restored, ...variant };
+    } else {
+      const { probability, ...historical } = decorateClassicFusion(restored, a, b);
+      fusions[id] = { ...historical, origin: "legacy" };
+    }
   }
   return fusions;
 }
@@ -655,6 +723,26 @@ function actionNumber(id, prefix) {
   if (typeof id !== "string" || !id.startsWith(`${prefix}-`)) return 0;
   const suffix = id.slice(prefix.length + 1);
   return /^[1-9][0-9]*$/.test(suffix) ? natural(Number(suffix)) : 0;
+}
+
+function restoreFusionCopies(source, inventory, fusions) {
+  if (!isRecord(source)) return {};
+  const copies = {};
+  const seen = new Set();
+  for (const [id, entries] of Object.entries(source)) {
+    const quantity = owns(inventory, id);
+    if (!quantity || !owns(fusions, id) || !Array.isArray(entries)) continue;
+    const recovered = [];
+    for (const copy of entries) {
+      if (recovered.length === quantity) break;
+      if (!isRecord(copy) || !actionNumber(copy.id, "copy") || seen.has(copy.id)
+          || (copy.origin !== "fusion" && copy.origin !== "essence")) continue;
+      seen.add(copy.id);
+      recovered.push({ id: copy.id, origin: copy.origin });
+    }
+    if (recovered.length) copies[id] = recovered;
+  }
+  return copies;
 }
 
 function restoreSources(state, source) {
@@ -700,6 +788,7 @@ function restoreHistory(source, state, limit = MAX_HISTORY) {
       const card = getCard(entry.cardId, state);
       if (card?.category !== (entry.kind === "aberration" ? "aberration" : "fusion")) continue;
       const restored = { kind: entry.kind, cardId: card.id, parents: card.parents, paid: natural(entry.paid) };
+      if (actionNumber(entry.copyId, "copy")) restored.copyId = entry.copyId;
       if (entry.kind === "recovered") {
         if (!actionNumber(entry.essenceId, "essence")) continue;
         restored.essenceId = entry.essenceId;
@@ -734,7 +823,7 @@ export function loadGame(serialized) {
   } catch {
     return createGame();
   }
-  if (!isRecord(raw) || (raw.version !== 1 && raw.version !== SAVE_VERSION) || !isRecord(raw.inventory)) return createGame();
+  if (!isRecord(raw) || ![1, 2, SAVE_VERSION].includes(raw.version) || !isRecord(raw.inventory)) return createGame();
 
   const fusions = restoreFusions(raw.fusions);
   const aberrations = restoreAberrations(raw.aberrations, { fusions });
@@ -745,6 +834,7 @@ export function loadGame(serialized) {
     id, Math.min(MAX_PORTRAIT_LEVEL, natural(owns(savedPortraits, id)) || 1)
   ]));
   const inventory = cleanCounts(raw.inventory, id => Boolean(getCard(id, cards)));
+  const fusionCopies = restoreFusionCopies(raw.fusionCopies, inventory, fusions);
   if (raw.version === 1 && Object.keys(inventory).length === 0) Object.assign(inventory, STARTER);
   const pity = cleanCounts(raw.pity, id => Boolean(PACK_BY_ID.get(id)?.pityAt));
   for (const id of Object.keys(pity)) pity[id] = Math.min(pity[id], PACK_BY_ID.get(id).pityAt - 1);
@@ -763,7 +853,7 @@ export function loadGame(serialized) {
     ? raw.discovered.filter(id => typeof id === "string" && getCard(id, cards)) : [];
   const settings = isRecord(raw.settings) ? raw.settings : {};
   const state = {
-    version: SAVE_VERSION, coins: natural(raw.coins), inventory, ...cards, essences, portraits, pity, stats,
+    version: SAVE_VERSION, coins: natural(raw.coins), inventory, fusionCopies, ...cards, essences, portraits, pity, stats,
     discovered: unique([...knownIds, ...Object.keys(inventory), ...Object.keys(fusions), ...Object.keys(aberrations)]),
     history: [], alchemyHistory: [], pendingReveal: null, sequence: natural(raw.sequence),
     settings: { ...settings, animation: ANIMATION_MODES.includes(settings.animation) ? settings.animation : "full" }
@@ -775,5 +865,8 @@ export function loadGame(serialized) {
   state.sequence = Math.max(state.sequence, actionNumber(state.pendingReveal?.id, "reveal"),
     ...Object.keys(essences).map(id => actionNumber(id, "essence")),
     ...state.alchemyHistory.map(entry => actionNumber(entry.essenceId, "essence")));
+  for (const stack of Object.values(fusionCopies)) {
+    for (const copy of stack) state.sequence = Math.max(state.sequence, actionNumber(copy.id, "copy"));
+  }
   return state;
 }
