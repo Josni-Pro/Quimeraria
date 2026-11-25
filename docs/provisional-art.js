@@ -159,10 +159,14 @@ const warboard = `<g>
   <path d="M114 113l17-14 8 10 13-6 23 10-16 7z" fill="#7c7360"/>
   <circle cx="122" cy="115" r="4" fill="#fff4c8"/><circle cx="165" cy="116" r="4" fill="#fff4c8"/></g>`;
 
-function drawShape(shape, anatomy, head, speciesId, family) {
-  const body = anatomy === "avian" ? avian(false)
+export function provisionalBody(anatomy, head) {
+  return anatomy === "avian" ? avian(false)
     : ["aquatic", "cephalopod", "amphibian"].includes(anatomy) ? aquatic(anatomy === "cephalopod")
-      : anatomy === "humanoid" ? humanoid(head) : quadruped(head);
+      : anatomy === "humanoid" ? humanoid(head) : anatomy === "construct" ? construct : quadruped(head);
+}
+
+function drawShape(shape, anatomy, head, speciesId, family) {
+  const body = anatomy === "construct" ? quadruped(head) : provisionalBody(anatomy, head);
   if (speciesId === "lobo_terrible") return direWolf;
   if (speciesId === "ortro") return secondHound + quadruped(head);
   if (speciesId === "kitsune") return sigil + foxTails + quadruped("fox");

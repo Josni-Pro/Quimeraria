@@ -1,10 +1,15 @@
 import { CARDS, RARITIES } from "./catalog.js";
-import { acknowledgeReveal, createGame, fuseCards, getCard, inspectFusionVariants, previewFusion } from "./engine.js";
+import { acknowledgeReveal, createEssence, createGame, fuseCards, getCard, inspectAberrationVariants,
+  inspectFusionVariants, previewFusion, useEssence } from "./engine.js";
 import { getPortrait, illustrationRecord } from "./illustrations.js";
 import { getCreatureConcept, CONCEPT_LABELS } from "./creature-concepts.js";
 import { CAPABILITY_FAMILIES, COMBAT_ROLES, COMBAT_STATS, getCreatureProfiles, MOBILITY_LABELS, UTILITY_FAMILIES } from "./creature-profiles.js";
 import { buildArtBrief } from "./fusion-art-registry.js";
 import { VARIANT_FAMILIES, VARIANT_QUALITY_LABELS } from "./fusion-variants.js";
+import { FAILURE_FAMILIES } from "./aberration-concepts.js";
+import { ALCHEMY } from "./game-config.js";
+import { EXPRESSION_LABELS } from "./creature-identity.js";
+import { SCALE_LABELS, scaleDimensions } from "./creature-scale.js";
 
 const examples = [
   ["alquimista", "mamut"], ["alquimista", "lobo"], ["medica", "oso"], ["abogado", "dragon"],
@@ -20,7 +25,9 @@ const examples = [
   ["medica", "buho"], ["pulpo", "mamut"], ["atenea", "thor"], ["musico", "pulpo"],
   ["anubis", "esfinge"], ["ajolote", "lobo"], ["velociraptor", "velociraptor"], ["atenea", "atenea"],
   ["buho", "esfinge"], ["atenea", "grifo"],
-  [{ parents: ["lobo", "lobo"], key: "trail-evolution", label: "Lobo de Huella Fría" }, "triceratops"]
+  [{ parents: ["lobo", "lobo"], key: "trail-evolution", label: "Lobo de Huella Fría" }, "triceratops"],
+  ["ajolote", "zorro"], ["herrera", "zorro"], ["atenea", "quetzalcoatl"],
+  [{ parents: ["alquimista", "mamut"], key: "classic", label: "Crisomamut" }, "obrero"]
 ];
 
 const exampleSelect = document.querySelector("#example");
@@ -31,12 +38,23 @@ const pairSummary = document.querySelector("#pair-summary");
 const compatible = document.querySelector("#compatible");
 const results = document.querySelector("#variants");
 const exportRegistry = document.querySelector("#export-registry");
+const exportFailures = document.querySelector("#export-aberrations");
+const failureResults = document.querySelector("#aberration-variants");
+const trialCount = document.querySelector("#trial-count");
+const trialSelection = document.querySelector("#trial-selection");
+const trialMake = document.querySelector("#trial-make");
+const trialUse = document.querySelector("#trial-use");
+const trialResult = document.querySelector("#trial-result");
 const number = new Intl.NumberFormat("es-MX", { maximumFractionDigits: 2 });
 const currency = new Intl.NumberFormat("es-MX");
 const collator = new Intl.Collator("es-MX");
 let state = freshState();
 let pool = new Set(CARDS.map(card => card.id));
 let shown = [];
+let failed = [];
+let trial = createGame();
+let samples = [];
+let simulatedEssence = null;
 
 function freshState() {
   return {
@@ -201,6 +219,46 @@ function variantArticle(card, index) {
   </article>`;
 }
 
+function aberrationArticle(card, index) {
+  const { identity } = card;
+  const portrait = getPortrait(card, state);
+  const rows = [
+    ["Identificador", card.id],
+    ["Progenitores", formatList(card.parents.map(cardName))],
+    ["Linaje", formatList(card.lineage.map(cardName))],
+    ["Plan corporal", CONCEPT_LABELS.anatomy[identity.anatomy] ?? identity.anatomy],
+    ["Escala", `${SCALE_LABELS[identity.scale.category]} · ${scaleDimensions(identity.scale)}`],
+    ["Aportes", formatList(identity.contributions.map(part =>
+      `${part.name} · ${EXPRESSION_LABELS[part.type]} · ${part.trait} · ${part.contribution}`))],
+    ["Descripción visual", identity.visual],
+    ["Estado de ilustración", illustrationRecord(card, portrait).status]
+  ];
+  return `<article class="variant">
+    <img class="variant__art" src="${escape(portrait.src)}" alt="${escape(card.name)}" loading="lazy" decoding="async">
+    <div class="variant__body">
+      <p class="variant__meta">${escape(FAILURE_FAMILIES[card.family])} · G${card.generation} · ${number.format(card.probability * 100)} % dado el fallo</p>
+      <h4 class="variant__name">${escape(card.name)}</h4>
+      <p>${escape(card.description)}</p>
+      <details><summary>Ficha de aberración</summary>${renderRows(rows)}</details>
+      <button type="button" class="variant__button" data-trial="${index}">Añadir al ensayo</button>
+    </div>
+  </article>`;
+}
+
+function refreshTrial() {
+  trialCount.textContent = `${samples.length} de ${ALCHEMY.aberrationsPerEssence} muestras`;
+  trialSelection.replaceChildren(...samples.map(card => {
+    const item = document.createElement("li");
+    item.textContent = `${card.name} · G${card.generation}`;
+    return item;
+  }));
+  trialMake.disabled = samples.length !== ALCHEMY.aberrationsPerEssence || Boolean(simulatedEssence);
+  trialUse.disabled = !simulatedEssence;
+  for (const button of failureResults.querySelectorAll("[data-trial]")) {
+    button.disabled = samples.length >= ALCHEMY.aberrationsPerEssence || Boolean(simulatedEssence);
+  }
+}
+
 function labState() {
   const inventory = Object.fromEntries([...pool].map(id => [id, 2]));
   return { ...state, inventory };
@@ -220,12 +278,18 @@ function renderPair() {
   }
   compatible.textContent = `${validCount} progenitores disponibles compatibles con ${cardName(first)}.`;
   const found = inspectFusionVariants(lab, first, second);
+  const faults = inspectAberrationVariants(lab, first, second);
+  const quote = previewFusion(lab, first, second);
   shown = found.ok ? found.variants : [];
+  failed = faults.ok ? faults.variants : [];
   pairSummary.textContent = found.ok
-    ? `${shown.length} variantes. Las probabilidades se aplican después de una fusión exitosa.`
+    ? `G${quote.generation} · ${number.format(quote.successRate * 100)} % de éxito (${shown.length} variantes) · ${number.format(quote.aberrationRate * 100)} % de fallo (${failed.length} variantes).`
     : found.error;
   exportRegistry.hidden = !found.ok;
+  exportFailures.hidden = !faults.ok;
   results.innerHTML = shown.map(variantArticle).join("");
+  failureResults.innerHTML = failed.map(aberrationArticle).join("");
+  refreshTrial();
 }
 
 function loadExample(index) {
@@ -260,20 +324,63 @@ results.addEventListener("click", event => {
   renderPair();
   results.querySelector(`[data-add="${button.dataset.add}"]`)?.closest("article")?.querySelector("summary")?.focus();
 });
-exportRegistry.addEventListener("click", () => {
-  const variants = shown.map(card => {
+function downloadRegistry(cards, filename) {
+  const variants = cards.map(card => {
     const portrait = getPortrait(card, state);
     return {
       ...card,
-      ...getCreatureProfiles(card),
+      ...(card.category === "fusion" ? getCreatureProfiles(card) : {}),
       illustrationRegistry: illustrationRecord(card, portrait)
     };
   });
   const url = URL.createObjectURL(new Blob([JSON.stringify(variants, null, 2)], { type: "application/json" }));
   const link = document.createElement("a");
   link.href = url;
-  link.download = "quimeraria-registro-cruce.json";
+  link.download = filename;
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+exportRegistry.addEventListener("click", () => downloadRegistry(shown, "quimeraria-registro-cruce.json"));
+exportFailures.addEventListener("click", () => downloadRegistry(failed, "quimeraria-aberraciones-cruce.json"));
+failureResults.addEventListener("click", event => {
+  const button = event.target.closest("[data-trial]");
+  if (!button || samples.length >= ALCHEMY.aberrationsPerEssence || simulatedEssence) return;
+  const { probability, ...sample } = failed[Number(button.dataset.trial)];
+  samples.push(sample);
+  trial = { ...trial, fusions: { ...trial.fusions, ...state.fusions },
+    aberrations: { ...trial.aberrations, [sample.id]: sample },
+    inventory: { ...trial.inventory, [sample.id]: (trial.inventory[sample.id] ?? 0) + 1 } };
+  refreshTrial();
+});
+trialMake.addEventListener("click", () => {
+  const result = createEssence(trial, samples.map(card => card.id));
+  if (!result.ok) {
+    trialResult.textContent = result.error;
+    return;
+  }
+  trial = result.state;
+  simulatedEssence = result.essence.id;
+  samples = [];
+  trialResult.textContent = `Esencia destilada · ${result.essence.pairCount} parejas compatibles.`;
+  refreshTrial();
+});
+trialUse.addEventListener("click", () => {
+  const result = useEssence(trial, simulatedEssence);
+  if (!result.ok) {
+    trialResult.textContent = result.error;
+    return;
+  }
+  trial = acknowledgeReveal(result.state, result.reveal.id).state;
+  simulatedEssence = null;
+  trialResult.textContent = `${result.card.name} · G${result.card.generation} · ${result.card.parents.map(id => getCard(id, trial).name).join(" + ")}.`;
+  refreshTrial();
+});
+document.querySelector("#trial-clear").addEventListener("click", () => {
+  trial = createGame();
+  simulatedEssence = null;
+  samples = [];
+  trialResult.textContent = "";
+  refreshTrial();
 });
 loadExample(0);

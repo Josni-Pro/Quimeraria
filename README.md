@@ -14,16 +14,16 @@ La partida pertenece al navegador y al origen desde el que se abre el juego. `do
 
 ## Forja, revelación y guardado
 
-La Forja muestra los materiales elegidos, el costo y las probabilidades de éxito y aberración. Al confirmar, consume los dos materiales y los óbolos. Tras un éxito sortea una variante compatible con la pareja y la revela en el ritual. Configuración permite completar la animación, reducirla o saltarla.
+La Forja muestra los materiales elegidos, el costo y las probabilidades de éxito y aberración. Al confirmar, aplica la tasa de la generación resultante y sortea una variante compatible del grupo correspondiente. Consume los dos materiales y los óbolos y revela la carta en el ritual. Configuración permite completar la animación, reducirla o saltarla.
 
-El juego guarda el gasto, la carta nueva y la revelación pendiente juntos en LocalStorage antes de mostrar la animación. Al volver al juego después de una recarga, se reanuda la revelación del mismo resultado. La migración al formato 3 conserva los identificadores, los nombres y atributos guardados, los niveles de retrato y el progreso de las versiones 1 y 2. Las cartas antiguas conservan sus pilas y se identifican como históricas. Cada copia obtenida desde esta actualización recibe un identificador y registra si procede de la Forja o de una esencia.
+El juego guarda el gasto, la carta nueva y la revelación pendiente juntos en LocalStorage antes de mostrar la animación. Al volver al juego después de una recarga, se reanuda la revelación del mismo resultado. El formato 4 conserva las partidas de las versiones 1 a 3 y registra los identificadores de las nuevas copias de aberración. Las pilas históricas conservan su cantidad y su ficha.
 
 ## Aberraciones y esencias
 
-Una fusión fallida produce una aberración con nombre, retrato e identificador propios. Su ficha registra la incompatibilidad, los dos progenitores exactos y el linaje base. Las aberraciones se reservan para Alquimia y se pueden consultar en el inventario, en Descubiertas y en el historial alquímico.
+Una fusión fallida sortea una de las aberraciones compatibles con sus dos progenitores. Su ficha registra el fallo, los aportes de ambos progenitores, el linaje base y la generación del intento. Las aberraciones se reservan para Alquimia y se pueden consultar en el inventario, en Descubiertas y en el historial alquímico.
 
 1. Selecciona manualmente cinco aberraciones en Alquimia. Puedes elegir varias copias de una misma carta.
-2. Destila la selección. La esencia consume las aberraciones y registra sus progenitores con el número de veces que aparece cada uno.
+2. Destila la selección. La esencia consume las aberraciones y guarda las fichas completas de sus diez referencias directas, agrupadas con el número de copias.
 3. Activa la esencia. El juego elige al azar una pareja válida entre los progenitores registrados, incluso de dos aberraciones distintas. Repetir un progenitor requiere dos registros del mismo. La recuperación respeta la rareza, el linaje, la generación y las recetas especiales de la Forja.
 4. La recuperación tiene éxito garantizado y consume únicamente la esencia. Tras escoger los progenitores, se sortea una variante con los mismos pesos que en la Forja. La nueva carta se descubre en su propia animación y queda en el historial alquímico.
 
@@ -34,7 +34,7 @@ Una fusión fallida produce una aberración con nombre, retrato e identificador 
 3. La rareza normal parte de la media de las rarezas de los materiales, redondeada hacia abajo. Sube un grado si la afinidad llega a dos puntos. Una fórmula registrada puede fijar la rareza. El resultado queda a un grado como máximo por encima del mejor material y para una mítica hacen falta dos materiales épicos o míticos.
 4. El motor reparte el presupuesto de atributos de la rareza entre Fuerza, Guardia e Ingenio, ponderando las estadísticas de los dos materiales y la especialidad. Cada atributo recibe al menos 2 puntos y como máximo el 58 % del presupuesto, redondeado hacia arriba.
 5. La quimera conserva hasta tres rasgos. Tiene una habilidad activa, heredada de uno de los materiales o definida por su fórmula. La habilidad da hasta 3 puntos adicionales en expediciones del atributo correspondiente.
-6. Al confirmar se consumen dos cartas y se añade una. La tarifa se fija con la rareza del material de mayor nivel. Las cartas base son generación 0 y una quimera puede llegar a generación 4. Dos materiales distintos deben tener linajes separados si alguno es una quimera. Dos copias de la misma variante pueden fusionarse con éxito garantizado hasta el límite de generación. Las parejas que ya eran válidas mantienen el 95 % de éxito y el 5 % de aberración.
+6. Al confirmar se consumen dos cartas y se añade una. La tarifa se fija con la rareza del material de mayor nivel. Las cartas base son generación 0 y una quimera puede llegar a generación 4. Dos materiales distintos deben tener linajes separados si alguno es una quimera. La Forja aplica 95 % de éxito y 5 % de aberración a toda pareja válida, incluidas dos copias de la misma variante.
 
 | Rareza | Presupuesto de Fuerza, Guardia e Ingenio | Costo de forja si es la mayor rareza de los materiales |
 | --- | ---: | ---: |
@@ -58,11 +58,11 @@ La calidad conceptual reparte 55, 30, 12 y 3 puntos entre común, poco común, r
 
 Para un futuro combate, `getCreatureProfiles(card).combat` expone roles, movilidad, afinidades, presupuesto, costo, estadísticas y capacidades. Las expediciones futuras pueden usar `getCreatureProfiles(card).utility` para suministro, transporte, investigación, protección u otras actividades. Los perfiles actuales son datos y las expediciones jugables siguen usando Fuerza, Guardia, Ingenio y las habilidades del catálogo.
 
-Abre `/diagnostics.html` en el mismo servidor local para inspeccionar combinaciones y variantes, probabilidades, linaje, perfiles y arte. Incluye 34 ejemplos, entre ellos Alquimista + Mamut, Anubis + Esfinge, Búho + Esfinge y cruces con variantes de generaciones superiores. Puedes añadir cualquier resultado como progenitor y descargar el registro de ilustraciones de la pareja en JSON. La página usa una partida en memoria y no escribe en el guardado del jugador.
+Abre `/diagnostics.html` en el mismo servidor local para comparar éxitos y aberraciones, inspeccionar perfiles y descargar cada grupo en JSON. Una variante exitosa puede añadirse como progenitor para explorar generaciones posteriores. El ensayo de esencia permite seleccionar cinco aberraciones de parejas distintas y ejecutar Alquimia en memoria. Abre `/aberraciones.html` para ver las ocho pinturas del piloto.
 
 Las variantes alternativas se representan con SVG locales que emplean siluetas, estructuras y rasgos anatómicos según el concepto. Las convergencias comparten el arte de la especie cuando coincide con el resultado. La fusión clásica y las históricas conservan las pinturas, los retratos WebP y los niveles que les corresponden. El catálogo genera únicamente las parejas consultadas y limita las cachés de variantes y retratos.
 
-La extensión del riesgo de aberración para fusiones de generaciones superiores queda pendiente para otra fase. La cobertura histórica se mantiene y el nuevo cruce de dos copias de una misma variante queda fuera de ese riesgo.
+La tasa de Forja se configura por separado para G1, G2, G3 y G4. Alquimia garantiza el éxito cuando la esencia conserva al menos una pareja válida. Las reglas, el barrido y la migración están documentados en el informe. [Aberraciones y esencias](ABERRACIONES.md)
 
 ## Sobres y expediciones
 
@@ -111,7 +111,7 @@ Si quieres que con el Ajolote tenga nombre y habilidad propios, registra su cruc
 
 Añade un perfil en `docs/portrait-profiles.js` con el mismo identificador que la carta base. `face` define su contorno, `features` ordena sus distintivos por prioridad y `colors` guarda sus colores base, de sombra y de luz. `accent` da color a los detalles, `texture` define el acabado y `visual` describe la apariencia en español. Puedes reutilizar las formas y motivos de los perfiles existentes.
 
-Las 496 fusiones de primera generación tienen su propio WebP inicial. Hay 44 cruces con pintura dedicada, incluidas las 12 fórmulas especiales, y 452 retratos generados individualmente y guardados como WebP. Ocho aberraciones también tienen pintura dedicada. Las demás aberraciones y las generaciones posteriores se dibujan cuando aparecen.
+Las 496 fusiones clásicas de primera generación tienen su propio WebP inicial. Hay 44 cruces con pintura dedicada, incluidas las 12 fórmulas especiales, y 452 retratos generados individualmente y guardados como WebP. El registro de aberraciones conserva ocho pinturas históricas y añade ocho del piloto. Los fallos nuevos restantes se dibujan a demanda según su familia y plan corporal.
 
 La composición generada integra la anatomía, los rasgos y los objetos de ambos materiales. Conserva su apariencia al volver a cargar y se dibuja cuando la interfaz la necesita. Un linaje puede aportar el hocico de chacal y el otro la balanza de un abogado. El perfil de incompatibilidad define la estructura imposible de cada aberración.
 
@@ -137,6 +137,7 @@ node tests/static.mjs
 node --test tests/ritual.mjs
 node --test tests/variants.mjs
 node --test tests/art-batches.mjs
+node --test tests/aberrations.mjs
 ```
 
 Las pruebas cubren probabilidades y progresión, ilustraciones y linajes, migración de partidas, consumo de recursos y recuperación de una revelación pendiente. Tras ajustar los costos, revisa la distribución de rarezas, la garantía de los sobres y la recuperación de moneda.

@@ -105,3 +105,13 @@ El lote incluye **20 pinturas WebP de 768 × 768** y **3.188.054 bytes**. El reg
 | Archivo de Contrafuertes | Arquitecta + Arquitecta | Nueva | `variant(fusion(arquitecta+arquitecta);counterfort-archive)` | [archivo-de-contrafuertes.webp](docs/assets/lote-03/archivo-de-contrafuertes.webp) | 206.202 |
 | Estratega de las Cien Piezas | Atenea + Atenea | Nueva | `variant(fusion(atenea+atenea);hundred-pieces)` | [estratega-de-las-cien-piezas.webp](docs/assets/lote-03/estratega-de-las-cien-piezas.webp) | 150.018 |
 | Rastreador de Coraza · Anquilosaurio | Anquilosaurio + Lobo | Nueva | `variant(fusion(anquilosaurio+lobo);scent-vanguard)` | [rastreador-coraza-anquilosaurio.webp](docs/assets/lote-03/rastreador-coraza-anquilosaurio.webp) | 167.642 |
+
+## Aberraciones
+
+- **Representa el intento y su interrupción.** Empieza por el plan corporal, la tarea y los aportes de los dos progenitores. Elige un único defecto principal. Haz visible dónde se detienen el apoyo, la carga, el reflejo o el poder.
+- **Apoya el mecanismo en la composición.** Dos huellas muestran qué giro se bloqueó. Una pieza frente al hocico muestra por qué una herramienta integrada queda fuera de alcance. Una correa o un efecto mágico por sí solos comunican poco sobre la transformación.
+- **Usa anatomía y materiales legibles.** Conserva los apoyos, articulaciones y proporciones que sí funcionan. Si hay duplicación o un apéndice mal situado, muestra su consecuencia. En el tejido, usa pliegues, membranas y cambios de textura. En estructuras, señala la trayectoria que ocupa la pieza rígida.
+- **Distingue la causa con luz y entorno.** Ilumina el peso, la dirección del flujo o la continuidad del cuerpo. Una escena clara puede mostrar el fallo tan bien como una oscura. Usa color y material de los progenitores y evita el daño gráfico.
+- **Contrasta con una fusión exitosa.** Si dos progenitores pueden producir una criatura extraña pero funcional, reserva la aberración para una incapacidad concreta. Revisa cada pintura junto con su ficha, a tamaño completo y en miniatura. Publica WebP de 768 × 768 y registra la variante por su identificador estable.
+
+El piloto compara las ocho familias y registra los pesos, rutas y progenitores de las pinturas. [Registro artístico de aberraciones](ABERRACIONES.md)

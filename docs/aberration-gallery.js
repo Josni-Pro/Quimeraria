@@ -1,0 +1,50 @@
+import { ABERRATION_PILOT } from "./aberration-art-pilot.js";
+import { FAILURE_FAMILIES } from "./aberration-concepts.js";
+import { acknowledgeReveal, createGame, fuseCards, getCard, inspectAberrationVariants } from "./engine.js";
+import { getPortrait } from "./illustrations.js";
+
+const gallery = document.querySelector("#paintings");
+const sample = createGame();
+sample.coins = 1_000;
+sample.inventory = { alquimista: 1, mamut: 1 };
+const fusion = fuseCards(sample, "alquimista", "mamut", () => 0);
+const state = acknowledgeReveal(fusion.state, fusion.reveal.id).state;
+
+for (const entry of ABERRATION_PILOT) {
+  const { variants } = inspectAberrationVariants(state, ...entry.parents);
+  const card = variants.find(candidate => candidate.defect === entry.key);
+  const article = document.createElement("article");
+  article.className = "variant";
+  const link = document.createElement("a");
+  link.href = getPortrait(card, state).src;
+  const image = new Image(768, 768);
+  image.alt = card.name;
+  image.className = "variant__art";
+  image.loading = "lazy";
+  image.decoding = "async";
+  image.src = link.href;
+  link.append(image);
+  const body = document.createElement("div");
+  body.className = "variant__body";
+  const type = document.createElement("p");
+  type.className = "variant__meta";
+  type.textContent = `${FAILURE_FAMILIES[card.family]} · G${card.generation}`;
+  const title = document.createElement("h2");
+  title.className = "variant__name";
+  title.textContent = card.name;
+  const parents = document.createElement("p");
+  parents.textContent = card.parents.map(id => getCard(id, state).name).join(" + ");
+  const description = document.createElement("p");
+  description.textContent = card.description;
+  const details = document.createElement("details");
+  const heading = document.createElement("summary");
+  heading.textContent = "Ficha artística";
+  const visual = document.createElement("p");
+  visual.textContent = entry.direction;
+  const id = document.createElement("code");
+  id.textContent = card.id;
+  details.append(heading, visual, id);
+  body.append(type, title, parents, description, details);
+  article.append(link, body);
+  gallery.append(article);
+}

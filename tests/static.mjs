@@ -65,13 +65,18 @@ for (const [index, first] of CARDS.entries()) {
     const failure = fuseCards(state, first.id, second.id, () => 0.99);
     assert.equal(failure.outcome, "aberration");
     const aberration = getPortrait(failure.card, state, 1, { defer: true });
-    if (PORTRAIT_OVERRIDES.has(failure.card.id)) {
+    if (aberration.kind === "painted") {
       verifyWebP(aberration.src, failure.card.name);
       abyssOverrides += 1;
     } else {
       assert.ok(aberration.deferred, failure.card.name);
+      assert.equal(aberration.format, "svg");
     }
   }
+}
+
+for (const [id, assets] of PORTRAIT_OVERRIDES) {
+  for (const key of assets) verifyWebP(`./assets/${key}.webp`, id);
 }
 
 assert.equal((artKinds.baked ?? 0) + (artKinds.painted ?? 0), CARDS.length * (CARDS.length + 1) / 2);

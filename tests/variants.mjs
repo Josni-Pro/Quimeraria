@@ -280,7 +280,7 @@ test('Dos copias de una variante se consumen juntas sin recuperar una generació
   const copyIds = getFusionCopies(state, target.id).map(copy => copy.id)
   assert.equal(new Set(copyIds).size, 2)
   const quote = previewFusion(state, target.id, target.id)
-  assert.equal(quote.aberrationRate, 0)
+  assert.equal(quote.aberrationRate, 0.05)
   const next = inspect(state, target.id, target.id).at(-1)
   const evolved = forge(state, target.id, target.id, next)
   assert.equal(evolved.state.inventory[target.id], undefined)
@@ -427,7 +427,7 @@ test('Registro, fichas y retratos comparten referencias reales', () => {
 test('Una partida real del motor anterior conserva variantes fuera del sorteo futuro', () => {
   const prior = JSON.parse(readFileSync(new URL('./fixtures/quimeraria-v3-before-refinement.json', import.meta.url)))
   const state = loadGame(prior)
-  assert.deepEqual(state, prior)
+  assert.deepEqual(state, { ...prior, version: SAVE_VERSION, aberrationCopies: {} })
   const owlId = 'variant(fusion(buho+buho);aerial)'
   const foxId = 'variant(fusion(zorro+zorro);kitsune)'
   assert.equal(state.inventory[owlId], 1)

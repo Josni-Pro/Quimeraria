@@ -1,11 +1,19 @@
+const SUCCESS_PERCENT_BY_GENERATION = Object.freeze({ 1: 95, 2: 95, 3: 95, 4: 95 });
+
 export const ALCHEMY = Object.freeze({
-  successPercent: 95,
+  successPercentByGeneration: SUCCESS_PERCENT_BY_GENERATION,
+  get successPercent() { return this.successPercentByGeneration[1]; },
   get successRate() { return this.successPercent / 100; },
   get aberrationRate() { return (100 - this.successPercent) / 100; },
   aberrationsPerEssence: 5,
   maxGeneration: 4,
   historyLimit: 120,
 });
+
+export function fusionRates(generation) {
+  const successPercent = ALCHEMY.successPercentByGeneration[generation];
+  return { successRate: successPercent / 100, aberrationRate: (100 - successPercent) / 100 };
+}
 
 export const ANIMATION_MODES = Object.freeze(["full", "reduced", "off"]);
 

@@ -16,12 +16,13 @@
       <a href="./lote-01.html" class="back">Lote 01</a>
       <a href="./lote-02.html" class="back">Lote 02</a>
       <a href="./lote-03.html" class="back">Lote 03</a>
+      <a href="./aberraciones.html" class="back">Piloto de aberraciones</a>
     </nav>
   </header>
   <main class="shell">
     <div class="intro">
       <h1>Diagnóstico de fusiones</h1>
-      <p>Elige dos progenitores para explorar las variantes de una fusión exitosa. Las pruebas de esta galería quedan en memoria y no modifican la partida.</p>
+      <p>Elige dos progenitores para comparar sus éxitos y fallos. El ensayo de Alquimia funciona en memoria.</p>
     </div>
     <div class="layout">
       <aside class="controls" aria-label="Selección de progenitores">
@@ -33,12 +34,25 @@
         <select id="parent-b"></select>
         <p id="compatible" class="note"></p>
         <p class="note">Para explorar generaciones posteriores, añade una variante a la lista de progenitores.</p>
+        <section class="trial" aria-labelledby="trial-title">
+          <h2 id="trial-title">Ensayo de esencia</h2>
+          <p id="trial-count" role="status"></p>
+          <ol id="trial-selection"></ol>
+          <button type="button" id="trial-make" disabled>Destilar</button>
+          <button type="button" id="trial-use" disabled>Usar esencia</button>
+          <button type="button" id="trial-clear">Limpiar ensayo</button>
+          <p id="trial-result" role="status"></p>
+        </section>
       </aside>
       <section class="results" aria-labelledby="pair-title">
         <h2 id="pair-title"></h2>
         <p id="pair-summary" role="status"></p>
-        <button type="button" id="export-registry" hidden>Descargar registro (JSON)</button>
+        <h3>Fusiones exitosas</h3>
+        <button type="button" id="export-registry" hidden>Descargar éxitos (JSON)</button>
         <div id="variants" class="variants"></div>
+        <h3>Aberraciones compatibles</h3>
+        <button type="button" id="export-aberrations" hidden>Descargar aberraciones (JSON)</button>
+        <div id="aberration-variants" class="variants"></div>
       </section>
     </div>
   </main>
