@@ -4,8 +4,8 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { CARDS, RECIPES } from '../docs/catalog.js'
 import { ALCHEMY } from '../docs/game-config.js'
-import { ABERRATION_PILOT, aberrationId } from '../docs/aberration-art-pilot.js'
-import { FAILURE_FAMILIES } from '../docs/aberration-concepts.js'
+import { ABERRATION_PILOT, ARCHIVED_ABERRATION_PAINTINGS, aberrationId } from '../docs/aberration-art-pilot.js'
+import { ABERRATION_RULES_VERSION, FAILURE_AXES, FAILURE_FAMILIES } from '../docs/aberration-concepts.js'
 import { assetPortrait, getPortrait } from '../docs/illustrations.js'
 import {
   acknowledgeReveal, createEssence, createGame, fuseCards, getAberrationCopies, getCard,
@@ -89,6 +89,12 @@ test('El barrido de las 496 parejas devuelve fallos compatibles y estables', () 
         assert.equal(card.stats, null)
         assert.equal(card.ability, null)
         assert.ok(card.identity.anatomy && card.identity.scale.category && card.identity.visual && card.identity.attempt)
+        assert.equal(card.failureRulesVersion, ABERRATION_RULES_VERSION)
+        assert.ok(new Set(card.identity.impairments.map(block => block.axis)).size >= 2)
+        for (const { axis, evidence } of card.identity.impairments) {
+          assert.ok(FAILURE_AXES[axis])
+          assert.ok(evidence.length > 40 && card.description.includes(evidence))
+        }
         assert.deepEqual(card.identity.contributions.map(source => source.parentId), sorted(pair))
         assert.ok(card.identity.contributions.every(source => source.trait && source.contribution))
         assert.ok(FAILURE_FAMILIES[card.family])
@@ -226,7 +232,13 @@ test('La partida histórica conserva aberraciones, esencia, descubrimientos y re
     const restored = getCard(id, state)
     assert.equal(restored.family, 'historical')
     for (const [key, value] of Object.entries(snapshot)) assert.deepEqual(restored[key], value)
-    assert.equal(getPortrait(restored, state).kind, 'painted')
+    const art = getPortrait(restored, state)
+    if (ARCHIVED_ABERRATION_PAINTINGS.has(id)) {
+      assert.equal(art.format, 'svg')
+      assert.match(decodeURIComponent(art.src), /data-contact=/)
+    } else {
+      assert.equal(art.kind, 'painted')
+    }
   }
   const available = Object.values(state.essences)[0]
   assert.equal(available.progenitors.reduce((sum, entry) => sum + entry.count, 0), 10)
@@ -278,4 +290,24 @@ test('El piloto tiene ocho archivos definitivos propios y los SVG se resuelven b
   assert.equal(eager.kind, 'generated')
   assert.match(eager.src, /^data:image\/svg\+xml/)
   assert.equal(getPortrait(card, state, 1, { defer: true }).src, null)
+})
+
+test('Los ocho fallos del piloto definen una obstrucción corporal y conservan sus identificadores', () => {
+  const { state } = stages()
+  const expected = {
+    'axis-lock': ['locomotion', 'stability'],
+    'sensory-loop': ['coordination', 'perception'],
+    'load-bind': ['structure', 'locomotion'],
+    'phase-bleed': ['form', 'locomotion'],
+    'blocked-craft': ['respiration', 'manipulation'],
+    'domain-knot': ['form', 'stability'],
+    'interrupted': ['locomotion', 'stability'],
+    overgrowth: ['structure', 'locomotion'],
+  }
+  for (const sample of ABERRATION_PILOT) {
+    const failure = failWith(state, sample.parents, sample.key)
+    assert.equal(failure.card.id, aberrationId(sample.parents, sample.key))
+    assert.deepEqual(failure.card.identity.impairments.map(block => block.axis), expected[sample.key])
+    assert.equal(failure.card.stats, null)
+  }
 })

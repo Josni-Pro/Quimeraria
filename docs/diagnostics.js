@@ -6,7 +6,7 @@ import { getCreatureConcept, CONCEPT_LABELS } from "./creature-concepts.js";
 import { CAPABILITY_FAMILIES, COMBAT_ROLES, COMBAT_STATS, getCreatureProfiles, MOBILITY_LABELS, UTILITY_FAMILIES } from "./creature-profiles.js";
 import { buildArtBrief } from "./fusion-art-registry.js";
 import { VARIANT_FAMILIES, VARIANT_QUALITY_LABELS } from "./fusion-variants.js";
-import { FAILURE_FAMILIES } from "./aberration-concepts.js";
+import { FAILURE_AXES, FAILURE_FAMILIES } from "./aberration-concepts.js";
 import { ALCHEMY } from "./game-config.js";
 import { EXPRESSION_LABELS } from "./creature-identity.js";
 import { SCALE_LABELS, scaleDimensions } from "./creature-scale.js";
@@ -230,6 +230,7 @@ function aberrationArticle(card, index) {
     ["Escala", `${SCALE_LABELS[identity.scale.category]} · ${scaleDimensions(identity.scale)}`],
     ["Aportes", formatList(identity.contributions.map(part =>
       `${part.name} · ${EXPRESSION_LABELS[part.type]} · ${part.trait} · ${part.contribution}`))],
+    ...identity.impairments.map(({ axis, evidence }) => [FAILURE_AXES[axis], evidence]),
     ["Descripción visual", identity.visual],
     ["Estado de ilustración", illustrationRecord(card, portrait).status]
   ];

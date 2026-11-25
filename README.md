@@ -111,7 +111,7 @@ Si quieres que con el Ajolote tenga nombre y habilidad propios, registra su cruc
 
 Añade un perfil en `docs/portrait-profiles.js` con el mismo identificador que la carta base. `face` define su contorno, `features` ordena sus distintivos por prioridad y `colors` guarda sus colores base, de sombra y de luz. `accent` da color a los detalles, `texture` define el acabado y `visual` describe la apariencia en español. Puedes reutilizar las formas y motivos de los perfiles existentes.
 
-Las 496 fusiones clásicas de primera generación tienen su propio WebP inicial. Hay 44 cruces con pintura dedicada, incluidas las 12 fórmulas especiales, y 452 retratos generados individualmente y guardados como WebP. El registro de aberraciones conserva ocho pinturas históricas y añade ocho del piloto. Los fallos nuevos restantes se dibujan a demanda según su familia y plan corporal.
+Las 496 fusiones clásicas de primera generación tienen su propio WebP inicial. Hay 44 cruces con pintura dedicada, incluidas las 12 fórmulas especiales, y 452 retratos generados individualmente y guardados como WebP. Las aberraciones muestran ocho pinturas del piloto corregido y una histórica. Siete pinturas históricas quedan en el archivo de revisión y sus fichas muestran un SVG que hace visible la disfunción. [Revisión de aberraciones](REVISION-ABERRACIONES.md)
 
 La composición generada integra la anatomía, los rasgos y los objetos de ambos materiales. Conserva su apariencia al volver a cargar y se dibuja cuando la interfaz la necesita. Un linaje puede aportar el hocico de chacal y el otro la balanza de un abogado. El perfil de incompatibilidad define la estructura imposible de cada aberración.
 

@@ -106,12 +106,12 @@ El lote incluye **20 pinturas WebP de 768 × 768** y **3.188.054 bytes**. El reg
 | Estratega de las Cien Piezas | Atenea + Atenea | Nueva | `variant(fusion(atenea+atenea);hundred-pieces)` | [estratega-de-las-cien-piezas.webp](docs/assets/lote-03/estratega-de-las-cien-piezas.webp) | 150.018 |
 | Rastreador de Coraza · Anquilosaurio | Anquilosaurio + Lobo | Nueva | `variant(fusion(anquilosaurio+lobo);scent-vanguard)` | [rastreador-coraza-anquilosaurio.webp](docs/assets/lote-03/rastreador-coraza-anquilosaurio.webp) | 167.642 |
 
-## Aberraciones
+## Aberraciones · Revisión obligatoria
 
-- **Representa el intento y su interrupción.** Empieza por el plan corporal, la tarea y los aportes de los dos progenitores. Elige un único defecto principal. Haz visible dónde se detienen el apoyo, la carga, el reflejo o el poder.
-- **Apoya el mecanismo en la composición.** Dos huellas muestran qué giro se bloqueó. Una pieza frente al hocico muestra por qué una herramienta integrada queda fuera de alcance. Una correa o un efecto mágico por sí solos comunican poco sobre la transformación.
-- **Usa anatomía y materiales legibles.** Conserva los apoyos, articulaciones y proporciones que sí funcionan. Si hay duplicación o un apéndice mal situado, muestra su consecuencia. En el tejido, usa pliegues, membranas y cambios de textura. En estructuras, señala la trayectoria que ocupa la pieza rígida.
-- **Distingue la causa con luz y entorno.** Ilumina el peso, la dirección del flujo o la continuidad del cuerpo. Una escena clara puede mostrar el fallo tan bien como una oscura. Usa color y material de los progenitores y evita el daño gráfico.
-- **Contrasta con una fusión exitosa.** Si dos progenitores pueden producir una criatura extraña pero funcional, reserva la aberración para una incapacidad concreta. Revisa cada pintura junto con su ficha, a tamaño completo y en miniatura. Publica WebP de 768 × 768 y registra la variante por su identificador estable.
+1. **Haz que el fallo se vea al primer golpe de vista.** La criatura debe resultar grotesca, inutilizable y anatómica o estructuralmente inviable. Diseña un defecto dominante que interrumpa dos ejes visibles en la ficha nueva. Entre ellos están la locomoción, la percepción, la respiración y el uso de herramientas.
+2. **Dibuja la obstrucción como parte del cuerpo.** Conserva reconocibles los aportes de los progenitores y muestra qué articulación, órgano o superficie ha quedado sustituida, torcida, atrapada o sin recorrido. Si se hunde, dibuja el punto real que carga el peso. Si falla el impulso, muestra qué aleta, ala o extremidad quedó inutilizada.
+3. **Construye la incomodidad desde la forma.** Usa torsión, cargas vencidas, siluetas que se cierran sobre sí mismas y uniones materiales incompatibles. Reserva la iluminación y el color para explicar el volumen. Mantén las superficies íntegras y evita el daño gráfico.
+4. **Prueba la imagen por sí sola.** Mira la pintura a tamaño completo y en miniatura, con la ficha cerrada. Comprueba que el fallo sea inmediato, que la criatura parezca inutilizable, que su cuerpo sea inviable y que produzca incomodidad. El defecto debe pertenecer al cuerpo, deben leerse ambos linajes y debe distinguirse de una fusión exitosa. Si la silueta aún parece funcional, corrige la composición o regenera la pintura.
+5. **Registra la revisión.** Conserva los identificadores históricos y distingue una pintura aprobada de un archivo en revisión. El SVG provisional también debe mostrar una obstrucción. Exporta las pinturas definitivas como WebP de 768 × 768.
 
-El piloto compara las ocho familias y registra los pesos, rutas y progenitores de las pinturas. [Registro artístico de aberraciones](ABERRACIONES.md)
+El informe recoge el dictamen de los 16 archivos, las correcciones del piloto y los conceptos que podrían funcionar como fusiones exitosas. [Revisión de aberraciones](REVISION-ABERRACIONES.md)
