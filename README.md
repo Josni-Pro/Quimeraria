@@ -56,13 +56,17 @@ La calidad conceptual reparte 55, 30, 12 y 3 puntos entre común, poco común, r
 
 `docs/creature-concepts.js` registra los aportes del catálogo y limita la herencia a seis aportes inmediatos, con cupos por clase de rasgo. Las reglas filtran la compatibilidad con la anatomía y la función del resultado. `docs/creature-profiles.js` define los roles, las estadísticas y las familias de capacidades reutilizables. Un perfil de combate reparte entre seis atributos el presupuesto de la generación (200, 250, 300, 350 o 400), más 0 a 20 puntos por rareza. El rol principal, el secundario y la naturaleza ajustan la distribución dentro de límites comunes. El costo de despliegue orientativo va de 1 a 5 según la generación. La calidad conceptual queda fuera del cálculo.
 
-Para un futuro combate, `getCreatureProfiles(card).combat` expone roles, movilidad, afinidades, presupuesto, costo, estadísticas y capacidades. Las expediciones futuras pueden usar `getCreatureProfiles(card).utility` para suministro, transporte, investigación, protección u otras actividades. Los perfiles actuales son datos y las expediciones jugables siguen usando Fuerza, Guardia, Ingenio y las habilidades del catálogo.
+El campo de entrenamiento adapta los roles, la movilidad, las afinidades y las capacidades de `getCreatureProfiles(card).combat` al combate por rondas. `getCreatureProfiles(card).utility` expone suministro, transporte, investigación, protección y otras capacidades de utilidad. Las expediciones jugables usan Fuerza, Guardia, Ingenio y las habilidades del catálogo.
 
 Abre `/diagnostics.html` en el mismo servidor local para comparar éxitos y aberraciones, inspeccionar perfiles y descargar cada grupo en JSON. Una variante exitosa puede añadirse como progenitor para explorar generaciones posteriores. El ensayo de esencia permite seleccionar cinco aberraciones de parejas distintas y ejecutar Alquimia en memoria. Abre `/aberraciones.html` para ver las ocho pinturas del piloto.
 
 Las variantes alternativas se representan con SVG locales que emplean siluetas, estructuras y rasgos anatómicos según el concepto. Las convergencias comparten el arte de la especie cuando coincide con el resultado. La fusión clásica y las históricas conservan las pinturas, los retratos WebP y los niveles que les corresponden. El catálogo genera únicamente las parejas consultadas y limita las cachés de variantes y retratos.
 
 La tasa de Forja se configura por separado para G1, G2, G3 y G4. Alquimia garantiza el éxito cuando la esencia conserva al menos una pareja válida. Las reglas, el barrido y la migración están documentados en el informe. [Aberraciones y esencias](ABERRACIONES.md)
+
+## Campo de entrenamiento
+
+Abre **Entrenamiento** en la navegación o `/training.html` en el servidor local. Forma una escuadra de hasta seis criaturas con un máximo de 12 puntos, elige una patrulla y dirige el combate con dos puntos de mando por ronda. La práctica usa copias del inventario y resuelve vitalidad, estados y recargas en memoria. [Reglas, arquitectura y verificación](COMBATE-FASE-01.md)
 
 ## Sobres y expediciones
 
@@ -138,6 +142,7 @@ node --test tests/ritual.mjs
 node --test tests/variants.mjs
 node --test tests/art-batches.mjs
 node --test tests/aberrations.mjs
+node --test tests/combat.mjs
 ```
 
 Las pruebas cubren probabilidades y progresión, ilustraciones y linajes, migración de partidas, consumo de recursos y recuperación de una revelación pendiente. Tras ajustar los costos, revisa la distribución de rarezas, la garantía de los sobres y la recuperación de moneda.
