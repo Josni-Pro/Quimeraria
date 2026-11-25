@@ -16,7 +16,7 @@ export const FUSION_ART_BATCH_01 = [
     id: "variant(fusion(buho+medica);air-rescue)",
     parents: ["buho", "medica"],
     asset: "lote-01/rescatista-altura-buho",
-    direction: "Búho antropomórfico de disco facial redondo, con dos piernas, dos brazos con manos y dos alas dorsales. Desde un saliente baja un arnés de evacuación. Las vendas, el estuche y la maniobra muestran que es una rescatista."
+    direction: "Búho antropomórfico de 1,70 m con disco facial, dos brazos, dos piernas y dos alas dorsales. Se arrodilla al lado de la persona adulta en la misma terraza. Una baranda de cintura, una bolsa médica de unos 45 cm y el anclaje fijo del arnés fijan la escala y la carga."
   },
   {
     id: "variant(fusion(arquitecta+triceratops);workshop)",
@@ -46,7 +46,7 @@ export const FUSION_ART_BATCH_01 = [
     id: "variant(fusion(mamut+pulpo);shore-carrier)",
     parents: ["mamut", "pulpo"],
     asset: "lote-01/vigia-de-dos-orillas",
-    direction: "Un mamut cruza la orilla en cuatro patas. En un costado, encastrada en un contrafuerte óseo del cuerpo, una cámara húmeda translúcida deja ver un pulpo y las ventosas con las que percibe la vibración del agua."
+    direction: "Mamut de 3,3 m al hombro y cuatro patas sobre la orilla. En la piel del flanco, tejido de manto con ventosas registra cambios de presión y comparte la circulación del cuerpo. La cámara es una cavidad orgánica bajo el pelaje. Juncos y agua baja dan escala."
   },
   {
     id: "variant(fusion(anubis+lobo);cerbero)",
@@ -70,7 +70,7 @@ export const FUSION_ART_BATCH_01 = [
     id: "variant(fusion(ajolote+sirena);reef-colony)",
     parents: ["ajolote", "sirena"],
     asset: "lote-01/colonia-ajolote-sirena",
-    direction: "Dos organismos de una colonia acuática se coordinan mediante anillos sensoriales. El primero muestra branquias externas de ajolote, el segundo una cola natatoria de sirena. Ambos protegen un refugio anfibio bajo el agua."
+    direction: "Un cuerpo anfibio de 1,5 m en un manantial. Los pólipos branquiales crecen sobre la misma piel del rostro y el flanco. La aleta natatoria dirige agua hacia ellos. Mostrar un rostro, una cola continua, regeneración en los bordes y rocas sumergidas a escala."
   },
   {
     id: "variant(fusion(fenix+sirena);elemental)",

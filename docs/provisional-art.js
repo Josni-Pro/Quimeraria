@@ -38,13 +38,13 @@ const avian = membranous => `<g><g transform="translate(282) scale(-1 1)">${wing
   <path d="M176 91l23-2 13 5-19 9z" fill="url(#accent)"/>
   <circle cx="181" cy="87" r="3" fill="#fff4c8"/></g>`;
 
-const aquatic = manyArms => `<g><path d="${manyArms
+const aquatic = (manyArms, visibleEye = true) => `<g><path d="${manyArms
   ? "M106 110Q74 134 55 122Q45 153 92 149L77 169Q98 185 121 146Q127 169 158 172L150 138Q175 159 201 142L174 116"
   : "M105 107Q78 101 55 79L62 109L48 137Q79 135 103 126L142 142L132 115"}" fill="url(#accent)"/>
   <path d="M77 116q40-37 81-37 45-4 80 18l14 16-12 19-41 2q-62 18-122-18z" fill="url(#body)"/>
   <path d="M133 85q8-33 42-37l-7 33M161 127l17 25 14-28" fill="url(#accent)"/>
   <path d="M186 95l-9 16M198 95l-9 16" fill="none" stroke="#f9eedd" opacity=".5"/>
-  <circle cx="225" cy="104" r="3" fill="#fff4c8"/></g>`;
+  ${visibleEye ? '<circle cx="225" cy="104" r="3" fill="#fff4c8"/>' : ""}</g>`;
 
 const humanoid = (head, kin = false) => `<g><path d="M128 111l30-5 18 26 1 40-15-1-12-35-20 34h-17z" fill="url(#body)"/>
   <path d="M119 78l15-9 27 4 16 16 30 5-3 13-48-8 8 30-41 2-14-19-23 9-9-10 29-28z" fill="url(#body)"/>
@@ -113,10 +113,16 @@ const stoneMammoth = `<g><path d="M72 113l-10-16 23-29 41-12 54 6 36 16 18 9 14 
   <path d="M219 115q23 15 38-2-6 32-32 14z" fill="#faf0c9"/>
   <path d="M94 129l19 14m37-4 25-29m29 21-19 10m21-54-19 22" fill="none" stroke="#2d2239" stroke-width="3"/></g>`;
 
-const cistern = `<g><path d="M99 84h86l-8 24H103z" fill="#a86f53"/>
-  <path d="M116 50h49v37h-49z" fill="#2c777f" stroke="#e7d1a1" stroke-width="3"/>
-  <path d="M119 72q14-15 20 0t23 0V57h-43z" fill="#9dd9cc"/>
-  <path d="M120 82q8-22 15-1m9-2q12-25 17 2" fill="none" stroke="#39416b" stroke-width="4"/></g>`;
+const wetMantle = `<g><path d="M104 98q25-11 56-1l18 14-19 12-32-2-18-10z" fill="#2c777f" opacity=".85"/>
+  <path d="M110 104q26 12 59 2m-49 9q19 8 38 1" fill="none" stroke="#9dd9cc" stroke-width="3"/>
+  <path d="M130 109h1m12 2h1m12-2h1" stroke="#eed4c5" stroke-width="3" stroke-linecap="round"/></g>`;
+
+const riverFox = `${quadruped("fox")}
+  <path d="M187 103q-23-12-27-29m28 32q-19-4-30-16m32 22q-17 1-26-7M78 114q-29 8-44-16 0 26 44 25"
+    stroke="url(#accent)" stroke-width="6" fill="none" stroke-linecap="round"/>`;
+const reefOctopus = `${aquatic(true, false)}
+  <path d="M167 105q-8-19 0-35 9-23 28-14l10 17-13 10 13 15-12 18z" fill="url(#body)"/>
+  <path d="M181 72h5m8 0h4m-20 25q-17 13-39 14m35-3q-21 18-43 16" stroke="#d8f2de" stroke-width="2" fill="none"/>`;
 const rescueHarness = `<g><path d="M111 122L77 163m85-41 25 41" stroke="#f4d396" stroke-width="3"/>
   <path d="M72 162h118l-13 14h-92z" fill="#b89164"/>
   <path d="M126 138h16m-8-8v16" stroke="#f6e7c9" stroke-width="4"/></g>`;
@@ -125,10 +131,11 @@ const wyvern = `<g>${wings(true)}
   <g transform="translate(270 -8) scale(-1 .9)">${wings(true)}</g>
   <path d="M61 133q40 5 61-28l43-13 17-28 25-9 17 15-12 15-19 4-11 29-27 14-4 28h-14l3-29-20 7-15 25H94l12-26q-29 16-59 5z" fill="url(#body)"/>
   <circle cx="207" cy="71" r="3" fill="#fff4c8"/></g>`;
-const windLoom = `<g>${wings(false)}
+const windLoom = `<g>
   <path d="M45 132Q72 79 106 116T171 117Q200 108 200 78l12-16 16 8-16 20q-4 44-40 45-24 13-64-4t-63 1z" fill="url(#body)"/>
-  <path d="M91 105v58h38v-46m19 8v37h32v-35" fill="url(#accent)" stroke="#ead5ad" stroke-width="3"/>
-  <path d="M98 113v40m9-37v37m9-34v34m39-22v23m9-24v24m8-26v26" stroke="#382c4f" stroke-width="2"/></g>`;
+  <path d="M187 108q-21-21 9-41l-4 19 23-10-10 20 10 8-19 13z" fill="url(#accent)"/>
+  <path d="M46 60q67-22 115 13 27 15 55 11M35 75q67-21 111 14 40 24 82 1"
+    stroke="#ead5ad" fill="none" stroke-width="2" opacity=".74"/></g>`;
 const citadel = `<g><path d="M69 82h140v51H69zM79 130h25l-9 44H75zm49 0h27v47h-29zm49 0h23l13 44h-23z" fill="url(#body)"/>
   <path d="M66 88q73-102 148 0q-70 38-148 0z" fill="url(#accent)" stroke="#e6cd95" stroke-width="3"/>
   <path d="M142 6l-12 24 16 1-13 32" fill="none" stroke="#d2e6fa" stroke-width="5"/>
@@ -159,7 +166,7 @@ const warboard = `<g>
   <path d="M114 113l17-14 8 10 13-6 23 10-16 7z" fill="#7c7360"/>
   <circle cx="122" cy="115" r="4" fill="#fff4c8"/><circle cx="165" cy="116" r="4" fill="#fff4c8"/></g>`;
 
-function drawShape(shape, anatomy, head, speciesId, family) {
+function drawShape(shape, anatomy, head, speciesId, family, element) {
   const body = anatomy === "avian" ? avian(false)
     : ["aquatic", "cephalopod", "amphibian"].includes(anatomy) ? aquatic(anatomy === "cephalopod")
       : anatomy === "humanoid" ? humanoid(head) : quadruped(head);
@@ -187,7 +194,9 @@ function drawShape(shape, anatomy, head, speciesId, family) {
       <path d="M217 145q16-13 28-11m-24 22q16-8 29-5" fill="none" stroke="#d5cab1" stroke-width="2" stroke-dasharray="4 4"/>`;
     case "night-disc": return body + `<path d="M208 99l-13-20 19 8 9-19 5 19 19-8-8 17-8 17-17-3z" fill="url(#accent)"/>
       <circle cx="224" cy="96" r="3" fill="#271a2e"/><path d="M250 83q13 11 3 23" fill="none" stroke="#c7acf8" stroke-width="2"/>`;
-    case "shore-carrier": return body + cistern;
+    case "river-fox": return riverFox;
+    case "reef-octopus": return reefOctopus;
+    case "shore-carrier": return body + wetMantle;
     case "winged-medic": return wings(false) + `<g transform="translate(282) scale(-1 1)">${wings(false)}</g>` + humanoid(head) + rescueHarness;
     case "cerberus": return `<g transform="translate(18 -9)">${secondHound}</g>` + secondHound + quadruped("wolf");
     case "cave-bear": return `<path d="M41 176V109Q45 29 141 29q85 0 104 81v66" fill="#352e37" stroke="#9c8068" stroke-width="9"/>${quadruped("bear")}
@@ -203,7 +212,8 @@ function drawShape(shape, anatomy, head, speciesId, family) {
     case "construct": return head === "elephant" ? stoneMammoth : construct;
     case "aerial": return avian(anatomy === "reptilian" || head === "dragon");
     case "spectral": return sigil + `<g opacity=".82" transform="translate(0 -8)">${body}</g>`;
-    case "elemental": return elemental;
+    case "elemental": return element === "agua" ? `<g opacity=".78">${aquatic(head === "octopus")}
+      <path d="M111 120q30-18 53-9 20 11 9 21-14 10-30-4" fill="none" stroke="#d8f2f9" stroke-width="3"/></g>` : elemental;
     case "symbiotic": return body + growth;
     case "ritual": return sigil + humanoid(head);
     case "colossal": return `<g transform="translate(-36 -18) scale(1.24 1.12)">${body}</g>`;
@@ -238,7 +248,8 @@ export function renderProvisionalPortrait(card, level) {
   const colors = animal?.colors ?? profiles[0]?.colors ?? ["#805f93", "#47304f", "#e6ba99"];
   const accent = isHex(card.identity.accent) ? card.identity.accent : profiles.find(profile => profile !== animal)?.accent
     ?? animal?.accent ?? "#b29ee1";
-  const shape = drawShape(card.identity.shape, card.concept?.anatomy, animal?.face, card.identity.speciesId, card.family);
+  const shape = drawShape(card.identity.shape, card.concept?.scale?.form ?? card.concept?.anatomy,
+    animal?.face, card.identity.speciesId, card.family, card.concept?.affinities?.[0]);
   const finish = level > 1 ? `<rect x="8" y="8" width="264" height="184" rx="8" fill="none" stroke="${accent}" opacity="${level === 3 ? 0.85 : 0.45}"/>` : "";
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 200" width="560" height="400">
     <defs>

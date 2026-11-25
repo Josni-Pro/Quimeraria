@@ -34,7 +34,7 @@ export const FUSION_ART_BATCH_02 = [
     id: "variant(fusion(atenea+quetzalcoatl);divine-manifest)",
     parents: ["atenea", "quetzalcoatl"],
     asset: "lote-02/tejedora-del-viento",
-    direction: "Una sola serpiente larga, con plumas verdes y doradas y cabeza mesoamericana sin extremidades humanas. Sus anillos sostienen un pequeño telar de bronce inspirado en Atenea; tiras de tela tensadas señalan un paso aéreo seguro. La trama se distingue de las plumas por su fibra. Nubes altas sobre terreno de montañas verdes, luz oblicua suave."
+    direction: "Serpiente emplumada única de unos cinco metros de longitud. Una égida de plumas vivas entreteje corrientes y desvía la ráfaga sobre el camino, que queda en calma. Un viajero pasa junto a un arco de dos metros. La silueta y la protección nacen del propio cuerpo."
   },
   {
     id: "variant(fusion(dragon+thor);divine-manifest)",
@@ -58,7 +58,7 @@ export const FUSION_ART_BATCH_02 = [
     id: "variant(fusion(anubis+atenea);divine-manifest)",
     parents: ["anubis", "atenea"],
     asset: "lote-02/tribunal-dos-puertas",
-    direction: "Centinela artificial que separa dos puertas antiguas. Tiene un solo cuerpo de piedra y bronce, apoyos articulados y una égida de dos hojas que se abre al centro; en la cavidad gira una balanza funeraria visible. Las bisagras conectan el escudo al cuerpo y una hoja cubre la retirada de un viajero diminuto. Interior de umbral, ocre y luz de lucernario. Sin cabeza de chacal ni tejado de ciudadela."
+    direction: "Un umbral viviente de 4,4 m. El perfil de chacal forma el dintel central y una égida de costillas de bronce protege dos vanos de altura humana. Uno ofrece paso a un alma y el otro se cierra. Los apoyos descargan en el piso y la arquitectura participa en el rito."
   },
   {
     id: "variant(fusion(cartografa+zorro);field-kin)",
@@ -82,13 +82,13 @@ export const FUSION_ART_BATCH_02 = [
     id: "variant(fusion(abogado+dragon);trade-specialist)",
     parents: ["abogado", "dragon"],
     asset: "lote-02/mediador-fronteras-dragon",
-    direction: "Figura bípeda con cabeza dracónica, dos manos articuladas y dos alas plegadas de su propio dorso. En una mesa fronteriza presenta dos sellos de cera coincidentes ante viajeros a escala pequeña; en la balanza se contrasta un tercer sello roto. Libro y pergaminos sin caracteres, luz de tarde en una puerta de aduana fantástica, gesto de mediación y sin fuego."
+    direction: "Humanoide dracónico de talla adulta con alas plegadas, manos articuladas y dos viajeros de igual tamaño en el mismo plano. Media señalando un paso neutral en un mapa sobre una mesa de pie. Una puerta de unos dos metros fija la escala del entorno."
   },
   {
     id: "variant(fusion(pulpo+sirena);elemental)",
     parents: ["pulpo", "sirena"],
     asset: "lote-02/foco-agua-octomarea",
-    direction: "Una sola entidad acuática de agua translúcida que rodea un núcleo redondo visible. Del núcleo salen brazos de pulpo y una cola larga de sirena formada por la misma corriente; la aleta se deshace en gotas y vuelve a unirse. Iluminación submarina verde azul, ventosas legibles a contraluz. Sin figura humana separada ni segundo animal."
+    direction: "Una envoltura continua de agua a escala de buceo. Los brazos regulan vórtices distribuidos y el ritmo de la aleta de sirena dirige la corriente. El remolino luminoso central es parte de esa misma circulación. Algas y rocas muestran el tamaño."
   },
   {
     id: "variant(fusion(anquilosaurio+triceratops);symbiosis)",

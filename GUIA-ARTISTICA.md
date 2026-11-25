@@ -8,11 +8,24 @@ Usa como referencia el peso y la textura mineral del [Coloso Alquímico](docs/as
 - **Diferenciación.** Decide qué aporta cada progenitor y qué acción permite la fusión. Un laboratorio necesita una estación de trabajo, un vehículo de asedio necesita su plataforma y una criatura de rescate necesita equipo que pueda utilizar. Compara las siluetas y funciones de las variantes hermanas antes de aceptar el retrato.
 - **Archivo.** Exporta a WebP de 768 × 768 píxeles con un nombre estable en minúsculas. Revisa la compresión a tamaño completo y en miniatura. Entrega el cuadro sin texto, marco ni marcas de agua. Asocia el archivo al identificador exacto de la variante en el registro de arte.
 
+## Revisión obligatoria antes de aceptar una pintura
+
+1. **Fija la escala.** Consulta altura, longitud, masa, envergadura y carga donde apliquen. Diminuta, pequeña, mediana, humanoide, grande, enorme y colosal son categorías orientativas. Un cuerpo largo puede ser ligero. Justifica los tamaños extraordinarios por su naturaleza y función. El rango, la generación y la rareza se consultan por separado.
+2. **Ancla las proporciones en la escena.** Representa a la criatura junto a una puerta, herramienta, persona, animal o planta de tamaño reconocible en un plano comparable. Dimensiona las herramientas al agarre y los accesorios a la carga. En una escena de rescate, indica qué apoyo o anclaje recibe el peso. Comprueba la escala tanto a tamaño completo como a tamaño de carta.
+3. **Identifica ambos aportes.** Anota qué aporta cada progenitor, qué cambia en el resultado y qué nueva función surge. Una aportación puede ser fisiológica, sensorial, conductual, técnica, cultural o sobrenatural. Si al quitar un accesorio desaparece la aportación, da a ese linaje una función visible antes de ilustrar.
+4. **Comprueba anatomía y equipo.** Cuenta extremidades y comprueba articulaciones, inserciones, órganos, apoyos y trayectorias de carga. Comprueba que las alas y herramientas puedan operar con la postura elegida. Un portador modifica o utiliza su estructura. Una criatura rescatada, una montura o un operador puede aparecer como referencia si su papel en la escena está claro.
+5. **Revisa la integración.** Una simbiosis presenta intercambio y modificación de los cuerpos o tejidos. Una colonia puede tener varios módulos dependientes, con coordinación observable. Un elemental se lee como un cuerpo continuo y su núcleo cumple una función interna. Da a cada interpretación una silueta y una acción que la distingan de sus variantes hermanas.
+6. **Revisa los dominios de las deidades y criaturas mitológicas.** Consulta sus tradiciones y elige acciones propias. Para la Tejedora, la estrategia defensiva dispone el viento de Ehécatl en un corredor seguro. En el Tribunal, el rito funerario y la protección hacen actuar a la arquitectura.
+7. **Contrasta la pintura con la ficha y sus acabados.** Confirma la identidad, la escala, la función, la continuidad entre niveles de retrato y el papel de las figuras auxiliares. Deja una observación concreta si hace falta corregir anatomía, escala, integración o concepto.
+8. **Comprueba el archivo y el identificador.** Verifica la carga y las dimensiones con las pruebas técnicas. La aceptación de anatomía, escala, integración y fidelidad requiere una revisión humana de la imagen real. Registra si cambió la pintura, la ficha o ambos. Para una identidad sustancialmente distinta, conserva la anterior en los guardados y da a la interpretación nueva su propio identificador.
+
+El inventario de las 128 pinturas, las referencias y las correcciones prioritarias están en el informe de la revisión. [Auditoría de coherencia](AUDITORIA-COHERENCIA.md)
+
 ## Lote 01
 
 La dirección artística de cada pintura completa la ficha de la variante con postura, anatomía y función visible. Los datos del lote están en `docs/fusion-art-batch-01.js` y alimentan el registro, la galería y la exportación JSON del diagnóstico.
 
-El Laboratorio, el Bastión y el Vigía son tres mamuts con funciones y siluetas diferenciadas. El primero lleva una estación de destilación, el segundo una plataforma baja de asedio y el tercero aloja un organismo acuático. El Taller de Tricerátops se concentra en un tablero de planos y un compás. El Barrio de Contrapeso quedó reservado para el lote 02 para dedicar una pintura propia a su escala habitable. El Coloso Alquímico y Kitsune conservan las pinturas del piloto.
+El Laboratorio, el Bastión y el Vigía son tres mamuts con funciones y siluetas diferenciadas. El primero lleva una estación de destilación, el segundo una plataforma baja de asedio y el tercero incorpora un manto sensorial irrigado. El Taller de Tricerátops se concentra en un tablero de planos y un compás. El Barrio de Contrapeso quedó reservado para el lote 02 para dedicar una pintura propia a su escala habitable. El Coloso Alquímico y Kitsune conservan las pinturas del piloto.
 
 Para revisar el lote, ejecuta `python3 -m http.server 8000 --directory docs` desde la raíz y abre `/lote-01.html`. Cada pintura enlaza al WebP completo y su ficha muestra los progenitores y el identificador.
 

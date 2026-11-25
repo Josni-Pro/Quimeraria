@@ -10,6 +10,7 @@ import { renderAlchemy, renderAberrationDetails, renderEssences } from "./alchem
 import { energyAccent, playRitual } from "./ritual.js";
 import { ALCHEMY } from "./game-config.js";
 import { CONCEPT_LABELS, getCreatureConcept } from "./creature-concepts.js";
+import { scaleDimensions } from "./creature-scale.js";
 import { CAPABILITY_FAMILIES, COMBAT_ROLES, COMBAT_STATS, getCreatureProfiles, MOBILITY_LABELS, UTILITY_FAMILIES } from "./creature-profiles.js";
 import { VARIANT_FAMILIES, VARIANT_QUALITY_LABELS } from "./fusion-variants.js";
 
@@ -471,6 +472,7 @@ function copyOrigins(card, count) {
 
 function creatureProfile(card, portrait, count) {
   const concept = getCreatureConcept(card);
+  const scale = card.category === "fusion" ? card.concept?.scale : concept.scale;
   const { combat, utility } = getCreatureProfiles(card);
   return detailRows([
     ["Especie", speciesName(card, concept)],
@@ -484,7 +486,8 @@ function creatureProfile(card, portrait, count) {
     <summary>Perfil estratégico</summary>
     ${detailRows([
       ["Naturaleza", CONCEPT_LABELS.nature[concept.nature]],
-      ["Anatomía", CONCEPT_LABELS.anatomy[concept.anatomy]],
+      ["Anatomía", CONCEPT_LABELS.anatomy[scale?.form ?? concept.anatomy]],
+      ["Escala corporal", scale ? `${CONCEPT_LABELS.size[scale.category]} · ${scaleDimensions(scale)}` : ""],
       ["Características", concept.features.join(", ")],
       ["Calidad conceptual", card.family === "legacy" ? "" : VARIANT_QUALITY_LABELS[card.quality]],
       ["Movilidad", MOBILITY_LABELS[combat.mobility]],

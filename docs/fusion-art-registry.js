@@ -1,5 +1,6 @@
 import { RECIPES } from "./catalog.js";
 import { CONCEPT_LABELS, getCreatureConcept } from "./creature-concepts.js";
+import { equipmentDimensions } from "./creature-scale.js";
 import { FUSION_ART_BATCH_01 } from "./fusion-art-batch-01.js";
 import { FUSION_ART_BATCH_02 } from "./fusion-art-batch-02.js";
 import { FUSION_ART_BATCH_03 } from "./fusion-art-batch-03.js";
@@ -61,25 +62,33 @@ const bodyPlans = {
   hybrid: "Integrar los rasgos de ambos progenitores en un solo cuerpo articulado"
 };
 
-function sourceBrief(parent, concept) {
+function sourceBrief(parent, concept, contribution) {
   const profile = PORTRAIT_PROFILES[parent.id];
   const motif = profile?.visual ?? (concept.features.join(", ") || parent.identity?.visual);
-  return { id: parent.id, name: parent.name, motif: motif || parent.description };
+  return {
+    id: parent.id, name: parent.name, motif: motif || parent.description,
+    ...(contribution ? { expression: contribution.type, trait: contribution.trait } : {}),
+    ...(contribution?.action ? { action: contribution.action } : {}),
+    ...(concept.depth.mythology ? { mythology: concept.depth.mythology } : {})
+  };
 }
 
 export function buildArtBrief(card, parents) {
   const concept = getCreatureConcept(card);
-  const sources = parents.map(parent => sourceBrief(parent, getCreatureConcept(parent)));
+  const sources = parents.map((parent, index) => sourceBrief(parent, getCreatureConcept(parent), concept.depth.contributions?.[index]));
   const contrast = card.identity?.visual ?? sources.map(source => source.motif).join(" junto a ");
-  const body = concept.anatomy === "hybrid" ? parents.map(getCreatureConcept)
-    .find(source => !source.profession && source.anatomy !== "hybrid")?.anatomy ?? concept.anatomy : concept.anatomy;
+  const body = concept.scale.form === "hybrid" ? parents.map(getCreatureConcept)
+    .find(source => !source.profession && source.anatomy !== "hybrid")?.anatomy ?? concept.scale.form : concept.scale.form;
   const anatomy = bodyPlans[body] ?? bodyPlans.hybrid;
   const features = concept.features.length ? concept.features : sources.map(source => source.motif);
   const artDirection = batch.get(card.id)?.direction;
   return {
     silhouette: `${anatomy}. Rasgos reconocibles: ${/[.!?]$/.test(contrast) ? contrast : contrast + "."}`,
-    anatomy: CONCEPT_LABELS.anatomy[concept.anatomy] ?? concept.anatomy,
+    anatomy: CONCEPT_LABELS.anatomy[concept.scale.form] ?? concept.scale.form,
     size: CONCEPT_LABELS.size[concept.size] ?? concept.size,
+    scale: concept.scale,
+    equipmentDimensions: equipmentDimensions(card, concept),
+    integration: concept.depth.integration || card.description,
     limbs: features,
     face: sources.map(source => source.motif),
     clothing: concept.profession ? sources.filter(source => PORTRAIT_PROFILES[source.id]?.face === "human").map(source => source.motif) : [],

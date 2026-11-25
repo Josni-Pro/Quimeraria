@@ -58,7 +58,7 @@ La calidad conceptual reparte 55, 30, 12 y 3 puntos entre común, poco común, r
 
 Para un futuro combate, `getCreatureProfiles(card).combat` expone roles, movilidad, afinidades, presupuesto, costo, estadísticas y capacidades. Las expediciones futuras pueden usar `getCreatureProfiles(card).utility` para suministro, transporte, investigación, protección u otras actividades. Los perfiles actuales son datos y las expediciones jugables siguen usando Fuerza, Guardia, Ingenio y las habilidades del catálogo.
 
-Abre `/diagnostics.html` en el mismo servidor local para inspeccionar combinaciones y variantes, probabilidades, linaje, perfiles y arte. Incluye 34 ejemplos, entre ellos Alquimista + Mamut, Anubis + Esfinge, Búho + Esfinge y cruces con variantes de generaciones superiores. Puedes añadir cualquier resultado como progenitor y descargar el registro de ilustraciones de la pareja en JSON. La página usa una partida en memoria y no escribe en el guardado del jugador.
+Abre `/diagnostics.html` en el mismo servidor local para inspeccionar combinaciones y variantes, probabilidades, linaje, perfiles y arte. Incluye 38 ejemplos, entre ellos Alquimista + Mamut, Anubis + Esfinge, Búho + Esfinge y cruces con variantes de generaciones superiores. Puedes añadir cualquier resultado como progenitor y descargar el registro de ilustraciones de la pareja en JSON. La página usa una partida en memoria y no escribe en el guardado del jugador.
 
 Las variantes alternativas se representan con SVG locales que emplean siluetas, estructuras y rasgos anatómicos según el concepto. Las convergencias comparten el arte de la especie cuando coincide con el resultado. La fusión clásica y las históricas conservan las pinturas, los retratos WebP y los niveles que les corresponden. El catálogo genera únicamente las parejas consultadas y limita las cachés de variantes y retratos.
 
@@ -121,7 +121,7 @@ Para añadir una pintura a un cruce existente, registra el identificador de la c
 
 Configura `nameMotif` como `[raíz, forma, epíteto]` en una carta nueva para personalizar las palabras que aporta al generador de nombres. Cuando falta, el generador usa el nombre y los rasgos de la carta.
 
-La auditoría de fusiones recoge los criterios artísticos y los dos retratos piloto. El lote 03 tiene un informe propio con el barrido de las 496 parejas y los resultados añadidos. [Auditoría de fusiones](AUDITORIA-FUSIONES.md) · [Ampliación del lote 03](AMPLIACION-FUSIONES-03.md)
+La auditoría de fusiones recoge los criterios artísticos y los dos retratos piloto. El lote 03 tiene un informe con el barrido de las 496 parejas. La revisión posterior documenta la escala, la integración, la fidelidad conceptual y el estado de cada retrato definitivo. [Auditoría de fusiones](AUDITORIA-FUSIONES.md) · [Ampliación del lote 03](AMPLIACION-FUSIONES-03.md) · [Auditoría de coherencia](AUDITORIA-COHERENCIA.md)
 
 La [guía artística](GUIA-ARTISTICA.md) describe el estilo y el formato. En el servidor local, abre `/lote-01.html`, `/lote-02.html` o `/lote-03.html` para revisar las pinturas y sus fichas.
 

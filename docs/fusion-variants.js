@@ -4,8 +4,11 @@ import { getCreatureConcept, inheritCreatureConcept } from "./creature-concepts.
 import { additionalSpecies, divineOption, VOCATIONS } from "./fusion-interpretations.js";
 import { artStatus, buildArtBrief, resolvePortraitAsset } from "./fusion-art-registry.js";
 import { expansionOptions } from "./fusion-expansion.js";
+import { expressionOf, integratedIdentity } from "./creature-identity.js";
+import { fusionScale } from "./creature-scale.js";
+import { elementalForm, symbioticForm, classicForm } from "./fusion-integration.js";
 
-export const FUSION_RULES_VERSION = 3;
+export const FUSION_RULES_VERSION = 4;
 
 export const VARIANT_FAMILIES = Object.freeze({
   classic: "Quimérica", hybrid: "Hibridación", anthropomorphic: "Antropomorfización",
@@ -36,8 +39,9 @@ function variant(key, family, quality, shape, name, description, spec, visual = 
   return { key, family, quality, shape, name, description, spec, visual };
 }
 
-function fromClassic(card) {
-  return variant("classic", "classic", "common", "classic", card.name, card.description, {}, null);
+function fromClassic(card, parents = []) {
+  const { shape, description, visual, spec } = classicForm(card, parents);
+  return variant("classic", "classic", "common", shape, card.name, description, spec, visual);
 }
 
 function buildCard(classic, parents, option, probability) {
@@ -56,6 +60,10 @@ function buildCard(classic, parents, option, probability) {
       illustration: { reference: ids.variantId, final }
     }
   };
+  const sources = parents.map(parent => ({ card: parent, concept: getCreatureConcept(parent) }));
+  concept.scale = { ...fusionScale(card, sources, concept, option), form: option.spec.physicalForm ?? concept.anatomy };
+  concept.size = concept.scale.category;
+  concept.depth = integratedIdentity(sources, option.family, option.spec);
   const asset = resolvePortraitAsset(card);
   const brief = buildArtBrief(card, parents);
   card.identity.visual ??= brief.silhouette;
@@ -132,17 +140,30 @@ function vocationalOptions(jobCard, bodyCard, job, body) {
   const titleForBody = flyingRescue ? "Rescatista de altura" : title;
   const aid = flyingRescue ? "vuela hasta heridos aislados y baja un arnés de evacuación desde un saliente" : activity;
   const tools = flyingRescue ? ["arnés de evacuación","vendas"] : job.tools;
+  const perception = flyingRescue
+    ? body.depth.expressions.find(({ type }) => type === "sense" || type === "power") ?? expressionOf(body, "symbiosis")
+    : expressionOf(body, "classic");
+  const rescueContribution = perception.type === "power" ? "aporta su poder al estabilizar al paciente después del descenso"
+    : "localiza al paciente y llega a un apoyo seguro";
+  const fieldUse = flyingRescue
+    ? "Localiza al paciente con las capacidades de su linaje, se posa y lo estabiliza antes de usar un anclaje que soporta la carga."
+    : `Adapta la práctica del oficio a sus capacidades propias (${perception.trait}).`;
   const results = [
     variant(flyingRescue ? "air-rescue" : beastkin ? "field-kin" : "trade-specialist",
       beastkin ? "kin" : "anthropomorphic", "uncommon", flyingRescue ? "winged-medic" : beastkin ? "kin" : "humanoid",
       `${titleForBody} · ${bodyCard.name}`,
-      `${jobCard.name} aporta ${vocation}. La criatura ${aid}; su anatomía conserva ${feature} del linaje de ${bodyCard.name}.`,
+      `${jobCard.name} aporta ${vocation}. La criatura ${aid} y conserva ${feature} de ${bodyCard.name}. ${fieldUse}`,
       { anatomy: "humanoid", intelligence: "sapient", profession: vocation, role,
         features: [feature, "manos articuladas"], tools, utility: flyingRescue ? ["heal","transport","survival"] : utility,
+        integration: fieldUse,
+        contributions: {
+          [jobCard.id]: { ...expressionOf(job, "profession"), action: aid },
+          [bodyCard.id]: { ...perception, action: flyingRescue ? rescueContribution : "condiciona cómo realiza el oficio en su entorno" }
+        },
         tags: ["profession", "manipulator", ...(flyingRescue ? ["winged"] : [])] },
-      `Figura bípeda de ${bodyCard.name} con ${feature}, manos articuladas y ${flyingRescue ? "alas extendidas y arnés de evacuación" : tradeGear}. En escena ${aid}.`)
+      `Figura bípeda de talla humana con ${feature}, manos articuladas y ${flyingRescue ? "alas dorsales y arnés de evacuación" : tradeGear}. En escena ${aid}.`)
   ];
-  const groundCarrier = has(body, "carrier") && ["large", "colossal"].includes(body.size) &&
+  const groundCarrier = has(body, "carrier") && ["large", "huge", "colossal"].includes(body.scale.category) &&
     ["quadruped", "reptilian"].includes(body.anatomy);
   if (groundCarrier && ["equipment", "construction", "alchemy"].some(tag => has(job, tag))) {
     const tools = job.tools.length ? job.tools.join(" y ") : "herramientas de campaña";
@@ -157,7 +178,7 @@ function vocationalOptions(jobCard, bodyCard, job, body) {
       { anatomy:"construct", nature:"artificial", role:"guardian", materials:["acero","escoria"],
         features:["lomo de yunque","articulaciones laminadas"], utility:["craft","protect"], capabilities:["shield"] }));
   }
-  if (vocation === "arquitectura" && body.size === "colossal" && has(body, "carrier")) {
+  if (vocation === "arquitectura" && ["huge", "colossal"].includes(body.scale.category) && has(body, "carrier")) {
     results.push(variant("mobile-borough", "carrier", "rare", "settlement", `Barrio de Contrapeso · ${bodyCard.name}`,
       `La estructura de ${jobCard.name} reparte una hilera de viviendas habitables a ambos lados del lomo de ${bodyCard.name}. Las pasarelas solo se despliegan con el animal arrodillado.`,
       form(body,{role:"logistics",structure:"settlement",tools:["pasarelas","contrapesos"],utility:["transport","supply","logistics"]})));
@@ -205,30 +226,6 @@ function sameSpeciesOption(card, concept) {
     `La coraza y los apoyos de ${card.name} se ensanchan para sostener el cuerpo al defender un paso estrecho.`,
     form(concept, { role:"guardian", features:["apoyos reforzados"], tags:["armored"],
       capabilities:["intercept","resist"], utility:["protect"] }));
-}
-
-function symbioticOption(a, b, ac, bc) {
-  const mixedHabitat = AQUATIC_BODIES.has(ac.anatomy) !== AQUATIC_BODIES.has(bc.anatomy);
-  if (mixedHabitat) {
-    const [water, land] = AQUATIC_BODIES.has(ac.anatomy) ? [a, b] : [b, a];
-    return variant("shore-carrier", "symbiosis", "uncommon", "shore-carrier", `Vigía de Dos Orillas · ${land.name}`,
-      `El organismo de ${water.name} habita una cámara húmeda del cuerpo de ${land.name}. La cámara detecta vibraciones y el portador puede cruzar tierra firme sin que se seque.`,
-      { anatomy: (land === a ? ac : bc).anatomy, bodySource: land.lineage[0], nature: "symbiotic", role: "logistics", secondaryRole: "controller",
-        features: ["cámara húmeda protegida"], tags: ["symbiosis", "amphibious"],
-        capabilities: ["empower", "slow"], utility: ["explore", "protect"] });
-  }
-  if (AQUATIC_BODIES.has(ac.anatomy) && AQUATIC_BODIES.has(bc.anatomy)) {
-    return variant("reef-colony", "symbiosis", "uncommon", "symbiotic", `Colonia de ${a.name} y ${b.name}`,
-      `Una colonia enlaza ${ac.features[0] ?? a.name} con ${bc.features[0] ?? b.name}. Los organismos se alternan al vigilar el refugio sumergido.`,
-      { anatomy: ac.anatomy === bc.anatomy ? ac.anatomy : "aquatic", nature:"symbiotic", role:"controller",
-        tags:["aquatic","symbiosis"], features:["anillos sensoriales"], capabilities:["slow"], utility:["survival","protect"] });
-  }
-  const sharedAnatomy = ac.anatomy === bc.anatomy ? ac.anatomy : "hybrid";
-  return variant("symbiosis", "symbiosis", "uncommon", "symbiotic", `Pacto de ${a.name} y ${b.name}`,
-    `Dos órganos vinculados conservan ${ac.features[0] ?? "la constitución del primer linaje"} y ${bc.features[0] ?? "la del segundo"}. Intercambian alertas y coordinan la retirada antes de abandonar el refugio.`,
-    { anatomy: sharedAnatomy, nature: "symbiotic", role: "support", secondaryRole: "controller",
-      features: ["órganos de enlace"], tags: ["symbiosis"], capabilities: ["empower", "slow"],
-      utility: ["explore", "protect"] });
 }
 
 function recognizedOptions(a, b, ac, bc) {
@@ -284,8 +281,8 @@ function jointProfession(a, b, ac, bc) {
 }
 
 function interpretations(a, b, classic) {
-  const results = [fromClassic(classic)];
   const parents = [a, b];
+  const results = [fromClassic(classic, parents)];
   const concepts = parents.map(getCreatureConcept);
   const [ac, bc] = concepts;
   if (a.id === "alquimista" && b.id === "mamut") return [...results, ...ALCHEMICAL_MAMMOTH];
@@ -301,7 +298,7 @@ function interpretations(a, b, classic) {
   } else {
     const marine = AQUATIC_BODIES.has(ac.anatomy) || AQUATIC_BODIES.has(bc.anatomy);
     const sharedHabitat = ac.habitat.some(place => bc.habitat.includes(place));
-    if (marine || (sharedHabitat && ac.anatomy === bc.anatomy)) results.push(symbioticOption(a, b, ac, bc));
+    if (marine || (sharedHabitat && ac.anatomy === bc.anatomy)) results.push(symbioticForm(a, b, ac, bc, variant));
   }
   if (a.id !== b.id && !ac.profession && !bc.profession && any(concepts, "winged")
       && has(ac, "winged") !== has(bc, "winged")
@@ -314,14 +311,8 @@ function interpretations(a, b, classic) {
         tags: ["winged"], role: "marksman", utility: ["explore"], capabilities: ["piercing"] }));
   }
   const element = concepts.flatMap(concept => concept.affinities)[0];
-  if (element && any(concepts, "magic")) {
-    results.push(variant("elemental", "element", "rare", "elemental", `Foco de ${element} · ${classic.name}`,
-      `La afinidad de ${element} toma cuerpo alrededor de un núcleo que combina las formas de ${a.name} y ${b.name}. El núcleo recompone la envoltura cuando se dispersa.`,
-      { nature: "elemental", anatomy: "construct", role: "mage", secondaryRole: "controller",
-        affinities: [element], features: ["núcleo de cohesión"], tags: ["magic"],
-        materials: [element], capabilities: ["area", "weaken"], utility: ["events", "research"] }));
-  }
-  const divine = divineOption(a, b, variant);
+  if (element && any(concepts, "magic")) results.push(elementalForm(a, b, ac, bc, element, classic, variant));
+  const divine = divineOption(a, b, ac, bc, variant);
   if (divine) results.push(divine);
   results.push(...recognizedOptions(a, b, ac, bc),
     ...additionalSpecies(a, b, id => species.get(id), getCreatureConcept, variant),

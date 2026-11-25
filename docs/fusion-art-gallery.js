@@ -1,5 +1,6 @@
 import { createGame, getCard, inspectFusionVariants } from "./engine.js";
 import { getPortrait } from "./illustrations.js";
+import { scaleDimensions } from "./creature-scale.js";
 
 export function renderArtBatch(entries, gallery) {
   const state = createGame();
@@ -34,9 +35,12 @@ export function renderArtBatch(entries, gallery) {
     summary.textContent = "Ficha artística";
     const direction = document.createElement("p");
     direction.textContent = entry.direction;
+    const scale = document.createElement("p");
+    const brief = card.identity.brief;
+    scale.textContent = `${brief.size} · ${scaleDimensions(brief.scale)}. Referencia visual · ${brief.scale.environment}.`;
     const id = document.createElement("code");
     id.textContent = card.id;
-    details.append(summary, direction, id);
+    details.append(summary, scale, direction, id);
     caption.append(parents, title, details);
     article.append(artLink, caption);
     gallery.append(article);

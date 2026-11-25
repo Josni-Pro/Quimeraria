@@ -1,3 +1,6 @@
+import { baseIdentity } from "./creature-identity.js";
+import { conceptScale, SCALE_LABELS } from "./creature-scale.js";
+
 // El catálogo conserva sus rasgos de expedición. Estos datos describen qué puede
 // aportar cada carta a una nueva interpretación.
 export const CONCEPT_LABELS = {
@@ -6,7 +9,7 @@ export const CONCEPT_LABELS = {
   anatomy: { humanoid: "Humanoide", quadruped: "Cuadrúpeda", avian: "Avícola",
     reptilian: "Reptiliana", aquatic: "Acuática", amphibian: "Anfibia", cephalopod: "Cefalópoda",
     serpentine: "Serpentina", centaur: "Centauroide", construct: "Constructo", hybrid: "Híbrida" },
-  size: { small: "Pequeña", medium: "Mediana", large: "Grande", colossal: "Colosal" },
+  size: SCALE_LABELS,
   intelligence: { animal: "Animal", sapient: "Sapiente", divine: "Divina" }
 };
 
@@ -98,8 +101,19 @@ const baseCache = new WeakMap();
 
 export function getCreatureConcept(card) {
   if (!card || ["aberration", "essence"].includes(card.category)) return null;
-  if (card.concept) return card.concept;
+  if (card.concept?.depth && card.concept.scale) return card.concept;
   if (baseCache.has(card)) return baseCache.get(card);
+  if (card.concept) {
+    const scale = { ...conceptScale(card, card.concept), form: card.concept.anatomy };
+    const concept = {
+      ...card.concept,
+      size: scale.category,
+      scale,
+      depth: baseIdentity(card, card.concept)
+    };
+    baseCache.set(card, concept);
+    return concept;
+  }
   const defaults = intellect[card.category] ?? intellect.fusion;
   const details = BASE_DETAILS[card.id] ?? {};
   const traitTags = (card.traits ?? []).map(trait => TRAIT_CONCEPTS[trait]);
@@ -117,6 +131,9 @@ export function getCreatureConcept(card) {
       field, Object.freeze(distinct(fields[field] ?? [], limit))
     ]))
   };
+  concept.scale = { ...conceptScale(card, concept), form: concept.anatomy };
+  concept.size = concept.scale.category;
+  concept.depth = baseIdentity(card, concept);
   const frozen = Object.freeze(concept);
   baseCache.set(card, frozen);
   return frozen;

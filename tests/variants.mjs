@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { test } from 'node:test'
 import { CARDS, RECIPES } from '../docs/catalog.js'
 import { CONCEPT_LIMITS, getCreatureConcept, inheritCreatureConcept } from '../docs/creature-concepts.js'
+import { SCALE_LABELS } from '../docs/creature-scale.js'
 import {
   CAPABILITY_FAMILIES, COMBAT_ROLES, COMBAT_STATS, PROFILE_RULES, UTILITY_FAMILIES, getCreatureProfiles,
 } from '../docs/creature-profiles.js'
@@ -66,6 +67,18 @@ function forge(state, a, b, target) {
 function verifyConcept(card, parents = []) {
   const concept = getCreatureConcept(card)
   assert.ok(concept && concept.anatomy && concept.nature && concept.size && concept.intelligence, card.id)
+  const { scale, depth } = concept
+  assert.ok(Object.hasOwn(SCALE_LABELS, scale.category))
+  assert.ok(scale.heightM > 0 || scale.lengthM > 0, card.id)
+  for (const field of ['heightM', 'lengthM', 'massKg', 'wingspanM']) {
+    assert.ok(scale[field] === null || Number.isFinite(scale[field]) && scale[field] > 0, card.id)
+  }
+  assert.ok(scale.payloadKg >= 0 && scale.form && scale.environment && scale.rationale, card.id)
+  assert.ok(depth.expressions.length > 0, card.id)
+  if (depth.contributions) {
+    assert.deepEqual(depth.contributions.map(entry => entry.parentId), card.parents)
+    assert.equal(depth.expressions.length, 2)
+  }
   for (const field of ['tags', 'features', 'knowledge', 'tools', 'materials', 'affinities', 'capabilities', 'utility']) {
     assert.ok(Array.isArray(concept[field]), `${card.id}: ${field}`)
     assert.ok(concept[field].length <= CONCEPT_LIMITS[field], `${card.id}: ${field}`)
@@ -152,6 +165,8 @@ test('El catálogo completo genera variantes estables bajo demanda y perfiles de
         assert.deepEqual(variant.lineage, pair)
         verifyConcept(variant, [first, second])
         assert.ok(variant.identity.brief.silhouette && variant.identity.brief.sources.length === 2)
+        assert.deepEqual(variant.identity.brief.scale, variant.concept.scale)
+        assert.ok(variant.identity.brief.equipmentDimensions && variant.identity.brief.integration)
         const portrait = getPortrait(variant, state)
         if (portrait.kind === 'painted') {
           painted++
@@ -532,4 +547,59 @@ test('Grifo y Esfinge convergen con arte de catálogo e impiden regresar a una e
   assert.equal(getPortrait(result.card, result.state).src, './assets/grifo.webp')
   verifyConcept(result.card, [owl, getCard('esfinge', state)])
   verifyProfiles(result.card)
+})
+
+test('La escala depende del cuerpo y la función, incluida la de los rescatistas', () => {
+  const state = stockedGame()
+  const defaultOwl = inspect(state, 'buho', 'mago')[0]
+  assert.equal(defaultOwl.concept.scale.category, 'small')
+  assert.equal(defaultOwl.concept.scale.heightM, getCreatureConcept(getCard('buho', state)).scale.heightM)
+  for (const parent of ['buho', 'fenix']) {
+    const rescue = inspect(state, parent, 'medica').find(card => card.variantKey === 'air-rescue')
+    assert.equal(rescue.concept.scale.category, 'human')
+    assert.equal(rescue.concept.scale.heightM, 1.7)
+    assert.ok(rescue.concept.scale.wingspanM > rescue.concept.scale.heightM)
+    assert.match(rescue.identity.brief.equipmentDimensions, /anclaje fijo/)
+  }
+  const custodian = inspect(state, 'anubis', 'thor').find(card => card.variantKey === 'divine-manifest')
+  const citadel = inspect(state, 'atenea', 'thor').find(card => card.variantKey === 'divine-manifest')
+  assert.equal(custodian.quality, citadel.quality)
+  assert.equal(custodian.concept.scale.category, 'human')
+  assert.equal(citadel.concept.scale.category, 'colossal')
+  assert.match(citadel.concept.scale.rationale, /comunidad/)
+})
+
+test('Colonia, Foco y forma anfibia integran los dos aportes en un solo cuerpo funcional', () => {
+  const state = stockedGame()
+  const pool = inspect(state, 'sirena', 'pulpo')
+  const colony = pool.find(card => card.variantKey === 'reef-colony')
+  const focus = pool.find(card => card.variantKey === 'elemental')
+  assert.match(colony.description, /red nerviosa.*tejido circulatorio compartido/)
+  assert.match(focus.description, /remolino central recompone todo el cuerpo/)
+  assert.match(focus.identity.brief.sources.find(source => source.id === 'pulpo').trait, /control distribuido/)
+  const [classic, watcher] = inspect(state, 'ajolote', 'zorro')
+  assert.equal(classic.concept.scale.form, 'quadruped')
+  assert.match(classic.description, /oído y olfato.*regenera/)
+  assert.match(watcher.description, /propia circulación/)
+  assert.equal(getPortrait(watcher, state).format, 'svg')
+  assert.equal(getPortrait(classic, state).format, 'svg')
+})
+
+test('Las fichas divinas expresan dominios que se integran y se pueden transmitir en G2', () => {
+  let state = stockedGame()
+  const weaver = inspect(state, 'atenea', 'quetzalcoatl').find(card => card.variantKey === 'divine-manifest')
+  assert.equal(weaver.name, 'Tejedora del Viento')
+  assert.match(weaver.description, /Ehécatl.*estrategia defensiva/)
+  assert.equal(weaver.concept.scale.form, 'serpentine')
+  const tribunal = inspect(state, 'anubis', 'atenea').find(card => card.variantKey === 'divine-manifest')
+  assert.equal(tribunal.name, 'Tribunal de las Dos Puertas')
+  assert.match(tribunal.description, /almas.*pesaje.*previsión/)
+  assert.ok(tribunal.identity.brief.sources.every(source => source.mythology && source.action))
+  state = close(forge(state, 'atenea', 'quetzalcoatl', weaver))
+  const descendants = inspect(state, weaver.id, 'sirena')
+  for (const card of descendants) {
+    const source = card.concept.depth.contributions.find(entry => entry.parentId === weaver.id)
+    assert.ok(weaver.concept.depth.expressions.some(entry => entry.trait === source.trait))
+    verifyConcept(card, [weaver, getCard('sirena', state)])
+  }
 })

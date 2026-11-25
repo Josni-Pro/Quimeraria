@@ -2,6 +2,8 @@ import { CARDS, RARITIES } from "./catalog.js";
 import { acknowledgeReveal, createGame, fuseCards, getCard, inspectFusionVariants, previewFusion } from "./engine.js";
 import { getPortrait, illustrationRecord } from "./illustrations.js";
 import { getCreatureConcept, CONCEPT_LABELS } from "./creature-concepts.js";
+import { EXPRESSION_LABELS } from "./creature-identity.js";
+import { scaleDimensions } from "./creature-scale.js";
 import { CAPABILITY_FAMILIES, COMBAT_ROLES, COMBAT_STATS, getCreatureProfiles, MOBILITY_LABELS, UTILITY_FAMILIES } from "./creature-profiles.js";
 import { buildArtBrief } from "./fusion-art-registry.js";
 import { VARIANT_FAMILIES, VARIANT_QUALITY_LABELS } from "./fusion-variants.js";
@@ -20,7 +22,8 @@ const examples = [
   ["medica", "buho"], ["pulpo", "mamut"], ["atenea", "thor"], ["musico", "pulpo"],
   ["anubis", "esfinge"], ["ajolote", "lobo"], ["velociraptor", "velociraptor"], ["atenea", "atenea"],
   ["buho", "esfinge"], ["atenea", "grifo"],
-  [{ parents: ["lobo", "lobo"], key: "trail-evolution", label: "Lobo de Huella Fría" }, "triceratops"]
+  [{ parents: ["lobo", "lobo"], key: "trail-evolution", label: "Lobo de Huella Fría" }, "triceratops"],
+  ["ajolote", "zorro"], ["atenea", "quetzalcoatl"], ["anubis", "atenea"], ["ajolote", "sirena"]
 ];
 
 const exampleSelect = document.querySelector("#example");
@@ -166,9 +169,13 @@ function variantArticle(card, index) {
     ["Calidad conceptual", quality],
     ["Probabilidad dado el éxito", chance],
     ["Descripción visual", brief.silhouette],
-    ["Anatomía", CONCEPT_LABELS.anatomy[concept.anatomy] ?? concept.anatomy],
+    ["Anatomía", brief.anatomy],
     ["Naturaleza", CONCEPT_LABELS.nature[concept.nature]],
-    ["Tamaño", CONCEPT_LABELS.size[concept.size]],
+    ["Escala corporal", brief.size],
+    ["Dimensiones", scaleDimensions(brief.scale)],
+    ["Referencias de escala", brief.scale.environment],
+    ["Justificación de escala", brief.scale.rationale],
+    ["Escala del equipo", brief.equipmentDimensions],
     ["Accesorios", formatList(identity?.accessories?.length ? identity.accessories : concept.tools)],
     ["Materiales", formatList(identity?.materials?.length ? identity.materials : concept.materials)],
     ["Poderes representativos", formatList(identity?.powers?.length ? identity.powers : concept.affinities)],
@@ -178,7 +185,11 @@ function variantArticle(card, index) {
     ["Estructuras", formatList(brief.structures)],
     ["Poderes visibles", formatList(brief.visiblePowers)],
     ["Función en escena", brief.action],
-    ["Aportes de cada progenitor", formatList(brief.sources.map(source => `${source.name} · ${source.motif}`))],
+    ["Aportes de cada progenitor", formatList(brief.sources.map(source =>
+      [source.name, EXPRESSION_LABELS[source.expression], source.trait ?? source.motif, source.action].filter(Boolean).join(" · ")))],
+    ["Atributos mitológicos", formatList(brief.sources.filter(source => source.mythology).map(source =>
+      `${source.name} · ${source.mythology.tradition} · ${source.mythology.symbols.join(", ")} · ${source.mythology.associatedAnimals.join(", ")}`))],
+    ["Integración", brief.integration],
     ["Distintivo", brief.distinguishingFeatures],
     ...(brief.artDirection ? [["Dirección artística", brief.artDirection]] : []),
     ["Referencia de ilustración", identity?.illustration?.reference],

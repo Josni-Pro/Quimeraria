@@ -40,13 +40,13 @@ export const FUSION_ART_BATCH_03 = [
     id: "variant(fusion(pulpo+sirena);reef-colony)",
     parents: ["pulpo", "sirena"],
     asset: "lote-03/colonia-pulpo-sirena",
-    direction: "Colonia submarina orgánica de dos cuerpos conectados: pulpo robusto con ventosas y sirena de torso cubierto, cola natatoria completa y manos acuáticas. Un corto puente sensorial flexible une ambos mientras el pulpo se aferra a la entrada del refugio y la sirena vigila. Biología y roca, no un elemental transparente ni un núcleo luminoso. Luz marina oblicua y manto de pulpo ocre."
+    direction: "Un torso cantor con dos brazos palmeados continúa en un manto acuático con una cola natatoria y brazos con ventosas que brotan de la cintura. El camuflaje y la circulación atraviesan la misma piel. Mientras dos brazos se anclan al arrecife, la cola guía el cuerpo. Un adulto mediría aproximadamente lo mismo."
   },
   {
     id: "variant(fusion(fenix+medica);air-rescue)",
     parents: ["fenix", "medica"],
     asset: "lote-03/rescatista-altura-fenix",
-    direction: "Fénix antropomórfico de disco facial aviar, plumas ceniza con brasa leve en las puntas, dos brazos hábiles, dos piernas y dos alas dorsales. Usa un torno anclado a una cornisa volcánica y baja un arnés de evacuación hacia una silueta pequeña. Vendas y estuche médico visibles, sin heridas. Humo cálido contra roca negra y luz de amanecer. Diferente del Búho rescatista nevado."
+    direction: "Fénix antropomórfico de 1,70 m, dos brazos, dos piernas y alas plegadas. Asegura el arnés de una persona adulta de pie junto a una puerta de 2 m. El anclaje soporta la carga. Reservar las brasas a plumas que quedan alejadas del herido."
   },
   {
     id: "variant(fusion(alquimista+mamut);transmuted)",

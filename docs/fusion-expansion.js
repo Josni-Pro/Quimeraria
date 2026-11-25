@@ -138,11 +138,11 @@ function adaptedFauna(parents, variant) {
   // Una función necesita dos aportes diferentes: orientación o escucha por
   // un lado y un cuerpo terrestre con capacidad estructural por el otro.
   const carrier = parents.find(({ concept }) => concept.anatomy === "quadruped" &&
-    !concept.profession && ["large", "colossal"].includes(concept.size) && concept.tags.includes("carrier") &&
+    !concept.profession && ["large", "huge", "colossal"].includes(concept.scale.category) && concept.tags.includes("carrier") &&
     (concept.tags.includes("armored") || concept.tags.includes("ancestral")));
   if (!carrier) return null;
   const guide = parents.find(parent => parent !== carrier);
-  if (guide.card.id === carrier.card.id || guide.concept.profession || guide.concept.size === "colossal") return null;
+  if (guide.card.id === carrier.card.id || guide.concept.profession || ["huge", "colossal"].includes(guide.concept.scale.category)) return null;
   const tracking = guide.concept.anatomy === "quadruped" && guide.concept.tags.includes("tracker");
   const listening = guide.concept.anatomy === "avian" && guide.concept.tags.includes("stealth");
   if (!tracking && !listening) return null;

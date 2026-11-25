@@ -36,6 +36,7 @@ const state = {
 const recipeKeys = new Set(RECIPES.map(recipe => [...recipe.parents].sort().join("+")));
 const images = new Map();
 const artKinds = {};
+const biologicalFallbacks = new Set(["fusion(ajolote+zorro)", "fusion(pulpo+sirena)"]);
 let abyssOverrides = 0;
 
 function verifyWebP(relative, cardName) {
@@ -55,8 +56,14 @@ for (const [index, first] of CARDS.entries()) {
     assert.equal(success.outcome, "success");
     const { card } = success;
     const art = getPortrait(card, state, 1, { defer: true });
-    assert.ok(["baked", "painted"].includes(art.kind), card.name);
-    verifyWebP(art.src, card.name);
+    if (biologicalFallbacks.has(card.id)) {
+      assert.equal(art.kind, "generated");
+      assert.equal(art.format, "svg");
+      assert.match(getPortrait(card, state).src, /^data:image\/svg\+xml/);
+    } else {
+      assert.ok(["baked", "painted"].includes(art.kind), card.name);
+      verifyWebP(art.src, card.name);
+    }
     artKinds[art.kind] = (artKinds[art.kind] ?? 0) + 1;
     if (recipeKeys.has([...card.parents].sort().join("+"))) {
       for (const level of [2, 3]) verifyWebP(getPortrait(card, state, level).src, `${card.name} ${level}`);
@@ -74,5 +81,6 @@ for (const [index, first] of CARDS.entries()) {
   }
 }
 
-assert.equal((artKinds.baked ?? 0) + (artKinds.painted ?? 0), CARDS.length * (CARDS.length + 1) / 2);
-console.log(JSON.stringify({ crucesEnDisco: artKinds, aberracionesConPintura: abyssOverrides, webpDistintos: images.size, recursosRelativos: visited.size }));
+assert.equal(artKinds.generated, biologicalFallbacks.size);
+assert.equal(Object.values(artKinds).reduce((total, count) => total + count, 0), CARDS.length * (CARDS.length + 1) / 2);
+console.log(JSON.stringify({ retratosDeCruces: artKinds, aberracionesConPintura: abyssOverrides, webpDistintos: images.size, recursosRelativos: visited.size }));
