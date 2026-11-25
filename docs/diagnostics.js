@@ -177,6 +177,7 @@ function variantArticle(card, index) {
     ["Función en escena", brief.action],
     ["Aportes de cada progenitor", formatList(brief.sources.map(source => `${source.name} · ${source.motif}`))],
     ["Distintivo", brief.distinguishingFeatures],
+    ...(brief.artDirection ? [["Dirección artística", brief.artDirection]] : []),
     ["Referencia de ilustración", identity?.illustration?.reference],
     ["Estado de ilustración", status]
   ];

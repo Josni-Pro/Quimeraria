@@ -45,3 +45,7 @@ dt { color: var(--muted); font-size: .83rem; }
 dd { margin: 0 0 .55rem; overflow-wrap: anywhere; }
 .variant__refs { display: flex; gap: .75rem; flex-wrap: wrap; margin-top: .7rem; font-size: .85rem; }
 @media (max-width: 44rem) { .layout { grid-template-columns: 1fr; } }
+.art-batch { padding-bottom: 3rem; }
+.art-batch .variant__art { aspect-ratio: 1; height: auto; }
+.art-batch .variant__name { margin-bottom: .4rem; }
+.art-batch code { overflow-wrap: anywhere; }

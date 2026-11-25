@@ -1,10 +1,12 @@
 import { RECIPES } from "./catalog.js";
 import { CONCEPT_LABELS, getCreatureConcept } from "./creature-concepts.js";
+import { FUSION_ART_BATCH_01 } from "./fusion-art-batch-01.js";
 import { BAKED_FUSIONS } from "./fusion-bakes.js";
 import { fusionArtKey, PAINTED_FUSIONS, PORTRAIT_OVERRIDES } from "./fusion-paintings.js";
 import { PORTRAIT_PROFILES } from "./portrait-profiles.js";
 
 const recipes = new Map(RECIPES.map(recipe => [fusionArtKey(recipe.parents), recipe]));
+const batch = new Map(FUSION_ART_BATCH_01.map(entry => [entry.id, entry]));
 const dedicated = new Map([
   ["variant(fusion(alquimista+mamut);colossus)", ["piloto/coloso-alquimico"]],
   ["variant(fusion(zorro+zorro);kitsune)", ["piloto/kitsune"]]
@@ -14,6 +16,8 @@ export function resolvePortraitAsset(card, level = 1) {
   if (!["fusion", "aberration"].includes(card.category)) {
     return card.art ? { key: card.art, kind: "painted" } : null;
   }
+  const painting = batch.get(card.id);
+  if (painting) return { key: painting.asset, kind: "painted" };
   const override = dedicated.get(card.id) ?? PORTRAIT_OVERRIDES.get(card.id);
   if (override?.length) return { key: override[level - 1] ?? override.at(-1), kind: "painted" };
   if (card.category === "aberration") return null;
@@ -68,6 +72,7 @@ export function buildArtBrief(card, parents) {
     .find(source => !source.profession && source.anatomy !== "hybrid")?.anatomy ?? concept.anatomy : concept.anatomy;
   const anatomy = bodyPlans[body] ?? bodyPlans.hybrid;
   const features = concept.features.length ? concept.features : sources.map(source => source.motif);
+  const artDirection = batch.get(card.id)?.direction;
   return {
     silhouette: `${anatomy}. Rasgos reconocibles: ${/[.!?]$/.test(contrast) ? contrast : contrast + "."}`,
     anatomy: CONCEPT_LABELS.anatomy[concept.anatomy] ?? concept.anatomy,
@@ -82,6 +87,7 @@ export function buildArtBrief(card, parents) {
     action: card.description.startsWith("Quimera que combina los rasgos")
       ? `Mostrar ${features.slice(0, 2).join(" y ")} en una postura funcional.` : card.description,
     distinguishingFeatures: contrast,
+    ...(artDirection ? { artDirection } : {}),
     sources
   };
 }
