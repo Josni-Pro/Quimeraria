@@ -1,12 +1,12 @@
-import { SKILLS } from "./combat/skills.js";
+import { applyPlaybackClip, playbackPlan } from "./training-playback.js";
 
 const palette = {
   strike: "#f2c58f", charge: "#ffbc77", slash: "#f5dac4", arrow: "#fadc9e", heavy: "#ffb782",
   arcane: "#d5b3ff", fire: "#ff9e54", water: "#8de4ef", wind: "#a5ecb7", lightning: "#b6d6ff",
-  earth: "#e3ae79", divine: "#ffe79e", alchemy: "#d4e88c", heal: "#a7efbc", regen: "#b9e99b",
+  earth: "#e3ae79", divine: "#ffe79e", alchemy: "#d4e88c", poison: "#cb97f8", bite: "#ffb49d", nature: "#d5ee91", heal: "#a7efbc", regen: "#b9e99b",
   guard: "#8fcce2", shield: "#9cc9ff", cleanse: "#eef6be", buff: "#e3db94", move: "#b5d8c6"
 };
-const physical = new Set(["strike", "charge", "slash", "heavy", "arrow"]);
+const physical = new Set(["strike", "charge", "slash", "heavy", "arrow", "bite"]);
 const reaching = new Set(["arrow", "lightning", "water", "wind", "arcane", "guard", "move", "fire", "alchemy"]);
 const recovery = new Set(["heal", "regen", "cleanse"]);
 const protection = new Set(["guard", "shield"]);
@@ -18,8 +18,7 @@ function card(scene, id) {
   return id ? scene.querySelector(`[data-unit="${CSS.escape(id)}"]`) : null;
 }
 
-function point(scene, element) {
-  const stage = scene.getBoundingClientRect();
+function point(stage, element) {
   const at = element?.getBoundingClientRect();
   return at ? { x: at.left + at.width / 2 - stage.left, y: at.top + at.height * .43 - stage.top }
     : { x: stage.width / 2, y: stage.height * .5 };
@@ -82,10 +81,10 @@ function drawPath(ctx, style, from, to, t) {
   }
 }
 
-function drawImpact(ctx, style, to, p, quality) {
+function drawImpact(ctx, style, to, p, quality, scale = 1) {
   const { x, y } = to;
   const fade = 1 - p;
-  const radius = 9 + p * 36;
+  const radius = (8 + p * 38) * scale;
   ctx.globalAlpha = fade * .92;
   if (recovery.has(style)) {
     for (let i = 0; i < 5; i++) {
@@ -114,6 +113,17 @@ function drawImpact(ctx, style, to, p, quality) {
     stroke(ctx,[[x-r*.4,y],[x+r*.4,y]],1.5);
   } else if (style === "alchemy") {
     for (const [dx,dy] of [[-16,-8],[12,-13],[7,12],[-12,15]]) ellipse(ctx,x+dx,y+dy-p*12,radius*.23,radius*.28,1.8);
+  } else if (style === "poison" || style === "nature") {
+    for (let i = 0; i < 5; i++) {
+      const angle = i * Math.PI * .4;
+      const dx = Math.cos(angle) * radius * .7, dy = Math.sin(angle) * radius * .55;
+      curve(ctx,x + dx * .3,y - p * 10,x + dx,y + dy - p * 14,radius * .28,style === "poison" ? 1.5 : 3);
+    }
+  } else if (style === "bite") {
+    for (const sign of [-1, 1]) {
+      const height = (24 - p * 13) * sign * scale;
+      stroke(ctx,[[x-radius*.68,y+height],[x-radius*.32,y+height*.42],[x,y+height],[x+radius*.32,y+height*.42],[x+radius*.68,y+height]],2.65);
+    }
   } else if (style === "earth") {
     for (let i = -2; i <= 2; i++) stroke(ctx,[[x+i*9,y+20],[x+i*13,y+10],[x+i*15,y-2-p*17]],2.5);
   } else if (style === "slash" || style === "strike") {
@@ -126,13 +136,13 @@ function drawImpact(ctx, style, to, p, quality) {
         [x+Math.cos(angle)*radius,y+Math.sin(angle)*radius]],2);
     }
   }
-  if (quality === "full") particles(ctx,x,y,p,style === "fire" ? 22 : 13, recovery.has(style) ? 36 : 11);
+  if (quality === "full") particles(ctx,x,y,p,style === "fire" ? 15 : 9, recovery.has(style) ? 36 : 11);
 }
 
-function float(scene, event, duration) {
+function float(scene, stage, event, duration, motions, quality) {
   const target = card(scene, event.target);
   if (!target) return;
-  const location = point(scene,target);
+  const location = point(stage,target);
   const type = event.type;
   const number = ["damage", "heal", "shield"].includes(type);
   if (!number && !descriptors[type]) return;
@@ -143,40 +153,25 @@ function float(scene, event, duration) {
   node.style.left = `${location.x}px`;
   node.style.top = `${location.y}px`;
   scene.querySelector(".scene-floats").append(node);
-  const animation = node.animate([
+  const animation = node.animate(quality === "minimal" ? [
+    { opacity: 1 }, { opacity: 1, offset: .72 }, { opacity: 0 }
+  ] : [
     { opacity: 0, transform: "translate(-50%, 4px) scale(.88)" },
     { opacity: 1, transform: "translate(-50%, -13px) scale(1.07)", offset: .2 },
     { opacity: 1, transform: "translate(-50%, -26px)", offset: .65 },
     { opacity: 0, transform: "translate(-50%, -43px)" }
   ], { duration, easing: "ease-out" });
-  animation.finished.then(() => node.remove(), () => node.remove());
+  motions.add(animation);
+  const clear = () => { node.remove(); motions.delete(animation); };
+  animation.finished.then(clear,clear);
 }
 
-function eventGroups(events) {
-  const groups = [];
-  let active = null;
-  for (const event of events) {
-    if (event.type === "action") {
-      active = { action: event, changes: [] };
-      groups.push(active);
-    } else if (active && ["damage","heal","shield","status","cleanse","down","intercept","move"].includes(event.type) && !event.periodic) {
-      active.changes.push(event);
-    } else {
-      active = null;
-      const previous = groups.at(-1);
-      if (event.type === "move" && previous?.changes.at(-1)?.swapWith === event.actor && !previous.action) {
-        previous.changes.push(event);
-      } else if (event.unit || event.type === "intercept") groups.push({ action: null, changes: [event] });
-    }
-  }
-  return groups;
-}
-
-function supplemental(event) {
+function secondaryVisual(event) {
   if (event.type === "heal") return "regen";
-  if (event.type === "damage") return event.kind === "burn" ? "fire" : "alchemy";
+  if (event.type === "damage") return event.kind === "burn" ? "fire" : event.kind === "poison" ? "poison" : "strike";
+  if (event.type === "shield" || event.effect === "guard") return "shield";
+  if (event.type === "skip" || event.effect === "stun") return "lightning";
   if (event.type === "move") return "move";
-  if (event.type === "status" && event.effect === "guard") return "shield";
   return null;
 }
 
@@ -195,112 +190,198 @@ function floatingChanges(changes) {
   return shown.values();
 }
 
-export async function playEvents(scene, events, options, apply) {
+function visuals(scene, stage, clip) {
+  if (clip.skill) {
+    const actor = card(scene,clip.action.actor);
+    const targets = clip.action.targets.map(id => card(scene,id)).filter(Boolean);
+    const from = point(stage,actor);
+    const to = targets.map(target => point(stage,target));
+    const visual = clip.changes.some(event => event.effect === "poison") ? "bite" :
+      clip.skill.id === "immobilize" ? "nature" : clip.skill.visual;
+    return { actor, targets, from, to: to.length ? to : [from], visual };
+  }
+  const byTarget = new Map();
+  for (const event of clip.changes) {
+    const visual = secondaryVisual(event);
+    const target = card(scene,event.target ?? event.actor);
+    if (visual && target) byTarget.set(target,{ visual, to: point(stage,target) });
+  }
+  return { visuals: [...byTarget.values()].slice(0,6), targets: [] };
+}
+
+function animateBody(actor, track, quality, duration) {
+  if (!actor || quality !== "full" || track.targets[0] === actor) return null;
+  const first = track.to[0];
+  const from = track.from;
+  const length = Math.hypot(first.x - from.x, first.y - from.y) || 1;
+  const force = { strike: 9, slash: 13, bite: 11, heavy: 14, charge: 18, arrow: 4 }[track.visual] ?? 5;
+  const x = (first.x - from.x) / length * force;
+  const y = (first.y - from.y) / length * force;
+  const motion = actor.animate([
+    { transform:"translate(0,0)" },
+    { transform:`translate(${-x*.31}px,${-y*.31}px) scale(.985)`, offset:.26, easing:"cubic-bezier(.65,.03,.32,1)" },
+    { transform:`translate(${x}px,${y}px) scale(1.025)`, offset:.49, easing:"cubic-bezier(.15,.52,.22,1)" },
+    { transform:"translate(0,0)" }
+  ], { duration });
+  motion.pause();
+  return motion;
+}
+
+function drawClip(ctx, clip, current, quality) {
+  const { track, start, end, impact, skill } = clip;
+  if (!track) return;
+  const local = (current - start) / (end - start || 1);
+  const landed = current >= impact;
+  const after = (current - impact) / (end - impact || 1);
+  ctx.lineCap = "round";
+  if (!skill) {
+    if (landed) for (const { visual, to } of track.visuals) {
+      ctx.strokeStyle = ctx.fillStyle = palette[visual];
+      ctx.shadowBlur = 0;
+      drawImpact(ctx,visual,to,after,"reduced",.74);
+    }
+    return;
+  }
+  const { visual, from, to } = track;
+  ctx.strokeStyle = ctx.fillStyle = palette[visual];
+  ctx.shadowColor = palette[visual];
+  ctx.shadowBlur = quality === "full" ? 12 : 3;
+  if (!landed && local > .1 && reaching.has(visual)) {
+    ctx.globalAlpha = .91;
+    for (const target of to) drawPath(ctx,visual,from,target,ease(Math.min(1,(local-.10)/.38)));
+  }
+  if (!landed && clip.action.special && quality !== "minimal") {
+    ctx.globalAlpha = Math.min(.48,local*.9);
+    ellipse(ctx,from.x,from.y,13+local*35,7+local*11,1.4,local*4,Math.PI*1.85+local);
+  }
+  if (landed) for (const target of to) drawImpact(ctx,visual,target,Math.min(1,after),quality,clip.action.special ? 1.23 : 1);
+  if (landed && !protection.has(visual) && clip.shields.length) {
+    ctx.strokeStyle = palette.shield;
+    for (const target of clip.shields) drawImpact(ctx,"shield",target,after,"reduced",.86);
+  }
+  if (landed && after < .45) for (const event of clip.intercepts) {
+    ctx.strokeStyle = palette.guard;
+    ctx.globalAlpha = (1 - after / .45) * .87;
+    drawPath(ctx,"guard",event.from,event.to,1);
+  }
+}
+
+export function playEvents(scene, events, options, apply) {
   const canvas = scene.querySelector("canvas");
   const ctx = canvas.getContext("2d");
   const caption = scene.querySelector(".scene-caption");
+  const captionActor = caption.querySelector("span");
+  const captionSkill = caption.querySelector("strong");
   const signal = options.signal;
-  for (const { action, changes } of eventGroups(events)) {
-    if (signal.aborted) break;
-    const velocity = options.speed();
-    const quality = options.quality();
-    const skill = action ? SKILLS[action.skill] : null;
-    const visual = skill?.visual ?? supplemental(changes[0]);
-    if (quality === "minimal" || !visual) {
-      apply(action ? [action, ...changes] : changes);
-      continue;
-    }
-    const actor = card(scene, action?.actor ?? changes[0].actor);
-    const targets = action?.targets ?? [changes[0].target ?? changes[0].actor];
-    const targetNodes = targets.map(id => card(scene,id)).filter(Boolean);
-    const from = point(scene,actor);
-    const to = targetNodes.map(element => point(scene,element));
-    if (!to.length) to.push(from);
-    const duration = (action ? action.special ? 730 : 510 : 300) / velocity * (quality === "reduced" ? .76 : 1);
-    const size = scene.getBoundingClientRect();
-    const scale = Math.min(window.devicePixelRatio || 1, 1.7);
-    if (canvas.width !== Math.round(size.width * scale) || canvas.height !== Math.round(size.height * scale)) {
-      canvas.width = Math.round(size.width * scale);
-      canvas.height = Math.round(size.height * scale);
-    }
-    ctx.setTransform(scale,0,0,scale,0,0);
-    scene.dataset.vfx = visual;
-    if (action) {
-      caption.textContent = skill.name;
-      caption.hidden = false;
-      caption.classList.toggle("special", action.special);
-    }
-    actor?.classList.add("active");
-    if (quality === "full" && actor && targetNodes[0] !== actor) {
-      const range = physical.has(visual) && visual !== "arrow" ? 22 : 6;
-      const length = Math.hypot(to[0].x - from.x, to[0].y - from.y) || 1;
-      const x = (to[0].x - from.x) / length * range;
-      const y = (to[0].y - from.y) / length * range;
-      actor.animate([
-        { transform: "translate(0,0)" }, { transform: `translate(${-x*.22}px,${-y*.22}px) scale(.99)`, offset: .19 },
-        { transform: `translate(${x}px,${y}px) scale(1.04)`, offset: .43 }, { transform: "translate(0,0)" }
-      ], { duration, easing: "cubic-bezier(.23,.58,.28,1)" });
+  const clips = playbackPlan(events, options.quality());
+  const motions = new Set();
+  const active = [];
+  let starting = 0, landing = 0, frame, previous, current = 0, visible = true;
+  let stage = scene.getBoundingClientRect();
+  const size = new ResizeObserver(() => { stage = scene.getBoundingClientRect(); });
+  const visibility = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; },{ rootMargin:"30px" });
+  visibility.observe(scene);
+  size.observe(scene);
+  const cleanup = clip => {
+    clip.motion?.cancel();
+    clip.track?.actor?.classList.remove("active");
+    for (const target of clip.track?.targets ?? []) target.classList.remove("hitting");
+  };
+  return new Promise(resolve => {
+    function stop() {
+      cancelAnimationFrame(frame);
+      visibility.disconnect();
+      size.disconnect();
+      signal.removeEventListener("abort", stop);
+      active.forEach(cleanup);
+      for (const motion of motions) motion.cancel();
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      caption.hidden = true;
+      delete scene.dataset.vfx;
+      delete scene.dataset.impact;
+      delete scene.dataset.impactSkill;
+      delete scene.dataset.impactEvents;
+      delete scene.dataset.special;
+      resolve();
     }
 
-    await new Promise(resolve => {
-      let frame;
-      let first;
-      let impacted = false;
-      function stop() {
-        cancelAnimationFrame(frame);
-        signal.removeEventListener("abort", stop);
-        resolve();
+    function tick(now) {
+      if (signal.aborted) { stop(); return; }
+      if (options.skip()) {
+        for (; landing < clips.length; landing++) applyPlaybackClip(clips[landing],apply);
+        stop();
+        return;
       }
-      function draw(now) {
-        first ??= now;
-        const t = Math.min(1,(now-first)/duration);
-        const color = palette[visual];
-        ctx.clearRect(0,0,size.width,size.height);
-        ctx.strokeStyle = ctx.fillStyle = color;
-        ctx.shadowColor = color;
-        ctx.shadowBlur = quality === "full" ? 10 : 3;
-        ctx.lineCap = "round";
-        if (t > .15 && t < .65 && reaching.has(visual)) {
-          ctx.globalAlpha = Math.min(.92,(t-.15)*4);
-          for (const destination of to) drawPath(ctx,visual,from,destination,ease(Math.min(1,(t-.15)/.33)));
+      // Si el navegador suspendió rAF, se conserva el orden y se evita un salto de varias acciones.
+      current += Math.min(54,now - (previous ?? now)) * options.speed();
+      previous = now;
+      const quality = options.quality();
+      for (; starting < clips.length && clips[starting].start <= current; starting++) {
+        const clip = clips[starting];
+        clip.track = visible ? visuals(scene,stage,clip) : null;
+        clip.intercepts = [];
+        clip.shields = [];
+        if (!clip.end && !clip.skill) continue;
+        active.push(clip);
+        if (!clip.skill || !clip.track) continue;
+        clip.track.actor?.classList.add("active");
+        if (clip.track.actor) captionActor.textContent = clip.track.actor.dataset.name;
+        captionSkill.textContent = clip.skill.name;
+        caption.hidden = false;
+        caption.classList.toggle("special",clip.action.special);
+        scene.dataset.vfx = clip.track.visual;
+        scene.dataset.special = String(clip.action.special);
+        clip.motion = animateBody(clip.track.actor,clip.track,quality,clip.end-clip.start);
+      }
+      for (; landing < clips.length && clips[landing].impact <= current; landing++) {
+        const clip = clips[landing];
+        applyPlaybackClip(clip,apply);
+        if (!visible || !clip.track) continue;
+        if (clip.skill) {
+          scene.dataset.impact = clip.track.visual;
+          scene.dataset.impactSkill = clip.skill.id;
+          scene.dataset.impactEvents = [...new Set(clip.changes.map(event => event.type))].join(" ");
+          options.sound?.(clip.skill.intent === "guard" ? "shield" : clip.track.visual);
         }
-        if (t >= .43) {
-          if (!impacted) {
-            impacted = true;
-            scene.dataset.impact = visual;
-            apply(action ? [action, ...changes] : changes);
-            for (const event of changes.filter(item => item.type === "intercept").slice(0,1)) {
-              const protector = card(scene,event.actor);
-              const victim = card(scene,event.target);
-              if (protector && victim) {
-                ctx.globalAlpha = .88; ctx.strokeStyle = palette.guard;
-                drawPath(ctx,"guard",point(scene,protector),point(scene,victim),1);
-                protector.animate([{ boxShadow:"0 0 22px #8fcce2" }, { boxShadow:"0 0 2px transparent" }],
-                  { duration: duration*.66, easing:"ease-out" });
-              }
-            }
-            for (const event of floatingChanges(changes)) float(scene,event,duration*.72);
-            for (const target of targetNodes) {
-              if (physical.has(visual) || skill?.intent === "control" || skill?.intent === "offense") {
-                target.classList.add("hitting");
-                if (quality === "full") target.animate([{ filter:"brightness(1.35)" },{ filter:"brightness(.87)" },{ filter:"brightness(1)" }],
-                  { duration:duration*.46, easing:"ease-out" });
-              }
+        for (const event of floatingChanges(clip.changes)) {
+          float(scene,stage,event,Math.max(165,(clip.end-clip.impact)*1.46/options.speed()),motions,quality);
+        }
+        for (const event of clip.changes) {
+          const target = card(scene,event.target);
+          if (event.type === "damage" && target && !target.classList.contains("hitting")) {
+            target.classList.add("hitting");
+            if (quality === "full") {
+              const direction = target.closest(".player") ? -3 : 3;
+              const rebound = target.querySelector(".unit-fig").animate([
+                { transform:"translateX(0)", filter:"brightness(1.28)" },
+                { transform:`translateX(${direction}px)`, filter:"brightness(1.06)", offset:.24 },
+                { transform:"translateX(0)", filter:"brightness(1)" }
+              ], { duration:139/options.speed(), easing:"ease-out" });
+              motions.add(rebound);
+              rebound.finished.then(() => motions.delete(rebound),() => motions.delete(rebound));
             }
           }
-          for (const destination of to) drawImpact(ctx,visual,destination,(t-.43)/.57,quality);
+          if (event.type === "shield" && target) clip.shields.push(point(stage,target));
+          if (event.type === "intercept" && target && clip.intercepts.length < 2) {
+            clip.intercepts.push({ from:point(stage,card(scene,event.actor)), to:point(stage,target) });
+          }
         }
-        if (t >= 1 || signal.aborted) stop();
-        else frame = requestAnimationFrame(draw);
       }
-      signal.addEventListener("abort",stop,{ once:true });
-      frame = requestAnimationFrame(draw);
-    });
-    actor?.classList.remove("active");
-    for (const element of targetNodes) element.classList.remove("hitting");
-    ctx.clearRect(0,0,size.width,size.height);
-    caption.hidden = true;
-    delete scene.dataset.vfx;
-    delete scene.dataset.impact;
-  }
+      while (active.length && active[0].end <= current) cleanup(active.shift());
+      if (visible && quality !== "minimal") {
+        const scale = Math.min(devicePixelRatio || 1,quality === "full" ? 1.55 : 1.25);
+        const width = Math.round(stage.width*scale), height = Math.round(stage.height*scale);
+        if (canvas.width !== width || canvas.height !== height) { canvas.width = width; canvas.height = height; }
+        ctx.setTransform(scale,0,0,scale,0,0);
+        ctx.clearRect(0,0,stage.width,stage.height);
+        for (const clip of active) drawClip(ctx,clip,current,quality);
+      } else if (canvas.width > 1) { canvas.width = 1; }
+      for (const clip of active) if (clip.motion) clip.motion.currentTime = current-clip.start;
+      if (landing >= clips.length && !active.length) stop();
+      else frame = requestAnimationFrame(tick);
+    }
+    signal.addEventListener("abort",stop,{ once:true });
+    if (signal.aborted) stop();
+    else frame = requestAnimationFrame(tick);
+  });
 }

@@ -122,7 +122,8 @@ function chooseAction(state, actor, difficulty) {
       control: 19 + Number(!hasHarmful(target)) * 8,
       heal: 18 + (1 - fraction(target)) * 38,
       cleanse: 19 + Number(hasHarmful(target)) * 23,
-      guard: (target.shield > target.maxHp * .16 ? 3 : 21) + Number(target.role === "healer") * 8,
+      guard: target.shield > target.maxHp * .16 ? -3 : 20 + Number(target.role === "healer") * 6 +
+        Number(fraction(target) < .55) * 4,
       buff: skill.effects.some(effect => target.effects[effect.id]) ? 5 : 24
     }[skill.intent];
     const honorsOrder = requested && (!explicit.target || target.id === explicit.target);

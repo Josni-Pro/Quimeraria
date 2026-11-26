@@ -66,7 +66,7 @@ La tasa de Forja se configura por separado para G1, G2, G3 y G4. Alquimia garant
 
 ## Campo de entrenamiento
 
-Abre **Entrenamiento** en la navegación o `/training.html` en el servidor local. Forma una escuadra de hasta seis criaturas con un máximo de 12 puntos, elige una patrulla y dirige el combate con dos puntos de mando por ronda. La práctica usa copias del inventario y resuelve vitalidad, estados y recargas en memoria. [Reglas, arquitectura y verificación](COMBATE-FASE-01.md)
+Abre **Entrenamiento** en la navegación o `/training.html` en el servidor local. Forma una escuadra de hasta seis criaturas con un máximo de 12 puntos, elige una patrulla y dirige el combate con dos puntos de mando por ronda. La práctica usa copias del inventario y resuelve vitalidad, estados y recargas en memoria. [Reglas y arquitectura](COMBATE-FASE-01.md) · [Ritmo, controles y validación](COMBATE-FASE-02.md)
 
 ## Sobres y expediciones
 
@@ -143,6 +143,7 @@ node --test tests/variants.mjs
 node --test tests/art-batches.mjs
 node --test tests/aberrations.mjs
 node --test tests/combat.mjs
+node --test tests/playback.mjs
 ```
 
 Las pruebas cubren probabilidades y progresión, ilustraciones y linajes, migración de partidas, consumo de recursos y recuperación de una revelación pendiente. Tras ajustar los costos, revisa la distribución de rarezas, la garantía de los sobres y la recuperación de moneda.
