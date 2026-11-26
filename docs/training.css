@@ -305,3 +305,6 @@ button:disabled { cursor: default; opacity: .49; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {scroll-behavior:auto !important;transition-duration: .02ms !important;}
 }
+@media (max-width:430px) {
+  .camp-nav nav {gap:8px;font-size:10px;}
+}

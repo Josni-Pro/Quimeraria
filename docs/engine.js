@@ -10,8 +10,10 @@ import { aberrationId } from "./aberration-art-pilot.js";
 import { getLegacyPackOdds, getShopPackOdds, rollLegacyPack, sample } from "./pack-rules.js";
 import { historicalPack, packDefinition } from "./pack-config.js";
 import { restorePackData } from "./pack-transactions.js";
+import { restoreArena } from "./arena-records.js";
+import { COMBAT_STATS } from "./creature-profiles.js";
 
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 6;
 export const MAX_GENERATION = ALCHEMY.maxGeneration;
 
 const STAT_KEYS = Object.keys(STATS);
@@ -672,6 +674,12 @@ function restoreFusions(source) {
       traits: savedTraits.length > 0 ? savedTraits : fallback.traits,
       ability: savedAbility || snapshot.ability === null ? snapshot.ability : fallback.ability
     };
+    const historical = snapshot.historicalCombat ?? snapshot.combat;
+    if (historical && Object.keys(COMBAT_STATS).every(key => Number.isSafeInteger(historical.stats?.[key]) &&
+        historical.stats[key] > 0 && historical.stats[key] <= 420)) {
+      restored.historicalCombat = { version: natural(historical.version) || 1,
+        stats: Object.fromEntries(Object.keys(COMBAT_STATS).map(key => [key,historical.stats[key]])) };
+    }
     if (variant) {
       fusions[id] = { ...restored, ...variant };
     } else {
@@ -827,7 +835,8 @@ function restoreHistory(source, state, limit = MAX_HISTORY) {
     if (entry.kind === "pack" && packDefinition(entry.packId) && Array.isArray(entry.cards)) {
       history.push({ kind: entry.kind, packId: entry.packId, cards: entry.cards.filter(id => BASE_CARDS.has(id)),
         paid: natural(entry.paid), pityTriggered: Boolean(entry.pityTriggered),
-        ...(natural(entry.quantity) > 0 && { quantity: natural(entry.quantity) }) });
+        ...(natural(entry.quantity) > 0 && { quantity: natural(entry.quantity) }),
+        ...(isRecord(entry.byType) && { byType:cleanCounts(entry.byType,id=>Boolean(packDefinition(id))) }) });
     }
     if (entry.kind === "expedition" && MISSION_BY_ID.has(entry.missionId)) {
       history.push({ kind: entry.kind, missionId: entry.missionId, success: Boolean(entry.success),
@@ -848,7 +857,7 @@ export function loadGame(serialized) {
   } catch {
     return createGame();
   }
-  if (!isRecord(raw) || ![1, 2, 3, 4, SAVE_VERSION].includes(raw.version) || !isRecord(raw.inventory)) return createGame();
+  if (!isRecord(raw) || ![1, 2, 3, 4, 5, SAVE_VERSION].includes(raw.version) || !isRecord(raw.inventory)) return createGame();
 
   const fusions = restoreFusions(raw.fusions);
   const aberrations = restoreAberrations(raw.aberrations, { fusions });
@@ -881,7 +890,7 @@ export function loadGame(serialized) {
   const state = {
     version: SAVE_VERSION, coins: natural(raw.coins), inventory, fusionCopies, aberrationCopies, ...cards, essences, portraits, pity, stats,
     discovered: unique([...knownIds, ...Object.keys(inventory), ...Object.keys(fusions), ...Object.keys(aberrations)]),
-    history: [], alchemyHistory: [], pendingReveal: null, ...restorePackData(raw, inventory),
+    history: [], alchemyHistory: [], pendingReveal: null, ...restorePackData(raw, inventory), ...restoreArena(raw.arena),
     settings: { ...settings, animation: ANIMATION_MODES.includes(settings.animation) ? settings.animation : "full" }
   };
   state.history = restoreHistory(raw.history, state);

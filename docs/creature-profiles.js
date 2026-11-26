@@ -1,4 +1,5 @@
 import { getCreatureConcept } from "./creature-concepts.js";
+import { profileAdjustments } from "./profile-weights.js";
 
 export const COMBAT_STATS = Object.freeze({
   vitality: "Vitalidad", strength: "Fuerza", defense: "Defensa", agility: "Agilidad",
@@ -60,23 +61,18 @@ export const COMBAT_ROLES = Object.freeze({
   logistics: role("Logístico", [8, 4, 6, 5, 4, 6], ["protect", "shield", "empower", "regen"], ["logistics", "supply"])
 });
 
+export const PROFILE_VERSION = 2;
+
 export const PROFILE_RULES = Object.freeze({
   baseBudgets: Object.freeze([200, 250, 300, 350, 400]),
   rarityBudgets: Object.freeze([0, 5, 10, 15, 20]),
   deploymentByGeneration: Object.freeze([1, 2, 3, 4, 5]),
   secondaryWeight: 0.25,
   minStatShare: 0.05,
-  maxStatShare: 0.31,
+  maxStatShare: 0.35,
   maxCombatCapabilities: 4,
   maxUtilityCapabilities: 4
 });
-
-const STAT_BONUS_BY_NATURE = {
-  artificial: { defense: 2 },
-  divine: { resistance: 2 },
-  elemental: { magic: 2 },
-  spiritual: { resistance: 2 }
-};
 
 function clampIndex(value, array) {
   return Number.isInteger(value) ? Math.max(0, Math.min(value, array.length - 1)) : 0;
@@ -89,11 +85,12 @@ function splitBudget(budget, weights) {
   const ideal = Object.fromEntries(STAT_IDS.map(stat => [stat, budget * weights[stat] / total]));
   const stats = Object.fromEntries(STAT_IDS.map(stat => [stat, Math.max(min, Math.min(max, Math.floor(ideal[stat])))]));
   const assigned = STAT_IDS.reduce((sum, stat) => sum + stats[stat], 0);
-  for (let remaining = budget - assigned; remaining > 0; remaining -= 1) {
-    const available = STAT_IDS.filter(stat => stats[stat] < max);
-    const best = available.reduce((first, second) =>
-      ideal[second] - stats[second] > ideal[first] - stats[first] ? second : first);
-    stats[best] += 1;
+  const direction = Math.sign(budget-assigned);
+  for (let remaining = budget-assigned; remaining !== 0; remaining -= direction) {
+    const available = STAT_IDS.filter(stat => direction > 0 ? stats[stat] < max : stats[stat] > min);
+    const best = available.reduce((first,second) =>
+      direction * (ideal[second]-stats[second]) > direction * (ideal[first]-stats[first]) ? second : first);
+    stats[best] += direction;
   }
   return stats;
 }
@@ -141,7 +138,6 @@ const profileCache = new WeakMap();
 export function getCreatureProfiles(card) {
   const concept = getCreatureConcept(card);
   if (!concept) return null;
-  if (card.combat && card.utility) return { combat: card.combat, utility: card.utility };
   if (profileCache.has(card)) return profileCache.get(card);
 
   const role = getRole(card, concept);
@@ -152,17 +148,15 @@ export function getCreatureProfiles(card) {
   const generation = clampIndex(card.generation, PROFILE_RULES.baseBudgets);
   const rarity = clampIndex(card.rarity, PROFILE_RULES.rarityBudgets);
   const powerBudget = PROFILE_RULES.baseBudgets[generation] + PROFILE_RULES.rarityBudgets[rarity];
-  const weights = Object.fromEntries(STAT_IDS.map(stat => [
-    stat,
-    primary.weights[stat] + (secondary?.weights[stat] ?? 0) * PROFILE_RULES.secondaryWeight +
-      (STAT_BONUS_BY_NATURE[concept.nature]?.[stat] ?? 0)
-  ]));
+  const adjustments = profileAdjustments(card,concept);
+  const weights = Object.fromEntries(STAT_IDS.map((stat,i) => [stat, Math.max(.8,
+    primary.weights[stat] + (secondary?.weights[stat] ?? 0) * PROFILE_RULES.secondaryWeight + adjustments[i])]));
   const capabilities = capabilitySelection(concept, primary, secondary);
   const stats = splitBudget(powerBudget, weights);
   const byPoints = [...STAT_IDS].sort((a, b) => stats[b] - stats[a]);
   const mobility = getMobility(concept, role);
   const combat = Object.freeze({
-    role, secondaryRole,
+    version: PROFILE_VERSION, role, secondaryRole,
     powerBudget,
     deploymentCost: PROFILE_RULES.deploymentByGeneration[generation],
     stats: Object.freeze(stats),

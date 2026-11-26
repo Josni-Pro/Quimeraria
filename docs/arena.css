@@ -1,0 +1,69 @@
+body[data-mode="arena"] {background:radial-gradient(ellipse at 54% -20%,#4a342b,transparent 54%),#121619;}
+[data-terrain="bronce"] {--arena-cover:url("./assets/arena/bronce.webp");}
+[data-terrain="arcana"] {--arena-cover:url("./assets/arena/arcana.webp");}
+[data-terrain="campeones"] {--arena-cover:url("./assets/arena/campeones.webp");}
+body[data-mode="arena"] :is(.scene,.results)[data-terrain] {--scene:var(--arena-cover);}
+.arena-hero {position:relative;display:flex;justify-content:space-between;align-items:end;gap:1.2rem;margin-block:1.35rem .8rem;
+  padding:clamp(1.35rem,5vw,4.2rem);min-height:285px;border:1px solid #ae9163;border-radius:.65rem;
+  background:linear-gradient(90deg,#16151af7 3%,#211d23ad 52%,#15171975),var(--arena-cover) center 48%/cover;}
+.arena-hero h1 {font:clamp(3.1rem,8vw,6.7rem)/.94 Georgia,serif;letter-spacing:-.055em;color:#f8e3b8;}
+.arena-hero p:not(.eyebrow) {color:#e1d1b7;margin:.75rem 0;}
+.arena-rank {display:grid;justify-items:center;min-width:140px;padding:1.1rem .9rem .8rem;gap:.2rem;color:var(--crest);
+  border:1px solid #ad8b5cbb;background:#16171cca;border-radius:.45rem;backdrop-filter:blur(4px);}
+.arena-emblem {width:52px;height:48px;color:inherit;flex:none;}
+.arena-rank .arena-emblem {width:73px;height:66px;filter:drop-shadow(0 2px 6px #000b);}
+.arena-rank strong {font:1.2rem Georgia,serif;}
+.arena-rank small,.arena-rank span {font-size:.77rem;}
+.arena-rank progress {height:.47rem;width:min(100%,140px);accent-color:var(--crest);}
+.arena-ledger {display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:.48rem;margin:.85rem 0;}
+.arena-ledger div {display:grid;gap:.2rem;padding:.54rem .66rem;border:1px solid #80684777;border-radius:.34rem;background:#202024;}
+.arena-ledger small {color:#cdbfaa;font-size:.75rem;}
+.arena-ledger strong {color:#f1d39a;font-family:Georgia,serif;}
+.arena-section-head {display:flex;align-items:baseline;justify-content:space-between;gap:.7rem;margin:1.35rem 0 .6rem;}
+.arena-section-head h2 {font-family:Georgia,serif;}
+.arena-section-head p {color:#d0bea7;font-size:.78rem;}
+.arena-cards {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.6rem;}
+.arena-contract {padding:.8rem .9rem;border:1px solid #8d7557;border-top:2px solid #ba9563;border-radius:.46rem;min-width:0;
+  background:linear-gradient(125deg,#222027fa,#201b20ee),var(--arena-cover) center/cover;}
+.arena-contract header {display:flex;align-items:center;gap:.56rem;color:#d2ac75;margin-bottom:.48rem;}
+.arena-contract header p {font-size:.66rem;letter-spacing:.08em;text-transform:uppercase;margin-bottom:.2rem;}
+.arena-contract h3 {margin:0;color:#f1dec0;font:1.32rem Georgia,serif;}
+.arena-contract p {font-size:.8rem;color:#d0c2ae;margin-bottom:.38rem;}
+.arena-contract .arena-contract-budget,.arena-contract .arena-contract-award {color:#eed09c;margin:.45rem 0;}
+.arena-contract details ul {padding-inline-start:1rem;margin-bottom:.4rem;}
+.arena-contract details li {font-size:.75rem;margin:.16rem 0;}
+.arena-contract details .camp-btn {min-height:29px;padding:.13rem .38rem;margin-left:.25rem;}
+.arena-opponent-faces {display:flex;gap:.25rem;overflow:hidden;margin-top:.58rem;}
+.arena-opponent-faces img {width:calc((100% - 1.25rem)/6);max-width:46px;aspect-ratio:1;object-fit:cover;border:1px solid #927959;border-radius:.33rem;}
+.arena-locked,.arena-notice {padding:.4rem .54rem;border-left:2px solid #b69468;background:#40312c;color:#f0cf98;}
+.arena-chronicle {margin:1.05rem 0;border:1px solid #80684a;border-radius:.46rem;background:#201e25;padding:.83rem;}
+.arena-chronicle li {margin:.2rem;font-size:.78rem;color:#e5cfad;}
+.arena-rank-list {display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:.4rem;padding:.7rem 0;}
+.arena-rank-list div {display:grid;justify-items:center;text-align:center;color:var(--crest);font-size:.75rem;}
+.arena-award {margin:.65rem 0;display:flex;align-items:center;gap:.55rem;flex-wrap:wrap;padding:.5rem;border:1px solid #ae8c55;border-radius:.35rem;background:#2d2526;}
+.arena-award > div {display:grid;padding:.43rem .55rem;color:#f1d49c;}
+.arena-award small {font-size:.7rem;color:#bfb1a3;}
+.arena-award .arena-promotion {display:flex;align-items:center;gap:.38rem;color:var(--crest);}
+.arena-award a {font-size:.75rem;text-decoration:underline;}
+.arena-celebrate,.arena-entry {animation:arena-arrive .38s ease-out both;}
+@keyframes arena-arrive {from{opacity:.45;transform:translateY(7px);}to{opacity:1;transform:none;}}
+@media(max-width:780px){
+  [data-terrain="bronce"] {--arena-cover:url("./assets/arena/bronce-movil.webp");}
+  [data-terrain="arcana"] {--arena-cover:url("./assets/arena/arcana-movil.webp");}
+  [data-terrain="campeones"] {--arena-cover:url("./assets/arena/campeones-movil.webp");}
+  .arena-hero {min-height:205px;padding:1rem .85rem;gap:.5rem;}
+  .arena-hero h1 {font-size:3.2rem;}
+  .arena-hero p:not(.eyebrow) {font-size:.77rem;}
+  .arena-rank {min-width:96px;padding:.6rem .43rem;}
+  .arena-rank .arena-emblem {width:50px;height:48px;}
+  .arena-rank strong {font-size:.9rem;}
+  .arena-ledger {grid-template-columns:repeat(3,minmax(0,1fr));}
+  .arena-cards {grid-template-columns:1fr;}
+  .arena-section-head {display:block;}
+  .arena-rank-list {grid-template-columns:repeat(4,minmax(0,1fr));}
+}
+@media(max-width:440px){
+  body[data-mode="arena"] .camp-nav nav {gap:7px;font-size:10px;}
+  body[data-mode="arena"] .camp-brand span {display:none;}
+}
+@media(prefers-reduced-motion:reduce){.arena-celebrate,.arena-entry{animation:none;}}

@@ -36,7 +36,7 @@ test("Ocho sobres usan las etiquetas del catálogo G0 y sus probabilidades se no
 });
 
 test("Mínimos temáticos y elegibilidad en 10 000 aperturas por tipo", () => {
-  const expected = [[],[4],[4],[4],[4],[4],[1,3],[2,2,1,1]];
+  const expected = [[],[4],[4],[4],[4],[4],[1,3],[2,2,1,1,1]];
   for (const [index,pack] of SHOP_PACKS.entries()) {
     assert.deepEqual(pack.positions.filter(position => position.family !== "general").map(position => position.count),expected[index]);
     const simulation = simulatePacks(pack.id,10_000,1977);

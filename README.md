@@ -16,7 +16,7 @@ La partida pertenece al navegador y al origen desde el que se abre el juego. `do
 
 La Forja muestra los materiales elegidos, el costo y las probabilidades de éxito y aberración. Al confirmar, aplica la tasa de la generación resultante y sortea una variante compatible del grupo correspondiente. Consume los dos materiales y los óbolos y revela la carta en el ritual. Configuración permite completar la animación, reducirla o saltarla.
 
-El juego guarda el gasto, la carta nueva y la revelación pendiente juntos en LocalStorage antes de mostrar la animación. Al volver al juego después de una recarga, se reanuda la revelación del mismo resultado. El formato 5 conserva las partidas anteriores y registra los sobres sellados, las aperturas pendientes y las copias obtenidas. El formato 4 añadió los identificadores de las copias de aberración. Las pilas históricas conservan su cantidad y su ficha.
+El juego guarda el gasto, la carta nueva y la revelación pendiente juntos en LocalStorage antes de mostrar la animación. Al volver al juego después de una recarga, se reanuda la revelación del mismo resultado. El formato 6 incorpora la Arena y conserva las partidas anteriores. El formato 5 registra los sobres sellados, las aperturas pendientes y las copias obtenidas. El formato 4 añadió los identificadores de las copias de aberración. Las pilas históricas conservan su cantidad y su ficha.
 
 ## Aberraciones y esencias
 
@@ -68,9 +68,13 @@ La tasa de Forja se configura por separado para G1, G2, G3 y G4. Alquimia garant
 
 Abre **Entrenamiento** en la navegación o `/training.html` en el servidor local. Forma una escuadra de hasta seis criaturas con un máximo de 12 puntos, elige una patrulla y dirige el combate con dos puntos de mando por ronda. La práctica usa copias del inventario y resuelve vitalidad, estados y recargas en memoria. [Reglas y arquitectura](COMBATE-FASE-01.md) · [Ritmo, controles y validación](COMBATE-FASE-02.md)
 
+## Arena
+
+Abre **Arena** en el menú o `/arena.html` en el servidor local. Elige un contrato contra bots, prepara la escuadra y gana puntos de rango, óbolos o sobres sellados de primer triunfo. [Arena, auditoría de perfiles y balance](ARENA.md)
+
 ## Sobres
 
-La tienda ofrece ocho sobres de cinco a diez cartas base. Los paquetes de cinco y diez reducen el precio total un 5 % y un 10 %, respectivamente. El juego guarda los sobres sellados y permite abrir una compra completa, revelar cartas una a una o ver el resumen agrupado. Consulta `/pack-lab.html` para explorar probabilidades y simular aperturas en el servidor local. [Reglas, precios y análisis](SOBRES.md)
+La tienda ofrece ocho sobres de cinco a diez cartas base. Los paquetes de cinco y diez reducen el precio total un 5 % y un 10 %, respectivamente. El juego guarda los sobres sellados y permite abrir una compra, todos los de un tipo o todos los almacenados. El Quimérico nuevo reserva una de sus diez plazas para una carta rara o superior. Consulta `/pack-lab.html` para explorar probabilidades y simular aperturas en el servidor local. [Reglas, precios y análisis](SOBRES.md)
 
 ## Expediciones
 
@@ -139,6 +143,7 @@ node --test tests/aberrations.mjs
 node --test tests/combat.mjs
 node --test tests/playback.mjs
 node --test tests/packs.mjs
+node --test tests/arena.mjs
 ```
 
 Las pruebas cubren probabilidades y progresión, ilustraciones y linajes, migración de partidas, consumo de recursos y recuperación de una revelación pendiente. Tras ajustar los costos, revisa la distribución de rarezas, la garantía de los sobres y la recuperación de moneda.

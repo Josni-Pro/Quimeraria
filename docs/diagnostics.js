@@ -1,3 +1,4 @@
+import { sortCards } from "./card-order.js";
 import { CARDS, RARITIES } from "./catalog.js";
 import { acknowledgeReveal, createEssence, createGame, fuseCards, getCard, inspectAberrationVariants,
   inspectFusionVariants, previewFusion, useEssence } from "./engine.js";
@@ -47,7 +48,6 @@ const trialUse = document.querySelector("#trial-use");
 const trialResult = document.querySelector("#trial-result");
 const number = new Intl.NumberFormat("es-MX", { maximumFractionDigits: 2 });
 const currency = new Intl.NumberFormat("es-MX");
-const collator = new Intl.Collator("es-MX");
 let state = freshState();
 let pool = new Set(CARDS.map(card => card.id));
 let shown = [];
@@ -100,7 +100,7 @@ function option(value, label) {
 }
 
 function choices() {
-  return [...pool].map(id => getCard(id, state)).sort((a, b) => collator.compare(a.name, b.name));
+  return sortCards([...pool].map(id=>getCard(id,state)));
 }
 
 function updateSelectors(first, second) {

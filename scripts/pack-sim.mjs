@@ -17,9 +17,11 @@ const results = [...LEGACY_PACKS,...SHOP_PACKS].map(pack => {
   }
   return {
     ...sample, cost:pack.cost,
-    expectedRarities:odds?.expectedRarities, rarityPresence:odds?.rarities,
+    expectedRarities:odds?.expectedRarities,
+    costsPerRarity: (odds?.expectedRarities ?? sample.rarities.map(r => r.copies)).map(mean =>
+      mean > 0 ? [1,5,10].map(quantity => (odds ? quotePackPurchase({coins:0},pack.id,quantity).final/quantity : pack.cost)/mean) : null), rarityPresence:odds?.rarities,
     expectedThematic:odds?.expectedThematic, expectedDuplicates:odds?.expectedDuplicates,
-    intendedSlots:odds?.groups.filter(group => group.family !== "general").reduce((n,group) => n + group.count,0),
+    intendedSlots:odds?.groups.filter(group => group.thematic).reduce((n,group) => n + group.count,0),
     quotes: odds && [1,5,10].map(quantity => {
       const { cards, original, discount, saving, final }=quotePackPurchase({coins:0},pack.id,quantity);
       return { quantity,cards,original,discount,saving,final,perCard:final/cards };

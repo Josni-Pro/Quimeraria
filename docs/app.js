@@ -1,3 +1,4 @@
+import { CARD_ORDERS, readCardOrder, recentCards, sortCardEntries, writeCardOrder } from "./card-order.js";
 import { ABILITIES, CARDS, CATEGORIES, ECONOMY, MISSIONS, RARITIES, STATS, TRAITS } from "./catalog.js";
 import {
   acknowledgeReveal, createEssence, createGame, describeDiscoveredFusion, fuseCards, getCard, getExpeditionSlots, getFusionCopies, loadGame,
@@ -14,9 +15,9 @@ import { CONCEPT_LABELS, getCreatureConcept } from "./creature-concepts.js";
 import { CAPABILITY_FAMILIES, COMBAT_ROLES, COMBAT_STATS, getCreatureProfiles, MOBILITY_LABELS, UTILITY_FAMILIES } from "./creature-profiles.js";
 import { VARIANT_FAMILIES, VARIANT_QUALITY_LABELS } from "./fusion-variants.js";
 
-import { oddsDetails, purchaseDetails, renderCheckoutTotal, renderPackOpening, renderPackShop } from "./pack-shop.js";
+import { oddsDetails, openingDetails, purchaseDetails, renderCheckoutTotal, renderPackOpening, renderPackShop } from "./pack-shop.js";
 import { playPackRupture } from "./pack-visuals.js";
-import { acknowledgePackOpening, getBaseCopies, purchasePackBatch, quotePackPurchase, revealPackCards, startPackOpening } from "./pack-transactions.js";
+import { acknowledgePackOpening, getBaseCopies, purchasePackBatch, quotePackOpening, quotePackPurchase, revealPackCards, startPackOpening } from "./pack-transactions.js";
 import { packDefinition } from "./pack-config.js";
 import { createBattleAudio } from "./training-audio.js";
 
@@ -56,11 +57,24 @@ let category = "all";
 let collectionMode = "owned";
 let collectionGroup = "none";
 let query = "";
+const filterKey = "quimeraria:filtros-cartas:v1";
+function storedFilters() {
+  try { return JSON.parse(sessionStorage.getItem(filterKey)) ?? {}; }
+  catch { return {}; }
+}
+const filtersByView = storedFilters();
+({category,query} = filtersByView[view] ?? { category,query });
+function saveSectionFilters() {
+  filtersByView[view] = { category,query };
+  try { sessionStorage.setItem(filterKey,JSON.stringify(filtersByView)); } catch { /* Sesión sin persistencia. */ }
+}
+let order = readCardOrder();
 let toastTimer;
 let storageUnavailable = false;
 const shop = { id: "explorador", quantity: 1, custom: false, batch: null, sheet: 0, filter: "",
   flip: null, away: false, fast: false, skipped: false, animatedId: null };
 let packMotion;
+let pendingStockIds;
 const soundKey = "quimeraria:entrenamiento:preferencias:v1";
 function soundPreferences() {
   try {
@@ -287,11 +301,22 @@ function collectionGroups(items) {
   return [...groups.values()].sort((a, b) => collator.compare(a.label, b.label));
 }
 
+function sortControls(context = "card") {
+  return `<div class="sort-controls"><label>Orden
+    <select id="${context}-order">${Object.entries(CARD_ORDERS).map(([id,name]) =>
+      `<option value="${id}" ${order.by === id ? "selected" : ""}>${name}</option>`).join("")}</select></label>
+    <label>Dirección <select id="${context}-direction"><option value="desc" ${order.direction === "desc" ? "selected" : ""}>Descendente</option>
+      <option value="asc" ${order.direction === "asc" ? "selected" : ""}>Ascendente</option></select></label></div>`;
+}
+function ordered(items) {
+  return sortCardEntries(items,order,recentCards(state));
+}
+
 function collectionGrid() {
   if (category === "essence") return renderEssences({ state, includeUsed: collectionMode !== "owned", query });
   const action = view === "forja" ? "choose" : "detail";
   const search = normalize(query);
-  const items = collectionItems().filter(({ card }) => {
+  const items = ordered(collectionItems().filter(({ card }) => {
     if (category === "normal" && card.generation !== 0) return false;
     if (!["all", "normal"].includes(category) && card.category !== category) return false;
     if (!search) return true;
@@ -302,7 +327,7 @@ function collectionGrid() {
     if (view === "coleccion" && card.category === "fusion") terms.push(interpretationName(card));
     if (view === "coleccion" && card.category === "aberration") terms.push(FAILURE_FAMILIES[card.family], ...cardNames(card.parents));
     return normalize(terms.join(" ")).includes(search);
-  });
+  }));
   if (!items.length) return '<div class="empty">No hay cartas con estos filtros.</div>';
   const tile = ({ card, count }) => {
     const picked = view === "forja" ? selected.filter(id => id === card.id).length : 0;
@@ -336,7 +361,7 @@ function renderInventory() {
       <select id="collection-group">
         ${[["none", "Sin agrupar"], ["species", "Especie"], ["family", "Interpretación"], ["combination", "Combinación"]].map(([key, label]) =>
           `<option value="${key}"${collectionGroup === key ? " selected" : ""}>${label}</option>`).join("")}
-      </select></label>` : ""}</div>
+      </select></label>` : ""}${category === "essence" ? "" : sortControls()}</div>
     <div class="card-grid ${category === "essence" ? "card-grid--essences" : ""}" id="card-grid">${collectionGrid()}</div>
   </section>`;
 }
@@ -388,21 +413,24 @@ function focusShop(id) {
 
 function resetOpening() {
   shop.sheet = 0;
+  shop.receiptPage = 0;
+  shop.showReceipts = false;
   shop.filter = "";
   shop.flip = null;
   shop.skipped = false;
   shop.away = false;
 }
 
-async function openSavedPacks(button, ids, previous = null) {
+async function openSavedPacks(button, ids, previous = null, mode = "individual") {
   button.disabled = true;
   shopSound.unlock();
   const outcome = await transact(game => {
-    if (!previous) return startPackOpening(game,ids);
-    const finished = acknowledgePackOpening(game,previous);
-    return finished.ok ? startPackOpening(finished.state,ids) : finished;
+    const available = previous ? acknowledgePackOpening(game,previous) : { ok:true,state:game };
+    if (!available.ok) return available;
+    const started = startPackOpening(available.state,ids,Math.random,mode);
+    return started.ok && mode === "joint" ? revealPackCards(started.state,started.opening.id) : started;
   },resetOpening,{ durable:true });
-  if (outcome.ok) focusShop("pack-stage");
+  if (outcome.ok) focusShop(mode === "joint" ? "pack-results" : "pack-stage");
 }
 
 async function exposePack(button, id) {
@@ -417,6 +445,12 @@ async function exposePack(button, id) {
   },{ durable:true });
   const next = app.querySelector(id ? '[data-action="pack-reveal"]' : '[data-action="pack-result-leave"]');
   next?.focus({ preventScroll:true });
+}
+
+function expeditionChoices() {
+  return ordered(inventory().filter(({card})=>isFunctional(card) && normalize(card.name).includes(normalize(query))))
+    .map(({card,count})=>cardFace(card,{ action:"team",count,compact:true,picked:team.filter(id=>id===card.id).length }))
+    .join("") || '<div class="empty">No hay cartas con este filtro.</div>';
 }
 
 function renderExpeditions() {
@@ -434,7 +468,8 @@ function renderExpeditions() {
       <div class="mission-info"><span class="count">${mission.stat ? STATS[mission.stat].name + " · " : ""}Meta ${mission.threshold}</span>${mission.trait ? `<span class="count">${escape(TRAITS[mission.trait].name)} +${mission.traitBonus} al equipo</span>` : ""}</div>
       ${summary}
       <p>${slots === 0 ? "Recoge minerales por tu cuenta para recuperar óbolos y volver a comprar cartas." : `Forma un equipo de ${slots} carta${slots === 1 ? "" : "s"}. Tus cartas regresan al terminar.`}</p>
-      <div class="card-grid">${inventory().filter(({card}) => isFunctional(card)).map(({ card, count }) => cardFace(card, { action: "team", count, compact: true, picked: team.filter(id => id === card.id).length })).join("")}</div>
+      ${sortControls("expedition")}<input type="search" id="expedition-search" class="search" aria-label="Buscar criatura para expedición" placeholder="Buscar criatura" value="${escape(query)}">
+      <div class="card-grid" id="expedition-cards">${expeditionChoices()}</div>
       <div class="mission-controls">
         <span class="mission-progress">${result ? `Puntuación ${result.score}/${result.threshold} · ${result.success ? "Éxito previsto" : "Recompensa parcial"} · +${result.reward} óbolos` : `Equipo ${team.length}/${slots}`}</span>
         ${result ? '<button class="button" data-action="mission-info">Ver cálculo</button>' : ""}
@@ -455,7 +490,7 @@ function render(focus) {
     animatePendingPack();
   }
   if (view === "expediciones") app.innerHTML = renderExpeditions();
-  if (view === "alquimia") app.innerHTML = intro(view) + renderAlchemy({ state, selection: alchemySelection, cardFace });
+  if (view === "alquimia") app.innerHTML = intro(view) + renderAlchemy({ state, selection: alchemySelection, cardFace, order });
   observePortraits();
   wallet.textContent = number.format(state.coins);
   for (const tab of tabs) {
@@ -757,9 +792,9 @@ function scrollToInventory() {
 function changeView() {
   const destination = currentView();
   if (destination !== view) {
+    saveSectionFilters();
     view = destination;
-    category = "all";
-    query = "";
+    ({ category,query } = filtersByView[view] ?? { category:"all",query:"" });
     render();
     window.scrollTo({ top: 0 });
   }
@@ -819,12 +854,11 @@ document.addEventListener("click", async event => {
       break;
     case "filter":
       category = id;
+      saveSectionFilters();
       render(focus);
       break;
     case "mode":
       collectionMode = id;
-      category = "all";
-      query = "";
       render(focus);
       break;
     case "fuse": {
@@ -908,6 +942,22 @@ document.addEventListener("click", async event => {
       showSettings();
       break;
     }
+    case "pack-mass": {
+      pendingStockIds = (state.packStock ?? []).filter(seal => id==="*" || seal.packId===id).map(seal=>seal.id);
+      const quote = quotePackOpening(state,pendingStockIds);
+      if (quote.ok) showModal("Abrir sobres almacenados",openingDetails(quote));
+      break;
+    }
+    case "pack-mass-confirm": {
+      const mode = document.querySelector("#pack-open-mode").value;
+      const ids = pendingStockIds;
+      modal.close();
+      await openSavedPacks(button,ids,null,mode);
+      break;
+    }
+    case "pack-stock-page": shop.stockPage = Number(id); render(); focusShop("pack-vault"); break;
+    case "pack-receipt-page": shop.receiptPage = Number(id); render(focus); break;
+    case "pack-sheet-step": shop.sheet = Number(id)-1; shop.flip = null; render(); break;
     case "pack-open-one":
     case "pack-open-batch": {
       const batch = (state.packStock ?? []).filter(pack => pack.batchId === id);
@@ -972,6 +1022,10 @@ document.addEventListener("click", async event => {
 
 app.addEventListener("toggle", event => {
   if (event.target.classList.contains("shop-custom")) shop.custom = event.target.open;
+  if (event.target.classList.contains("pack-receipts") && event.target.open !== Boolean(shop.showReceipts)) {
+    shop.showReceipts = event.target.open;
+    if (shop.showReceipts) render();
+  }
 },true);
 modal.addEventListener("input",event => {
   if (event.target.id !== "pack-volume") return;
@@ -979,7 +1033,11 @@ modal.addEventListener("input",event => {
   if (event.target.valueAsNumber === 0) shopSound.stop();
 });
 app.addEventListener("change", event => {
-  if (event.target.id === "pack-sheet") { shop.sheet = Number(event.target.value); shop.flip = null; }
+  if (/^(card|expedition)-(order|direction)$/.test(event.target.id)) {
+    const field = event.target.id.endsWith("-order") ? "by" : "direction";
+    order = { ...order, [field]:event.target.value };
+    writeCardOrder(order);
+  } else if (event.target.id === "pack-sheet") { shop.sheet = Math.max(0,(event.target.valueAsNumber || 1)-1); shop.flip = null; }
   else if (event.target.id === "pack-result-filter") shop.filter = event.target.value;
   else return;
   const id = event.target.id;
@@ -989,13 +1047,22 @@ app.addEventListener("change", event => {
 
 app.addEventListener("input", event => {
   if (revealRunning || state.pendingReveal) return;
+  if (event.target.id === "expedition-search") {
+    query = event.target.value.trim();
+    saveSectionFilters();
+    const grid = document.querySelector("#expedition-cards");
+    portraitObserver?.disconnect();
+    grid.innerHTML = expeditionChoices();
+    observePortraits(grid);
+    return;
+  }
   if (event.target.id === "pack-custom-quantity") {
     shop.quantity = event.target.valueAsNumber;
     app.querySelector("#pack-cart").innerHTML = renderCheckoutTotal(state,shop.id,shop.quantity);
     for (const preset of app.querySelectorAll(".shop-quantity")) preset.setAttribute("aria-pressed",String(Number(preset.dataset.id) === shop.quantity));
     return;
   }
-  if (event.target.id === "search") query = event.target.value.trim();
+  if (event.target.id === "search") { query = event.target.value.trim(); saveSectionFilters(); }
   else if (event.target.id === "collection-group") collectionGroup = event.target.value;
   else return;
   const grid = document.querySelector("#card-grid");

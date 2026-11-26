@@ -1,3 +1,4 @@
+import { DEFAULT_CARD_ORDER, sortCardEntries } from "./card-order.js";
 import { CATEGORIES, RARITIES } from "./catalog.js";
 import { MAX_PACK_PURCHASE, PACK_DISCOUNTS, packArtwork, packDefinition, SHOP_PACKS, shopPack } from "./pack-config.js";
 import { getShopPackOdds } from "./pack-rules.js";
@@ -25,21 +26,32 @@ export function renderCheckoutTotal(state, id, quantity) {
         !quote.affordable ? "disabled" : "")}</div>`;
 }
 
-function stockShelf(state, highlighted) {
+function stockShelf(state, ui) {
   const batches = packStockGroups(state);
   if (!batches.length && !state.pendingPack) return "";
   const stock = batches.reduce((n,batch) => n + batch.length,0);
+  const types = [...new Set(batches.map(batch=>batch[0].packId))];
+  const page = Math.min(ui.stockPage ?? 0,Math.max(0,Math.ceil(batches.length/12)-1));
   return `<section class="shop-vault" aria-labelledby="shop-vault-title" id="pack-vault">
     <div class="shop-heading"><div><h2 id="shop-vault-title">Sobres sellados</h2><p>Ábrelos cuando quieras.</p></div><strong>${count(stock,"sobre")}</strong></div>
     ${state.pendingPack ? `<div class="shop-pending"><span>Apertura pendiente</span>${button("pack-resume","","Reanudar","button--primary")}</div>` : ""}
-    <div class="shop-stock">${batches.map(batch => {
+    ${stock ? `<div class="stock-actions stock-mass">
+      ${button("pack-mass","*","Abrir todos los sobres","button--primary",state.pendingPack ? "disabled" : "")}
+      <details><summary>Abrir todos los de un tipo</summary><div class="stock-actions">${types.map(id =>
+        button("pack-mass",id,escape(packDefinition(id).name),"",state.pendingPack ? "disabled" : "")).join("")}</div></details></div>` : ""}
+    <div class="shop-stock">${batches.slice(page*12,page*12+12).map(batch => {
       const pack = packDefinition(batch[0].packId);
       const { batchId } = batch[0];
-      return `<article class="stock-row ${batchId === highlighted ? "stock-highlight" : ""}" style="--pack-tone:${pack.color ?? "#bfa979"}">
-        ${shopImage(pack,'loading="lazy"')}<div><h3>${escape(pack.name)}</h3><p>${count(batch.length,"sobre")} · ${count(batch.length * pack.slots,"carta")}</p></div>
+      return `<article class="stock-row ${batchId === ui.batch ? "stock-highlight" : ""}" style="--pack-tone:${pack.color ?? "#bfa979"}">
+        ${shopImage(pack,'loading="lazy"')}<div><h3>${escape(pack.name)}</h3><p>${count(batch.length,"sobre")} · ${count(batch.length * pack.slots,"carta")}${batch[0].rulesVersion===1 ? " · Edición anterior" : ""}</p></div>
         <div class="stock-actions">${button("pack-open-one",batchId,"Abrir uno","","")}${batch.length > 1 ? button("pack-open-batch",batchId,"Abrir todos","button--primary") : ""}</div>
       </article>`;
-    }).join("")}</div></section>`;
+    }).join("")}</div>
+    ${batches.length > 12 ? `<div class="stock-actions stock-pages">
+      ${button("pack-stock-page",page-1,"Anterior","",""+(page===0 ? "disabled" : ""))}
+      <span>${page+1} / ${Math.ceil(batches.length/12)}</span>
+      ${button("pack-stock-page",page+1,"Siguiente","",""+((page+1)*12>=batches.length ? "disabled" : ""))}
+    </div>` : ""}</section>`;
 }
 
 export function renderPackShop(state, ui) {
@@ -49,7 +61,7 @@ export function renderPackShop(state, ui) {
       <p>Encuentra progenitores para la Forja entre ocho colecciones.</p></div>
     <a class="shop-wallet" href="#expediciones"><span>Tu saldo</span><strong>${spanMoney(state.coins)}</strong><span>Ganar óbolos</span></a>
   </section>
-  ${stockShelf(state,ui.batch)}
+  ${stockShelf(state,ui)}
   <div class="shop-grid">
     <section class="shop-catalog" id="pack-catalog" aria-labelledby="shop-catalog-title">
       <div class="shop-heading"><h2 id="shop-catalog-title">Elige un sobre</h2></div>
@@ -94,6 +106,16 @@ export function purchaseDetails(quote, sequence, balance) {
         `data-quantity="${quote.quantity}" data-sequence="${sequence}" data-balance="${balance}" ${quote.affordable ? "" : "disabled"}`)}</div>`;
 }
 
+export function openingDetails(quote) {
+  return `<dl class="shop-receipt"><div><dt>Sobres almacenados</dt><dd>${number.format(quote.seals.length)}</dd></div>
+    ${Object.entries(quote.counts).map(([id,n]) => `<div><dt>${escape(packDefinition(id).name)}</dt><dd>${n}</dd></div>`).join("")}
+    <div><dt>Cartas base</dt><dd>${number.format(quote.cards)}</dd></div><div><dt>Cargo adicional</dt><dd>0 óbolos</dd></div></dl>
+    <label class="open-mode">Revelación <select id="pack-open-mode"><option value="joint">Conjunta con resumen</option>
+      <option value="individual">Sobre por sobre</option></select></label>
+    <div class="modal-actions">${button("close","","Cancelar")}
+      ${button("pack-mass-confirm","","Confirmar apertura","button--primary")}</div>`;
+}
+
 export function oddsDetails(id) {
   const profile = getShopPackOdds(id);
   if (!profile) return "";
@@ -134,8 +156,9 @@ export function renderPackOpening(state, ui, cardById, portrait) {
   const index = Math.max(0,Math.min(ui.sheet,opening.packs.length-1));
   const current = opening.packs[index].cards;
   const cardToReveal = current.find(card => !revealed.has(card.id)) ?? all.find(card => !revealed.has(card.id));
+  const markedPack = packDefinition(opening.packs[index].packId);
   const rare = ui.flip && all.find(entry => entry.id === ui.flip);
-  const deck = `<p class="pack-progress">${revealed.size} de ${all.length} cartas reveladas</p>
+  const deck = `<p class="pack-progress">${escape(markedPack.name)} · ${revealed.size} de ${all.length} cartas reveladas</p>
     <div class="pack-fan" style="--card-count:${current.length}">${current.map((entry,i) => {
       if (!revealed.has(entry.id)) return `<button class="pack-back" type="button" style="--slot:${i}"
         aria-label="Revelar carta ${i+1}" data-action="pack-reveal" data-id="${entry.id}"><span aria-hidden="true">✧</span></button>`;
@@ -146,10 +169,12 @@ export function renderPackOpening(state, ui, cardById, portrait) {
     }).join("")}</div>
     ${rare && revealed.has(rare.id) ? `<p class="pack-sr-status" role="status">${escape(cardById(rare.cardId).name)} revelada.</p>` : ""}
     <div class="pack-deck-actions">
-      ${opening.packs.length > 1 ? `<label>Sobre <select id="pack-sheet" aria-label="Sobre que estás revelando">
-        ${opening.packs.map((item,i) => `<option value="${i}" ${index === i ? "selected" : ""}>${i+1} de ${opening.packs.length}</option>`).join("")}</select></label>` : ""}
+      ${opening.packs.length > 1 ? `<label>Sobre
+        <input id="pack-sheet" type="number" min="1" max="${opening.packs.length}" value="${index+1}" inputmode="numeric"
+          aria-label="Sobre que estás revelando"> de ${opening.packs.length}</label>
+        ${button("pack-sheet-step",index+2,"Siguiente sobre","",index+1>=opening.packs.length ? "disabled" : "")}` : ""}
       ${button("pack-reveal",cardToReveal.id,"Revelar una")}${button("pack-reveal-all","","Revelar todas","button--primary")}</div>`;
-  return stageShell(pack,opening,{ ...ui, noMotion: ui.skipped || ["skip", "off"].includes(state.settings.animation) },deck);
+  return stageShell(markedPack,opening,{ ...ui, noMotion: ui.skipped || ["skip", "off"].includes(state.settings.animation) },deck);
 }
 
 function packResult(state, ui, cardById, portrait, all, pack) {
@@ -167,14 +192,20 @@ function packResult(state, ui, cardById, portrait, all, pack) {
     families.set(card.category,(families.get(card.category) ?? 0)+1);
   }
   const discovered = all.filter(entry => entry.isNew).length;
+  const highest = rarityCounts.findLastIndex(Boolean);
+  const types = new Map();
+  for (const receipt of opening.packs) types.set(receipt.packId,(types.get(receipt.packId) ?? 0)+1);
   const next = (state.packStock ?? []).find(seal => seal.batchId === opening.packs[0].batchId);
-  const ordered = [...grouped.values()].filter(({ card }) => ui.filter === "" || String(card.rarity) === ui.filter)
-    .sort((a,b) => b.card.rarity - a.card.rarity || a.card.name.localeCompare(b.card.name,"es"));
-  return `<section class="pack-results" style="--pack-tone:${pack.color ?? "#d7bc88"}">
-      <div class="pack-result-head">${shopImage(pack)}<div><p class="shop-kicker">${escape(pack.name)}</p><h1>Cartas obtenidas</h1>
+  const ordered = sortCardEntries([...grouped.values()].filter(({ card }) => ui.filter === "" || String(card.rarity) === ui.filter),DEFAULT_CARD_ORDER);
+  const page = Math.min(ui.receiptPage ?? 0,Math.ceil(opening.packs.length/10)-1);
+  return `<section class="pack-results" id="pack-results" style="--pack-tone:${pack.color ?? "#d7bc88"}">
+      <div class="pack-result-head">${shopImage(pack)}<div><p class="shop-kicker">${types.size === 1 ? escape(pack.name) : "Apertura de varios tipos"}</p><h1>Cartas obtenidas</h1>
       <p>${count(opening.packs.length,"sobre abierto","sobres abiertos")} · ${count(all.length,"carta")}</p></div></div>
+      ${types.size > 1 ? `<p class="pack-progress">${[...types].map(([id,n])=>escape(packDefinition(id).name)+" ×"+n).join(" · ")}</p>` : ""}
       <dl class="pack-summary"><div><dt>Cartas</dt><dd>${all.length}</dd></div><div><dt>Descubrimientos</dt><dd>${discovered}</dd></div>
-        <div><dt>Copias adicionales</dt><dd>${all.length - discovered}</dd></div></dl>
+        <div><dt>Copias adicionales</dt><dd>${all.length - discovered}</dd></div>
+        <div><dt>Repetidas en esta apertura</dt><dd>${all.length - grouped.size}</dd></div></dl>
+      <p class="pack-progress">Mayor rareza obtenida · ${RARITIES[highest].name}</p>
       <div class="pack-distribution"><section><h2>Rarezas</h2><dl class="shop-rarity-list">
         ${rarityCounts.map((value,i) => `<div><dt>${RARITIES[i].name}</dt><dd>${value}</dd></div>`).join("")}</dl></section>
       <section><h2>Familias del catálogo</h2><dl class="shop-rarity-list">${[...families].map(([category,quantity]) =>
@@ -190,5 +221,13 @@ function packResult(state, ui, cardById, portrait, all, pack) {
             <img src="${escape(portrait(card))}" alt="" width="768" height="768" loading="lazy">
             <span><strong>${escape(card.name)} ×${quantity}</strong><small>${RARITIES[card.rarity].name}${fresh ? " · Descubrimiento" : ""}</small></span></button>`).join("") ||
           '<p class="shop-hint">No obtuviste cartas de esta rareza.</p>'}</div>
+      <details class="pack-receipts" ${ui.showReceipts ? "open" : ""}>
+        <summary>Resultados por sobre (${opening.packs.length})</summary>
+        ${ui.showReceipts ? `<div class="stock-actions stock-pages">${button("pack-receipt-page",page-1,"Anterior","",page===0 ? "disabled" : "")}
+          <span>${page+1} / ${Math.ceil(opening.packs.length/10)}</span>
+          ${button("pack-receipt-page",page+1,"Siguiente","",(page+1)*10>=opening.packs.length ? "disabled" : "")}</div>
+          <ol start="${page*10+1}">${opening.packs.slice(page*10,page*10+10).map(seal => `<li>
+          <strong>${escape(packDefinition(seal.packId).name)}</strong> · ${seal.cards.map(entry=>escape(cardById(entry.cardId).name)).join(", ")}</li>`).join("")}</ol>` : ""}
+      </details>
     </section>`;
 }

@@ -20,7 +20,11 @@ function show() {
   document.querySelector("#lab-odds").innerHTML = oddsDetails(pick.value) + `<p>Coste efectivo por carta · ${quotes.map(quote => `
     ${quote.quantity} sobre${quote.quantity === 1 ? "" : "s"} · ${number.format(quote.final / quote.cards)} óbolos
   `).join(" / ")}</p><p>Media teórica por sobre · ${number.format(selected.expectedThematic)} cartas de familias temáticas ·
-    ${number.format(selected.expectedDuplicates)} copias repetidas.</p><details><summary>Pesos configurados por posición</summary><ul>${selected.groups.map(group =>
+    ${number.format(selected.expectedDuplicates)} copias repetidas.</p>
+    <details><summary>Coste esperado por rareza</summary><dl class="shop-rarity-list">
+      ${selected.expectedRarities.map((mean,i)=>`<div><dt>${RARITIES[i].name}</dt><dd>${mean ?
+        quotes.map(quote=>number.format(quote.final/quote.quantity/mean)).join(" / ")+" óbolos" : "Sin resultados"}</dd></div>`).join("")}</dl>
+      <p>Compras de 1, 5 y 10 respectivamente. Se divide el precio efectivo por la cantidad esperada por sobre.</p></details><details><summary>Pesos configurados por posición</summary><ul>${selected.groups.map(group =>
     `<li>${group.count} × ${group.label} · ${group.weights.join(" / ")}</li>`).join("")}</ul></details>`;
   results.innerHTML = "";
 }
