@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0c0a14">
+  <title>Diagnóstico de sobres · Quimeraria</title>
+  <link rel="icon" href="./assets/sigil.png">
+  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./pack-shop.css">
+  <script type="module" src="./pack-lab.js"></script>
+</head>
+<body>
+  <main class="container">
+    <header class="shop-hero">
+      <div><p class="shop-kicker">Quimeraria</p><h1>Diagnóstico de sobres</h1><p>Explora los sorteos y repítelos con la misma semilla.</p></div>
+      <a class="button" href="./index.html#sobres">Volver a tienda</a>
+    </header>
+    <section class="shop-vault">
+      <form id="pack-lab-form" class="stock-actions">
+        <label>Sobre <select name="pack" id="lab-pack"></select></label>
+        <label>Aperturas <input type="number" name="count" min="1" max="100000" value="10000" required></label>
+        <label>Semilla <input type="number" name="seed" min="0" max="4294967295" value="1977" required></label>
+        <button class="button button--primary" type="submit">Simular</button>
+      </form>
+      <div id="lab-odds"></div>
+      <div id="lab-result" aria-live="polite"></div>
+    </section>
+    <details class="shop-vault"><summary>Etiquetas de las 31 cartas base</summary><dl id="lab-tags" class="shop-possible"></dl></details>
+  </main>
+</body>
+</html>

@@ -138,12 +138,6 @@ button.card:hover { border-color: #b889ec; transform: translateY(-2px); }
 .panel h2 { font: 700 32px/1 var(--serif); }
 .panel h3 { font: 700 26px/1 var(--serif); }
 .panel p { color: var(--muted); margin-top: 7px; }
-.pack-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 15px; }
-.pack { display: grid; gap: 11px; align-content: start; }
-.pack .button { align-self: end; margin-top: 2px; }
-.pack-art { position: relative; overflow: hidden; height: clamp(132px, 16vw, 212px); background: radial-gradient(ellipse at center,#5e3881,#231532 62%,#181120); border: 1px solid #ffffff20; border-radius: 8px; }
-.pack-small { color: var(--dim); font-size: 11px; }
-.odds { display: flex; flex-wrap: wrap; gap: 3px 8px; margin-top: 8px; color: var(--muted); font-size: 11px; }
 summary { width: max-content; max-width: 100%; cursor: pointer; color: var(--lilac); font-size: 12px; }
 summary:hover { color: var(--text); }
 .mission-layout { display: grid; grid-template-columns: minmax(240px,.75fr) minmax(0,1.6fr); gap: 14px; align-items: start; }
@@ -157,7 +151,6 @@ summary:hover { color: var(--text); }
 .mission-controls .button { margin-left: auto; }
 .mission-progress { padding: 8px 11px; border-radius: 7px; background: #281b35; color: #d7b7f8; font-size: 12px; flex: 1 1 150px; }
 .message-box { color: #e1c5f8; border: 1px solid #644781; border-radius: 8px; padding: 10px 12px; background: #22142e; }
-.pack-note { padding: 10px 13px; border: 1px solid var(--line); background: #15101c; color: var(--muted); border-radius: 8px; margin-top: 14px; }
 
 dialog { color: var(--text); background: #181122; border: 1px solid #79589a; border-radius: 13px; padding: 0; width: min(590px,calc(100% - 28px)); max-height: calc(100dvh - 30px); box-shadow: 0 18px 90px #000b; }
 dialog::backdrop { background: #07050bbd; backdrop-filter: blur(3px); }
@@ -201,7 +194,6 @@ dialog::backdrop { background: #07050bbd; backdrop-filter: blur(3px); }
   .result { min-height: 340px; border-left: 0; border-top: 1px solid #43325a; }
   .card-grid { grid-template-columns: repeat(4,minmax(0,1fr)); gap: 8px; }
   .card-grid .card { height: 149px; }
-  .pack-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .mission-layout { grid-template-columns: 1fr; }
   .mission-list { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 7px; }
 }
@@ -226,8 +218,6 @@ dialog::backdrop { background: #07050bbd; backdrop-filter: blur(3px); }
   .card-count { top: 5px; right: 5px; font-size: 9px; }
   .rarity-badge { font-size: 8px; padding-inline: 5px; }
   .search { margin-left: 0; width: 100%; }
-  .pack-grid { grid-template-columns: 1fr; }
-  .pack-art { height: 155px; }
   .mission-choice strong { font-size: 21px; }
   .mission-controls .button { margin-left: 0; }
   .page-footer { gap: 7px; }
@@ -265,7 +255,6 @@ dialog::backdrop { background: #07050bbd; backdrop-filter: blur(3px); }
 .portrait-view { display: grid; justify-items: center; overflow: hidden; border: 1px solid var(--line-bright); border-radius: 9px; background: #100a18; margin-top: 12px; }
 .portrait-view img { max-width: 100%; max-height: 62dvh; object-fit: contain; }
 .portrait-view[data-portrait-level="3"] { border-color: #d7aa68; box-shadow: 0 0 16px #e1b86a49; }
-.pack-art .portrait-image { object-position: center 49%; }
 
 .result-mystery {
   display: grid;

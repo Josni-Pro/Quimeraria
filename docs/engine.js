@@ -1,5 +1,5 @@
 import {
-  ABILITIES, CARDS, ECONOMY, MISSIONS, PACKS, RARITIES, RECIPES, STATS, STARTER, TRAITS
+  ABILITIES, CARDS, ECONOMY, MISSIONS, RARITIES, RECIPES, STATS, STARTER, TRAITS
 } from "./catalog.js";
 import { nameFusion } from "./fusion-names.js";
 import { ABERRATION_DEFECTS, ALCHEMY, ANIMATION_MODES, fusionRates } from "./game-config.js";
@@ -7,7 +7,11 @@ import { decorateClassicFusion, selectVariant, variantIdentity, variantsFor } fr
 import { aberrationsFor } from "./aberration-concepts.js";
 import { aberrationId } from "./aberration-art-pilot.js";
 
-export const SAVE_VERSION = 4;
+import { getLegacyPackOdds, getShopPackOdds, rollLegacyPack, sample } from "./pack-rules.js";
+import { historicalPack, packDefinition } from "./pack-config.js";
+import { restorePackData } from "./pack-transactions.js";
+
+export const SAVE_VERSION = 5;
 export const MAX_GENERATION = ALCHEMY.maxGeneration;
 
 const STAT_KEYS = Object.keys(STATS);
@@ -20,7 +24,6 @@ const BASE_CARDS = new Map(CARDS.map(card => [card.id, {
   ...card, generation: 0, parents: [], lineage: [card.id]
 }]));
 const RECIPE_BY_PARENTS = new Map(RECIPES.map(recipe => [fusionId(...recipe.parents), recipe]));
-const PACK_BY_ID = new Map(PACKS.map(pack => [pack.id, pack]));
 const MISSION_BY_ID = new Map(MISSIONS.map(mission => [mission.id, mission]));
 
 function pairId(kind, ...ids) {
@@ -376,6 +379,7 @@ function commitFusion(state, result, { materials = [], paid = 0, essenceId = nul
     coins: state.coins - paid,
     inventory: inventoryAfter(state, materials, [card.id]),
     fusionCopies: updateCopies(state.fusionCopies, state.inventory, materials, card.id, copy),
+    ...(state.baseCopies && { baseCopies: updateCopies(state.baseCopies, state.inventory, materials) }),
     ...(failed ? { aberrations: { ...state.aberrations, [card.id]: card } } : {
       fusions: { ...state.fusions, [card.id]: card },
       portraits: { ...state.portraits, [card.id]: portraitLevel }
@@ -506,85 +510,23 @@ export function useEssence(state, essenceId, rng = Math.random) {
   return commitFusion({ ...state, essences }, result, { essenceId });
 }
 
-function packPools(pack) {
-  return RARITIES.map((_, rarity) => CARDS.filter(card =>
-    card.rarity === rarity && (!pack.categories || pack.categories.includes(card.category))));
-}
-
-function probabilities(weights) {
-  const sum = weights.reduce((total, weight) => total + weight, 0);
-  return weights.map(weight => sum > 0 ? weight * 100 / sum : 0);
-}
-
-function packDistribution(state, pack) {
-  const pools = packPools(pack);
-  const weights = pools.map((pool, rarity) => pool.length ? (pack.weights[rarity] ?? 0) : 0);
-  const protectedWeights = weights.map((weight, rarity) => rarity >= pack.pityRarity ? weight : 0);
-  const counter = owns(state.pity, pack.id) ?? 0;
-  const hasPity = Boolean(pack.pityAt && protectedWeights.some(weight => weight > 0));
-  const remaining = hasPity ? Math.max(1, pack.pityAt - counter) : null;
-  return {
-    pools, weights, protectedWeights, counter, remaining, hasPity, pityActive: hasPity && remaining === 1
-  };
-}
-
 export function getPackOdds(state, packId) {
-  const pack = PACK_BY_ID.get(packId);
-  if (!pack) return error("Este sobre no está disponible.");
-
-  const distribution = packDistribution(state, pack);
-  if (!distribution.weights.some(weight => weight > 0)) return error("Este sobre no tiene cartas disponibles.");
-  return {
-    ok: true,
-    pack,
-    counter: distribution.counter,
-    remaining: distribution.remaining,
-    pityActive: distribution.pityActive,
-    odds: probabilities(distribution.weights),
-    guaranteedOdds: distribution.hasPity ? probabilities(distribution.protectedWeights) : null
-  };
-}
-
-function sample(rng) {
-  const value = rng();
-  return Number.isFinite(value) ? Math.max(0, Math.min(1 - Number.EPSILON, value)) : 0;
-}
-
-function weightedIndex(weights, rng) {
-  const total = weights.reduce((sum, weight) => sum + weight, 0);
-  let choice = sample(rng) * total;
-  const lastEligible = weights.findLastIndex(weight => weight > 0);
-  for (let index = 0; index < weights.length; index += 1) {
-    choice -= weights[index];
-    if (choice < 0) return index;
+  const distribution = getLegacyPackOdds(state.pity, packId);
+  if (!distribution) {
+    const current = getShopPackOdds(packId);
+    return current ? { ok: true, ...current } : error("Este sobre no está disponible.");
   }
-  return lastEligible;
+  const { pack, counter, remaining, pityActive, hasPity, odds, protectedOdds } = distribution;
+  return { ok: true, pack, counter, remaining, pityActive, odds: odds.map(value => value * 100),
+    guaranteedOdds: hasPity ? protectedOdds.map(value => value * 100) : null };
 }
 
+// Vía histórica utilizada por las partidas y herramientas anteriores a la tienda de sobres sellados.
 export function openPack(state, packId, rng = Math.random) {
-  const pack = PACK_BY_ID.get(packId);
-  if (!pack) return error("Este sobre no está disponible.");
+  const pack = historicalPack(packId);
+  if (!pack) return error("Este sobre histórico no está disponible.");
   if (state.coins < pack.cost) return error("No tienes suficientes monedas para este sobre.");
-
-  const { pools, weights, protectedWeights, counter, hasPity, pityActive } = packDistribution(state, pack);
-  if (!weights.some(weight => weight > 0)) return error("Este sobre no tiene cartas disponibles.");
-
-  const cards = [];
-  let qualified = false;
-  let pityTriggered = false;
-  for (let slot = 0; slot < pack.slots; slot += 1) {
-    const guaranteed = pityActive && !qualified && slot === pack.slots - 1;
-    const rarity = weightedIndex(guaranteed ? protectedWeights : weights, rng);
-    const pool = pools[rarity];
-    cards.push(getCard(pool[Math.floor(sample(rng) * pool.length)].id));
-    qualified ||= rarity >= pack.pityRarity;
-    pityTriggered ||= guaranteed;
-  }
-
-  const ids = cards.map(card => card.id);
-  const pity = { ...state.pity };
-  if (!hasPity || qualified) delete pity[pack.id];
-  else pity[pack.id] = counter + 1;
+  const { cards: ids, pity, pityTriggered } = rollLegacyPack(state.pity,packId,rng);
   const next = {
     ...state,
     coins: state.coins - pack.cost,
@@ -594,7 +536,7 @@ export function openPack(state, packId, rng = Math.random) {
     history: record(state, { kind: "pack", packId, cards: ids, paid: pack.cost, pityTriggered }),
     stats: { ...state.stats, packs: state.stats.packs + 1 }
   };
-  return { ok: true, state: next, pack, cards, pityTriggered };
+  return { ok: true, state: next, pack, cards: ids.map(id => getCard(id)), pityTriggered };
 }
 
 export function getExpeditionSlots(state, missionId) {
@@ -882,9 +824,10 @@ function restoreHistory(source, state, limit = MAX_HISTORY) {
       const sources = restoreSources(state, entry.sources);
       if (sources) history.push({ kind: "essence", essenceId: entry.essenceId, sources, progenitors: essencePool(state, sources) });
     }
-    if (entry.kind === "pack" && PACK_BY_ID.has(entry.packId) && Array.isArray(entry.cards)) {
+    if (entry.kind === "pack" && packDefinition(entry.packId) && Array.isArray(entry.cards)) {
       history.push({ kind: entry.kind, packId: entry.packId, cards: entry.cards.filter(id => BASE_CARDS.has(id)),
-        paid: natural(entry.paid), pityTriggered: Boolean(entry.pityTriggered) });
+        paid: natural(entry.paid), pityTriggered: Boolean(entry.pityTriggered),
+        ...(natural(entry.quantity) > 0 && { quantity: natural(entry.quantity) }) });
     }
     if (entry.kind === "expedition" && MISSION_BY_ID.has(entry.missionId)) {
       history.push({ kind: entry.kind, missionId: entry.missionId, success: Boolean(entry.success),
@@ -905,7 +848,7 @@ export function loadGame(serialized) {
   } catch {
     return createGame();
   }
-  if (!isRecord(raw) || ![1, 2, 3, SAVE_VERSION].includes(raw.version) || !isRecord(raw.inventory)) return createGame();
+  if (!isRecord(raw) || ![1, 2, 3, 4, SAVE_VERSION].includes(raw.version) || !isRecord(raw.inventory)) return createGame();
 
   const fusions = restoreFusions(raw.fusions);
   const aberrations = restoreAberrations(raw.aberrations, { fusions });
@@ -919,8 +862,8 @@ export function loadGame(serialized) {
   const fusionCopies = restoreFusionCopies(raw.fusionCopies, inventory, fusions);
   const aberrationCopies = restoreAberrationCopies(raw.aberrationCopies, inventory, aberrations);
   if (raw.version === 1 && Object.keys(inventory).length === 0) Object.assign(inventory, STARTER);
-  const pity = cleanCounts(raw.pity, id => Boolean(PACK_BY_ID.get(id)?.pityAt));
-  for (const id of Object.keys(pity)) pity[id] = Math.min(pity[id], PACK_BY_ID.get(id).pityAt - 1);
+  const pity = cleanCounts(raw.pity, id => Boolean(historicalPack(id)?.pityAt));
+  for (const id of Object.keys(pity)) pity[id] = Math.min(pity[id], historicalPack(id).pityAt - 1);
   const previousStats = isRecord(raw.stats) ? raw.stats : {};
   const stats = {
     packs: natural(previousStats.packs),
@@ -938,7 +881,7 @@ export function loadGame(serialized) {
   const state = {
     version: SAVE_VERSION, coins: natural(raw.coins), inventory, fusionCopies, aberrationCopies, ...cards, essences, portraits, pity, stats,
     discovered: unique([...knownIds, ...Object.keys(inventory), ...Object.keys(fusions), ...Object.keys(aberrations)]),
-    history: [], alchemyHistory: [], pendingReveal: null, sequence: natural(raw.sequence),
+    history: [], alchemyHistory: [], pendingReveal: null, ...restorePackData(raw, inventory),
     settings: { ...settings, animation: ANIMATION_MODES.includes(settings.animation) ? settings.animation : "full" }
   };
   state.history = restoreHistory(raw.history, state);
