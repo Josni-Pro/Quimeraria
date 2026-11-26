@@ -1,27 +1,35 @@
 import { getCard } from "./engine.js";
 import { getPortrait } from "./illustrations.js";
-import { advanceCombat, DIFFICULTIES } from "./combat/bots.js";
+import { advanceCombat, DIFFICULTIES, finishCombat } from "./combat/bots.js";
 import { ORDERS, SLOTS, TRAINING_RULES } from "./combat/config.js";
 import { budgetUsed, clearOrders, issueOrder, startCombat, validateFormation } from "./combat/engine.js";
 import { EFFECTS } from "./combat/effects.js";
 import { availableCopies, opponentPortraitCard, opponentPortraitState, readTrainingGame, SCOUTS, trainingOpponent, trainingRoster } from "./combat/roster.js";
 import { SKILLS } from "./combat/skills.js";
 import { playEvents } from "./training-animation.js";
+import { createBattleAudio } from "./training-audio.js";
+import { AUTOMATIC_GAP } from "./training-playback.js";
 import { arenaSide, battleShell, builderFormation, builderShell, detailMarkup, escape, logLines, orderPanel,
   resultView, rosterEntry, unitPanel, updateBudget } from "./training-view.js";
 
 const root = document.querySelector("#training");
 const dialog = document.querySelector("#camp-detail");
 const detail = document.querySelector("#detail-body");
+const instantDialog = document.querySelector("#camp-instant");
 const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+const preferenceKey = "quimeraria:entrenamiento:preferencias:v1";
 const pageSize = 14;
 const collator = new Intl.Collator("es", { sensitivity: "base" });
 const text = value => value.toLocaleLowerCase("es").normalize("NFD").replace(/\p{Diacritic}/gu, "");
+let settings;
+try { settings = JSON.parse(localStorage.getItem(preferenceKey)); } catch { /* Usa los valores de sesión. */ }
 const ui = {
   filters: { search: "", generation: "", role: "", cost: "", affinity: "", family: "", available: "", sort: "name" },
   filtersOpen: false, seedOpen: false, page: 0, seed: 1977, scout: "watch", difficulty: "normal",
-  slots: Array(TRAINING_RULES.slots).fill(null), selected: 2, speed: 1,
-  quality: reduce.matches ? "reduced" : "full", auto: false, armed: null, actor: null, detailId: null,
+  slots: Array(TRAINING_RULES.slots).fill(null), selected: 2, speed: [1,2,4].includes(settings?.speed) ? settings.speed : 1,
+  quality: ["full","reduced","minimal"].includes(settings?.quality) ? settings.quality : "reduced",
+  volume: Number.isFinite(settings?.volume) ? Math.max(0,Math.min(100,settings.volume)) : 28,
+  muted: settings?.muted !== false, auto: false, instant: false, elapsed: 0, armed: null, actor: null, detailId: null,
   target: null, busy: false, affinities: []
 };
 let screen = "builder";
@@ -34,7 +42,15 @@ let message = "";
 let opponent = null;
 let autoTimer = 0;
 let observer;
-const animationQuality = () => reduce.matches && ui.quality === "full" ? "reduced" : ui.quality;
+let resumeOnCancel = false;
+const animationQuality = () => reduce.matches ? "minimal" : ui.quality;
+const audio = createBattleAudio(() => ui.muted ? 0 : ui.volume);
+
+function savePreferences() {
+  const { speed, quality, muted, volume } = ui;
+  try { localStorage.setItem(preferenceKey,JSON.stringify({ speed, quality, muted, volume })); }
+  catch { /* Las preferencias siguen disponibles en memoria. */ }
+}
 
 function portrait(id, side = "player", defer = false) {
   const context = side === "enemy" ? opponentPortraitState() : game;
@@ -175,6 +191,7 @@ function syncRoster() {
 
 function interrupt() {
   clearTimeout(autoTimer);
+  audio.stop();
   session?.abort();
   session = null;
   ui.auto = false;
@@ -195,6 +212,8 @@ function begin() {
     return;
   }
   battle = result.state;
+  ui.elapsed = 0;
+  ui.instant = false;
   session = new AbortController();
   screen = "battle";
   ui.actor = battle.units.find(unit => unit.side === "player")?.id;
@@ -207,6 +226,7 @@ function begin() {
 
 function returnToBuilder() {
   interrupt();
+  audio.suspend();
   battle = null;
   screen = "builder";
   message = "";
@@ -215,10 +235,10 @@ function returnToBuilder() {
   window.scrollTo(0,0);
 }
 
-function renderBattle(keepFocus = null) {
+function renderBattle() {
   root.innerHTML = battleShell(battle, ui, portrait);
+  root.querySelector("#scene").dataset.quality = animationQuality();
   updateBattlePanels();
-  if (keepFocus) root.querySelector(`[data-camp="${keepFocus}"]`)?.focus({ preventScroll: true });
 }
 
 function updateBattlePanels() {
@@ -228,6 +248,9 @@ function updateBattlePanels() {
   root.querySelector("#order-list").innerHTML = orderPanel(battle, ui);
   root.querySelector("#order-note").textContent = message || "Selecciona una criatura para darle una orden.";
   root.querySelector("#camp-log").innerHTML = logLines(battle.history, battle.units);
+  root.querySelector("#arena-round").textContent = battle.round;
+  root.querySelector("#duel-pressure").hidden = battle.round < (battle.rules.pressure?.starts ?? Infinity);
+  root.querySelector("#scene").dataset.phase = ui.busy ? "playing" : "planning";
   root.querySelector('[data-camp="next"]').disabled = ui.busy || ui.auto;
   const automatic = root.querySelector('[data-camp="auto"]');
   automatic.textContent = ui.auto ? "Pausar al acabar la ronda" : "Automático";
@@ -298,41 +321,44 @@ function updatePortrait(unit) {
   element.querySelector(".life-fill").style.width = `${hp/maxHp*100}%`;
   element.querySelector(".shield-fill").style.width = `${shield/maxHp*100}%`;
   element.querySelector(".hp-text").textContent = `${hp}/${maxHp}${shield ? " · ⬟ " + shield : ""}`;
+  element.setAttribute("aria-label",`${unit.name}, ${SLOTS[unit.slot]}, ${hp} de ${maxHp} de vitalidad`);
   const tag = element.querySelector(".unit-states");
   tag.textContent = effects.slice(0,3).map(id => EFFECTS[id].icon).join(" ");
   tag.title = effects.map(id => EFFECTS[id].name).join(", ");
 }
 
 function applyFrames(events) {
+  const changed = new Map();
   for (const event of events) {
     if (!event.unit) continue;
     const frame = { ...visualFrames.get(event.unit.id), ...event.unit };
     visualFrames.set(frame.id, frame);
-    updatePortrait(frame);
+    changed.set(frame.id,frame);
   }
   if (events.some(event => event.type === "move")) {
     const layout = root.querySelector(".arena-layout");
-    const previous = new Map([...layout.querySelectorAll("[data-unit]")].map(node => [node.dataset.unit, node.getBoundingClientRect()]));
+    const animated = !ui.instant && animationQuality() === "full";
+    const previous = animated && new Map([...layout.querySelectorAll("[data-unit]")].map(node => [node.dataset.unit, node.getBoundingClientRect()]));
     const visual = { ...battle, units: [...visualFrames.values()].map(frame => ({
       ...frame, effects: Array.isArray(frame.effects) ? Object.fromEntries(frame.effects.map(key => [key, {}])) : frame.effects
     })) };
     layout.innerHTML = ["player", "enemy"].map(side => arenaSide(visual, side, ui, portrait)).join("");
-    if (animationQuality() === "full") for (const node of layout.querySelectorAll("[data-unit]")) {
+    if (previous) for (const node of layout.querySelectorAll("[data-unit]")) {
       const before = previous.get(node.dataset.unit);
       if (!before) continue;
       const after = node.getBoundingClientRect();
       const x = before.left - after.left;
       const y = before.top - after.top;
       if (x || y) node.animate([{ transform: `translate(${x}px,${y}px)` }, { transform: "translate(0,0)" }],
-        { duration: 200 / ui.speed, easing: "ease-out" });
+        { duration: 135 / ui.speed, easing: "ease-out" });
     }
-  }
+  } else for (const frame of changed.values()) updatePortrait(frame);
 }
 
 async function nextRound() {
   if (screen !== "battle" || ui.busy || !session) return;
   const token = session;
-  const focus = document.activeElement?.dataset.camp;
+  const since = performance.now();
   ui.busy = true;
   ui.armed = null;
   message = "Resolviendo la ronda.";
@@ -340,24 +366,38 @@ async function nextRound() {
   const next = advanceCombat(battle, ui.difficulty);
   visualFrames = new Map(battle.units.map(unit => [unit.id, unit]));
   await playEvents(root.querySelector("#scene"), next.events,
-    { speed: () => ui.speed, quality: animationQuality, signal: token.signal }, applyFrames);
+    { speed: () => ui.speed, quality: animationQuality, skip: () => ui.instant,
+      signal: token.signal, sound: audio.play }, applyFrames);
   if (session !== token || token.signal.aborted) return;
   battle = next;
+  ui.elapsed += performance.now() - since;
   ui.busy = false;
   message = "";
-  if (battle.result) {
-    interrupt();
-    screen = "result";
-    root.innerHTML = resultView(battle, ui);
-    window.scrollTo(0,0);
-    return;
-  }
+  if (battle.result) { showResult(); return; }
+  if (ui.instant) { resolveInstantly(); return; }
   if (!battle.units.some(unit => unit.id === ui.actor && unit.hp > 0)) {
     ui.actor = battle.units.find(unit => unit.side === "player" && unit.hp > 0)?.id;
   }
   if (!battle.units.some(unit => unit.id === ui.target && unit.hp > 0)) ui.target = null;
-  renderBattle(focus);
-  if (ui.auto) autoTimer = setTimeout(nextRound, 360 / ui.speed);
+  updateBattlePanels();
+  if (ui.auto) autoTimer = setTimeout(nextRound, AUTOMATIC_GAP / ui.speed);
+}
+
+function showResult() {
+  interrupt();
+  screen = "result";
+  if (instantDialog.open) instantDialog.close("cancel");
+  root.innerHTML = resultView(battle,ui);
+  if (!ui.instant) audio.play(battle.result.winner === "player" ? "victory" : battle.result.winner === "enemy" ? "defeat" : "draw");
+  window.scrollTo(0,0);
+  root.querySelector(".results h1").focus({ preventScroll: true });
+}
+
+function resolveInstantly() {
+  const since = performance.now();
+  battle = finishCombat(battle,ui.difficulty);
+  ui.elapsed += performance.now() - since;
+  showResult();
 }
 
 function exportReport() {
@@ -411,13 +451,31 @@ root.addEventListener("click", event => {
       returnToBuilder();
       break;
     case "next":
+      audio.unlock();
       nextRound();
       break;
     case "auto":
+      audio.unlock();
       ui.auto = !ui.auto;
       if (ui.auto) nextRound();
       else clearTimeout(autoTimer);
       updateBattlePanels();
+      break;
+    case "instant":
+      resumeOnCancel = ui.auto;
+      ui.auto = false;
+      clearTimeout(autoTimer);
+      updateBattlePanels();
+      instantDialog.returnValue = "cancel";
+      instantDialog.showModal();
+      break;
+    case "mute":
+      ui.muted = !ui.muted;
+      if (ui.muted) audio.stop();
+      else audio.unlock();
+      el.setAttribute("aria-pressed",String(ui.muted));
+      el.textContent = ui.muted ? "Activar sonido" : "Silenciar";
+      savePreferences();
       break;
     case "order":
       if (!ui.busy) arm(el.dataset.order);
@@ -462,10 +520,30 @@ root.addEventListener("change", event => {
   if (id === "speed") {
     ui.speed = Number(event.target.value);
     root.querySelector("#scene").style.setProperty("--pace", 1 / ui.speed);
+    savePreferences();
   }
   if (id === "quality") {
     ui.quality = event.target.value;
     root.querySelector("#scene").dataset.quality = animationQuality();
+    savePreferences();
+  }
+});
+root.addEventListener("input",event => {
+  if (event.target.id !== "camp-volume") return;
+  ui.volume = Number(event.target.value);
+  if (ui.volume === 0) audio.stop();
+  else audio.unlock();
+  savePreferences();
+});
+instantDialog.addEventListener("close",() => {
+  if (screen !== "battle") return;
+  if (instantDialog.returnValue === "resolve") {
+    ui.instant = true;
+    if (!ui.busy) resolveInstantly();
+  } else if (resumeOnCancel) {
+    ui.auto = true;
+    updateBattlePanels();
+    nextRound();
   }
 });
 root.addEventListener("toggle", event => {
@@ -481,15 +559,12 @@ window.addEventListener("storage", event => {
     renderBuilder();
   }
 });
-window.addEventListener("pagehide", interrupt);
+window.addEventListener("pagehide",() => { interrupt(); audio.suspend(); });
 window.addEventListener("pageshow", event => {
   if (event.persisted && screen === "battle") returnToBuilder();
 });
-reduce.addEventListener("change", event => {
-  if (event.matches && ui.quality === "full") {
-    ui.quality = "reduced";
-    const control = root.querySelector("#camp-quality");
-    if (control) control.value = "reduced";
-  }
+reduce.addEventListener("change", () => {
+  const scene = root.querySelector("#scene");
+  if (scene) scene.dataset.quality = animationQuality();
 });
 renderBuilder();

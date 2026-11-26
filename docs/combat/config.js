@@ -6,8 +6,15 @@ export const TRAINING_RULES = Object.freeze({
   healthBase: 44, healthPerVitality: 2.2, damageBase: 8, damagePerPower: .52,
   mitigation: 65, variance: .10, shieldCap: .36, interceptShare: .48, stunImmunity: 2,
   guardedReduction: .32, guardedOffense: .72, exposureBonus: .22,
+  pressure: Object.freeze({ starts: 8, capRounds: 10, damagePerRound: .044, recoveryPerRound: .033 }),
   terrain: "patio", mode: "training"
 });
+
+export function duelPressure(round, { pressure }) {
+  if (!pressure) return { damage: 1, recovery: 1 };
+  const steps = Math.min(pressure.capRounds,Math.max(0,round - pressure.starts + 1));
+  return { damage: 1 + steps * pressure.damagePerRound, recovery: 1 - steps * pressure.recoveryPerRound };
+}
 
 export const SLOTS = Object.freeze([
   "Vanguardia izquierda", "Vanguardia central", "Vanguardia derecha",

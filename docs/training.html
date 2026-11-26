@@ -20,6 +20,16 @@
   <main class="camp-wrap" id="training"></main>
   <div class="camp-wrap camp-foot"><a href="./index.html#forja">← Volver a la Forja</a><span>Quimeraria</span></div>
   <dialog id="camp-detail" aria-labelledby="detail-title"><div id="detail-body"></div></dialog>
+  <dialog id="camp-instant" aria-labelledby="instant-title">
+    <form method="dialog" class="instant-dialog">
+      <h2 id="instant-title">Resolver el combate</h2>
+      <p>Las rondas restantes se resolverán automáticamente. Las órdenes ya preparadas se respetarán y no podrás intervenir en las rondas siguientes.</p>
+      <div class="instant-actions">
+        <button class="camp-btn quiet" value="cancel" autofocus>Seguir jugando</button>
+        <button class="camp-btn gold" value="resolve">Resolver ahora</button>
+      </div>
+    </form>
+  </dialog>
   <noscript>Activa JavaScript para abrir el campo de entrenamiento.</noscript>
 </body>
 </html>

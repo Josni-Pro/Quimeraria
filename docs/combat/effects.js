@@ -1,4 +1,4 @@
-import { alive, fraction, random } from "./config.js";
+import { alive, duelPressure, fraction, random } from "./config.js";
 
 export const EFFECTS = Object.freeze({
   intercept: { name: "Intercepción", icon: "⇥" }, armor: { name: "Defensa elevada", icon: "⬟" },
@@ -26,7 +26,7 @@ export function stat(unit, key) {
   return Math.max(0, unit.stats[key] + buff(unit, boost) - buff(unit, penalty));
 }
 
-export function conditionedDamage(actor, target, effect, rules, sample = .5) {
+export function conditionedDamage(actor, target, effect, rules, sample = .5, pressure = 1) {
   const physical = effect.kind === "physical";
   const power = stat(actor, physical ? "strength" : "magic");
   const resistance = stat(target, physical ? "defense" : "resistance") * (1 - (effect.pierce ?? 0));
@@ -35,7 +35,7 @@ export function conditionedDamage(actor, target, effect, rules, sample = .5) {
   const offense = actor.effects.guard ? rules.guardedOffense : 1;
   const variation = 1 + (sample - .5) * rules.variance;
   return Math.max(1, Math.round((rules.damageBase + power * rules.damagePerPower) * effect.factor *
-    rules.mitigation / (rules.mitigation + resistance) * exposed * defense * offense * variation));
+    rules.mitigation / (rules.mitigation + resistance) * exposed * defense * offense * variation * pressure));
 }
 
 export function snapshot(unit) {
@@ -117,8 +117,9 @@ export function moveUnit(state, actor, slot, other = null) {
 
 export function applyEffect(state, actor, target, effect) {
   if (!alive(target)) return;
+  const pressure = duelPressure(state.round,state.rules);
   if (effect.type === "damage") {
-    const amount = conditionedDamage(actor, target, effect, state.rules, random(state));
+    const amount = conditionedDamage(actor, target, effect, state.rules, random(state),pressure.damage);
     const protector = state.units.find(unit => unit.id === target.effects.intercept?.source);
     if (alive(protector) && protector !== target && !protector.intercepted && !protector.effects.stun && amount > 1) {
       const split = Math.max(1, Math.round(amount * state.rules.interceptShare));
@@ -131,9 +132,9 @@ export function applyEffect(state, actor, target, effect) {
       hit(state, actor, target, amount, effect.kind);
     }
   } else if (effect.type === "heal") {
-    recover(state, actor, target, (9 + stat(actor, "magic") * .46) * effect.factor);
+    recover(state, actor, target, (9 + stat(actor, "magic") * .46) * effect.factor * pressure.recovery);
   } else if (effect.type === "shield") {
-    assignShield(state, actor, target, (7 + stat(actor, "defense") * .44) * effect.factor);
+    assignShield(state, actor, target, (7 + stat(actor, "defense") * .44) * effect.factor * pressure.recovery);
   } else if (effect.type === "status") {
     applyStatus(state, actor, target, effect);
   } else if (effect.type === "cleanse") {
@@ -150,6 +151,7 @@ export function applyEffect(state, actor, target, effect) {
 }
 
 export function upkeep(state) {
+  const pressure = duelPressure(state.round,state.rules);
   for (const unit of state.units) {
     unit.hasActed = false;
     unit.intercepted = false;
@@ -165,7 +167,7 @@ export function upkeep(state) {
     for (const [id, effect] of Object.entries(unit.effects)) {
       const owner = state.units.find(actor => actor.id === effect.source) ?? unit;
       if (EFFECTS[id].periodic === "damage") hit(state, owner, unit, effect.value, id, true);
-      if (EFFECTS[id].periodic === "heal") recover(state, owner, unit, effect.value, true);
+      if (EFFECTS[id].periodic === "heal") recover(state, owner, unit, effect.value * pressure.recovery, true);
     }
     if (alive(unit) && unit.passive.trigger === "renew" && !unit.passiveUsed && fraction(unit) < .55) {
       unit.passiveUsed = true;

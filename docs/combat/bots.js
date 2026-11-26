@@ -42,6 +42,12 @@ export function advanceCombat(state, difficulty) {
   return resolveRound(planBot(state, difficulty), difficulty);
 }
 
+export function finishCombat(start, difficulty) {
+  let state = start;
+  while (state.phase === "orders") state = advanceCombat(state, difficulty);
+  return state;
+}
+
 export function simulateCombat(start, { player = "normal", enemy = "normal" } = {}) {
   let state = start;
   while (state.phase === "orders") {

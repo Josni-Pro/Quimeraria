@@ -71,7 +71,7 @@ export function unitCard(unit, art, options = {}) {
   const effects = Object.keys(unit.effects ?? {});
   const roleText = roles(unit);
   return `<button type="button" class="unit-card${options.selected ? " is-selected" : ""}${options.focused ? " is-focused" : ""}${hp <= 0 ? " down" : ""}"
-    aria-label="${escape([unit.name, options.label, options.inBattle ? hp + " de " + unit.maxHp + " de vitalidad" : roleText].filter(Boolean).join(", "))}" ${attrs}>
+    data-name="${escape(unit.name)}" aria-label="${escape([unit.name, options.label, options.inBattle ? hp + " de " + unit.maxHp + " de vitalidad" : roleText].filter(Boolean).join(", "))}" ${attrs}>
     <div class="unit-fig">${art ? `<img src="${escape(art)}" alt="" decoding="async">` : ""}<span class="unit-badge">${options.inBattle ? "G" + unit.generation : "◈ " + unit.cost}</span></div>
     <div class="unit-copy"><strong>${escape(unit.name)}</strong>
     ${options.inBattle ? `<div class="life-track" aria-hidden="true"><div class="life-fill" style="width:${hp / unit.maxHp * 100}%"></div><div class="shield-fill" style="width:${shield / unit.maxHp * 100}%"></div></div>
@@ -116,19 +116,23 @@ export function arenaSide(state, side, selection, portrait) {
 
 export function battleShell(state, model, portrait) {
   return `<header class="combat-head"><div class="combat-title"><p class="eyebrow">Santuario del Umbral</p><h1>Ensayo de combate</h1></div>
-    <div class="combat-round">Ronda <b id="arena-round">${state.round}</b> / ${state.rules.maxRounds}</div></header>
+    <div class="round-hud"><div class="combat-round"><span>Ronda</span> <b id="arena-round">${state.round}</b><small> / ${state.rules.maxRounds}</small></div><span id="duel-pressure" hidden>Presión del duelo</span></div></header>
     <section class="scene" id="scene" aria-label="Campo de combate" data-quality="${model.quality}" style="--pace:${1 / model.speed}">
       <div class="side-names"><span>Tu formación</span><span class="versus" aria-label="Contra">VS</span><span>${escape(SCOUTS[model.scout].name)}</span></div>
       <div class="arena-layout">${arenaSide(state, "player", model, portrait)}${arenaSide(state, "enemy", model, portrait)}</div>
       <canvas class="scene-canvas" aria-hidden="true"></canvas><div class="scene-floats" aria-hidden="true"></div>
-      <div class="scene-caption" hidden></div>
+      <div class="scene-caption" hidden><span></span><strong></strong></div>
     </section>
     <div class="combat-controls">
       <div class="transport">${button("next", "Avanzar ronda", "gold")}${button("auto", model.auto ? "Pausar al acabar la ronda" : "Automático")}
-      ${button("reset", "Reiniciar", "quiet")}${button("exit", "Volver a formación", "quiet")}</div>
+      ${button("instant", "Resolver combate", "quiet")}</div>
       <div class="preferences">
         ${field("Velocidad", "camp-speed", [[1,"1×"],[2,"2×"],[4,"4×"]], model.speed)}
-        ${field("Efectos", "camp-quality", [["full","Completos"],["reduced","Reducidos"],["minimal","Sin animaciones"]], model.quality)}
+        <details class="combat-settings"><summary>Ajustes</summary><div class="settings-popover">
+        ${field("Calidad gráfica", "camp-quality", [["full","Alta"],["reduced","Equilibrada"],["minimal","Reducida"]], model.quality)}
+        <label class="field-label sound-volume">Volumen <input id="camp-volume" type="range" min="0" max="100" value="${model.volume}"></label>
+        ${button("mute",model.muted ? "Activar sonido" : "Silenciar","quiet",`aria-pressed="${model.muted}"`)}
+        </div></details>
       </div>
     </div>
     <div class="combat-info">
@@ -137,8 +141,9 @@ export function battleShell(state, model, portrait) {
         <div id="order-list"></div><p class="tactic" id="order-note" role="status"></p>
       </section>
       <section class="camp-panel combat-detail" id="camp-unit-panel" aria-label="Detalle de criatura"></section>
-      <section class="camp-panel log"><h2>Crónica</h2><ol class="log-lines" id="camp-log"></ol></section>
-    </div>`;
+      <details class="camp-panel log battle-log"><summary>Crónica de la ronda</summary><ol class="log-lines" id="camp-log"></ol></details>
+    </div>
+    <div class="battle-exit">${button("reset", "Reiniciar", "quiet")}${button("exit", "Volver a formación", "quiet")}</div>`;
 }
 
 export function orderPanel(state, model) {
@@ -222,12 +227,20 @@ export function resultView(state, model) {
   const heading = result.winner === "player" ? "Victoria" : result.winner === "enemy" ? "Derrota" : "Empate";
   const bySide = ["player","enemy"].map(side => [side, squadResults(state, side)]);
   const survivors = side => side.filter(unit => unit.hp > 0).length;
-  return `<div class="mast"><p class="eyebrow">Santuario del Umbral</p></div>
-    <header class="results">
-      <h1>${heading}</h1><p>${result.rounds} ${result.rounds === 1 ? "ronda" : "rondas"} · ${result.reason === "limit" ? "Límite de rondas" : "Encuentro concluido"}
-      · Semilla ${state.initialSeed}</p>
+  const totals = bySide[0][1].reduce((total,unit) => {
+    for (const key of ["damage","healing","protection","control"]) total[key] = (total[key] ?? 0) + unit.metrics[key];
+    return total;
+  },{});
+  const duration = model.elapsed / 1000;
+  const time = duration < 1 ? " < 1 s activo" : Math.floor(duration / 60) + ":" + String(Math.floor(duration % 60)).padStart(2,"0") + " activo";
+  return `<header class="results" data-result="${result.winner ?? "draw"}">
+      <div class="result-emblem" aria-hidden="true"><span>${result.winner === "player" ? "✧" : result.winner === "enemy" ? "◈" : "◇"}</span></div>
+      <p class="eyebrow">Santuario del Umbral</p><h1 tabindex="-1">${heading}</h1>
+      <p>${result.rounds} ${result.rounds === 1 ? "ronda" : "rondas"} · ${escape(time)} · ${result.reason === "limit" ? "Límite de rondas" : "Encuentro concluido"}</p>
       <div class="result-actions">${button("reset", "Repetir", "gold")}${button("exit", "Cambiar formación", "quiet")}${button("export", "Exportar crónica", "quiet")}</div>
     </header>
+    <dl class="result-summary">${[["damage","Daño"],["healing","Curación"],["protection","Protección"],["control","Control"]].map(([key,name]) =>
+      `<div><dt>${name} de tu escuadra</dt><dd>${totals[key]}</dd></div>`).join("")}</dl>
     ${bySide.map(([side, units]) => `<section class="camp-panel result-sheet">
       <h2>${side === "player" ? "Tu escuadra" : escape(SCOUTS[model.scout].name)}</h2>
       <p class="rival-note">${survivors(units)} en pie · ${units.length - survivors(units)} incapacitadas</p>
