@@ -1,5 +1,6 @@
 import { CARDS } from "../catalog.js";
 import { acknowledgeReveal, createGame, fuseCards, getCard, getFusionCopies, loadGame } from "../engine.js";
+import { getBaseCopies } from "../pack-transactions.js";
 import { TRAINING_RULES } from "./config.js";
 import { prepareCombatant } from "./skills.js";
 
@@ -15,7 +16,7 @@ export function trainingRoster(game, rules = TRAINING_RULES) {
     const card = getCard(id, game);
     const profile = prepareCombatant(card, rules);
     if (!profile) return [];
-    const tracked = getFusionCopies(game, id);
+    const tracked = card.generation ? getFusionCopies(game,id) : getBaseCopies(game,id);
     const count = Math.min(owned, rules.slots);
     const copies = Array.from({ length: count }, (_, index) => ({
       copyId: tracked[index]?.id ?? `legacy:${id}:${index - tracked.length}`, profile

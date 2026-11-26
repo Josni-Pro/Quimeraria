@@ -19,7 +19,7 @@ export function simulatePacks(id, iterations = 10_000, seed = 1977) {
   const rng = seededRng(seed);
   const counts = Object.fromEntries(CARDS.map(card => [card.id, { copies:0, presence:0 }]));
   const rarities = RARITIES.map(() => ({ copies:0, presence:0 }));
-  const featured = new Set(profile?.groups.filter(group => group.family !== "general").flatMap(group => Object.keys(group.byCard)));
+  const featured = new Set(profile?.groups.filter(group => group.thematic).flatMap(group => Object.keys(group.byCard)));
   const allowed = new Set(profile ? profile.cards.map(({ card }) => card.id) :
     old.pools.flatMap((pool,i) => old.odds[i] ? pool.map(card => card.id) : []));
   const reserved = profile?.groups.filter(group => group.family !== "general") ?? [];
@@ -46,7 +46,7 @@ export function simulatePacks(id, iterations = 10_000, seed = 1977) {
     withDuplicates += Number(ids.length !== unique.size);
 
     // Los grupos más estrechos preceden a sus superconjuntos en las definiciones.
-    const unassigned = [...ids];
+    const unassigned = [...ids].sort((a,b) => cards.get(a).rarity-cards.get(b).rarity);
     if (ids.length !== pack.slots || ids.some(cardId => !allowed.has(cardId)) || reserved.some(group => {
       for (let i = 0; i < group.count; i++) {
         const at = unassigned.findIndex(cardId => Object.hasOwn(group.byCard,cardId));

@@ -109,7 +109,7 @@
 .pack-result-head img {width:74px;height:auto;aspect-ratio:2/3;object-fit:cover;}
 .pack-result-head h1 {font-size:clamp(1.9rem,4.5vw,3.8rem);}
 .pack-result-head p:last-child {margin:.47rem 0 0;color:#dccba9;}
-.pack-summary {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.6rem;margin:.85rem 0;}
+.pack-summary {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.6rem;margin:.85rem 0;}
 .pack-summary div,.pack-distribution section {padding:.55rem .7rem;border:1px solid #87765866;border-radius:.36rem;background:#24202b;}
 .pack-summary dt {font-size:.75rem;}
 .pack-summary dd {margin:.1rem 0 0;color:#ffe0a1;font:1.65rem Georgia,serif;}
@@ -147,7 +147,7 @@
   .shop-rarity-list,.shop-possible {grid-template-columns:1fr;}
   .stock-row {grid-template-columns:38px 1fr;}
   .stock-row .stock-actions {grid-column:2;}
-  .pack-summary {gap:.26rem;}
+  .pack-summary {grid-template-columns:repeat(2,minmax(0,1fr));gap:.26rem;}
   .pack-summary div {padding:.44rem;}
   .pack-summary dt {font-size:.69rem;}
   .pack-result-card img {width:36px;height:36px;}
@@ -163,3 +163,14 @@
 #pack-lab-form input,#pack-lab-form select {min-height:36px;max-width:100%;border:1px solid #826b55;background:#15141e;color:#f4e7cc;padding:.27rem;border-radius:.3rem;}
 #pack-lab-form input {width:9rem;}
 #lab-tags dd {white-space:normal;text-align:right;}
+.stock-mass,.stock-pages {margin:.65rem 0;}
+.stock-mass details {flex-basis:100%;}
+.stock-mass details div {margin:.4rem 0;}
+.stock-pages span {font-size:.81rem;color:#e4cca3;}
+.open-mode {display:flex;gap:.5rem;align-items:center;margin:.8rem 0;}
+.open-mode select,.pack-deck-actions input {width:auto;min-height:37px;color:#f2e7d2;background:#16151e;border:1px solid #8d7458;border-radius:.3rem;padding:.3rem;}
+.pack-deck-actions input {width:4.25rem;}
+.pack-receipts {padding:.7rem 1rem;margin-top:1rem;border:1px solid #897655;border-radius:.35rem;background:#24202b;}
+.pack-receipts li {font-size:.78rem;color:#d6c9b6;padding:.25rem 0;}
+
+#lab-odds .shop-rarity-list dd {white-space:normal;text-align:right;}

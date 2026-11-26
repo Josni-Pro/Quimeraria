@@ -1,4 +1,9 @@
-import { getCard } from "./engine.js";
+import { readCardOrder, recentCards, sortCardEntries, writeCardOrder } from "./card-order.js";
+import { getCard, loadGame, serializeGame } from "./engine.js";
+import { advanceArena, arenaCard, arenaEnemy, arenaOffers, arenaPortraitState, beginArena, recoverArena, rewardQuote, validateArenaTeam, withdrawArena } from "./arena.js";
+import { ARENA_RULES } from "./arena-config.js";
+import { arenaLobby, arenaReceipt } from "./arena-view.js";
+import { prepareCombatant } from "./combat/skills.js";
 import { getPortrait } from "./illustrations.js";
 import { advanceCombat, DIFFICULTIES, finishCombat } from "./combat/bots.js";
 import { ORDERS, SLOTS, TRAINING_RULES } from "./combat/config.js";
@@ -19,12 +24,19 @@ const instantDialog = document.querySelector("#camp-instant");
 const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
 const preferenceKey = "quimeraria:entrenamiento:preferencias:v1";
 const pageSize = 14;
-const collator = new Intl.Collator("es", { sensitivity: "base" });
+const arenaMode = document.body.dataset.mode === "arena";
+const saveKey = "quimeraria:partida:v1";
+const rosterKey = "quimeraria:filtros-escuadra:v1";
+function savedRosterFilters() {
+  try { return JSON.parse(sessionStorage.getItem(rosterKey)) ?? {}; }
+  catch { return {}; }
+}
+const ordering = readCardOrder();
 const text = value => value.toLocaleLowerCase("es").normalize("NFD").replace(/\p{Diacritic}/gu, "");
 let settings;
 try { settings = JSON.parse(localStorage.getItem(preferenceKey)); } catch { /* Usa los valores de sesión. */ }
 const ui = {
-  filters: { search: "", generation: "", role: "", cost: "", affinity: "", family: "", available: "", sort: "name" },
+  filters: { search: "", generation: "", role: "", cost: "", affinity: "", family: "", available: "", ...savedRosterFilters(), sort: ordering.by, direction: ordering.direction },
   filtersOpen: false, seedOpen: false, page: 0, seed: 1977, scout: "watch", difficulty: "normal",
   slots: Array(TRAINING_RULES.slots).fill(null), selected: 2, speed: [1,2,4].includes(settings?.speed) ? settings.speed : 1,
   quality: ["full","reduced","minimal"].includes(settings?.quality) ? settings.quality : "reduced",
@@ -32,7 +44,9 @@ const ui = {
   muted: settings?.muted !== false, auto: false, instant: false, elapsed: 0, armed: null, actor: null, detailId: null,
   target: null, busy: false, affinities: []
 };
-let screen = "builder";
+let screen = arenaMode ? "lobby" : "builder";
+let activeArenaId;
+let receipt;
 let game = readTrainingGame();
 let roster = trainingRoster(game);
 let battle = null;
@@ -53,8 +67,8 @@ function savePreferences() {
 }
 
 function portrait(id, side = "player", defer = false) {
-  const context = side === "enemy" ? opponentPortraitState() : game;
-  const card = side === "enemy" ? opponentPortraitCard(id) : getCard(id, game);
+  const context = side === "enemy" ? (arenaMode ? arenaPortraitState() : opponentPortraitState()) : game;
+  const card = side === "enemy" ? (arenaMode ? arenaCard(id) : opponentPortraitCard(id)) : getCard(id,game);
   if (!card) return null;
   return getPortrait(card, context, undefined, { defer }).src;
 }
@@ -75,15 +89,9 @@ function freeCopies(entry) {
 function filteredRoster() {
   const filters = ui.filters;
   const query = text(filters.search.trim());
-  const ordered = {
-    name: (a,b) => collator.compare(a.card.name,b.card.name),
-    cost: (a,b) => a.profile.cost - b.profile.cost,
-    health: (a,b) => b.profile.maxHp - a.profile.maxHp,
-    agility: (a,b) => b.profile.stats.agility - a.profile.stats.agility,
-    generation: (a,b) => b.profile.generation - a.profile.generation
-  };
-  return roster.filter(entry => {
+  const visible = roster.filter(entry => {
     const unit = entry.profile;
+    if (ui.encounter && unit.generation > ui.encounter.generation) return false;
     return (!query || text(entry.card.name).includes(query)) &&
       (!filters.generation || unit.generation === Number(filters.generation)) &&
       (!filters.role || [unit.role, unit.secondaryRole].includes(filters.role)) &&
@@ -91,7 +99,8 @@ function filteredRoster() {
       (!filters.affinity || unit.affinities.includes(filters.affinity)) &&
       (!filters.family || [unit.basic, unit.main, unit.special].some(key => SKILLS[key].intent === filters.family)) &&
       (filters.available === "free" ? freeCopies(entry) > 0 : filters.available !== "deployed" || freeCopies(entry) < entry.owned);
-  }).sort((a,b) => ordered[filters.sort](a,b) || ordered.name(a,b));
+  }).map(entry => ({ ...entry,available:freeCopies(entry) }));
+  return sortCardEntries(visible,{ by:filters.sort,direction:filters.direction },recentCards(game));
 }
 
 function showRoster() {
@@ -123,16 +132,24 @@ function showFormation() {
   const used = budgetUsed(ui.slots);
   const view = root.querySelector("#camp-formation");
   view.innerHTML = builderFormation(ui.slots, ui.selected, portrait);
-  updateBudget(root.querySelector("#camp-budget"), ui.slots);
+  const offer = ui.encounter;
+  const maximum = offer?.kind === "challenge" ? offer.budget : TRAINING_RULES.budget;
+  updateBudget(root.querySelector("#camp-budget"),ui.slots,maximum);
   root.querySelector("#camp-remove").disabled = !ui.slots[ui.selected];
-  root.querySelector("#camp-start").disabled = !validateFormation(ui.slots, TRAINING_RULES, availableCopies(roster)).ok;
-  opponent = trainingOpponent(ui.scout, ui.difficulty, used);
-  root.querySelector("#camp-rival-note").textContent = `${SCOUTS[ui.scout].description} ${budgetUsed(opponent)} pts para este ensayo.`;
+  const copies = availableCopies(roster);
+  const validation = offer ? validateArenaTeam(ui.slots,offer,copies) : validateFormation(ui.slots,TRAINING_RULES,copies);
+  root.querySelector("#camp-start").disabled = !validation.ok;
+  opponent = offer ? arenaEnemy(offer) : trainingOpponent(ui.scout,ui.difficulty,used);
+  const enemyBudget = budgetUsed(opponent);
+  const rewards = offer && rewardQuote(offer,used,enemyBudget);
+  root.querySelector("#camp-rival-note").textContent = offer ?
+    `${enemyBudget} pts rivales · +${rewards.gain} / −${rewards.loss} de rango · ${rewards.coins} óbolos por victoria.` :
+    `${SCOUTS[ui.scout].description} ${enemyBudget} pts para este ensayo.`;
   root.querySelector("#camp-rival").innerHTML = opponent.filter(Boolean).map(({ profile }) =>
     `<img src="${escape(portrait(profile.cardId, "enemy"))}" alt="${escape(profile.name)}" title="${escape(profile.name)}" loading="lazy">`).join("");
   const instruction = ui.slots[ui.selected] ? "Toca otra plaza para intercambiar." : "Elige una criatura para la plaza marcada.";
   root.querySelector("#camp-formation-hint").textContent = instruction;
-  root.querySelector("#camp-feedback").textContent = message;
+  root.querySelector("#camp-feedback").textContent = message || (offer && !validation.ok ? validation.error : "");
 }
 
 function renderBuilder() {
@@ -200,15 +217,21 @@ function interrupt() {
   observer?.disconnect();
 }
 
-function begin() {
+async function begin() {
   interrupt();
   syncRoster();
-  opponent = trainingOpponent(ui.scout, ui.difficulty, budgetUsed(ui.slots));
-  const result = startCombat(ui.slots, opponent, { seed: ui.seed, available: availableCopies(roster) });
+  const offer = ui.encounter;
+  if (!offer) opponent = trainingOpponent(ui.scout,ui.difficulty,budgetUsed(ui.slots));
+  const result = offer ? await saveArena(current=>beginArena(current,offer.id,ui.slots.map(entry=>entry?.copyId ?? null))) :
+    startCombat(ui.slots,opponent,{ seed:ui.seed,available:availableCopies(roster) });
   if (!result.ok) {
     message = result.error;
     screen = "builder";
     renderBuilder();
+    return;
+  }
+  if (offer) {
+    acceptArena(result.active,result.battle);
     return;
   }
   battle = result.state;
@@ -235,9 +258,84 @@ function returnToBuilder() {
   window.scrollTo(0,0);
 }
 
+function saveArena(operation) {
+  const commit = () => {
+    try {
+      const current = loadGame(localStorage.getItem(saveKey));
+      const result = operation(current);
+      if (!result.ok) return result;
+      localStorage.setItem(saveKey,serializeGame(result.state));
+      game = result.state;
+      return result;
+    } catch { return { ok:false,error:"El navegador impide guardar la Arena." }; }
+  };
+  return navigator.locks?.request ? navigator.locks.request(saveKey,commit) : Promise.resolve(commit());
+}
+function acceptArena(active, snapshot) {
+  ui.encounter = active.offer;
+  ui.difficulty = active.offer.difficulty;
+  ui.slots = active.player.slice();
+  opponent = active.enemy;
+  activeArenaId = active.id;
+  receipt = null;
+  battle = snapshot;
+  ui.elapsed = 0;
+  ui.instant = false;
+  session = new AbortController();
+  screen = "battle";
+  ui.actor = battle.units.find(unit=>unit.side==="player" && unit.hp>0)?.id;
+  ui.detailId = ui.actor;
+  ui.target = null;
+  message = "";
+  renderBattle();
+  window.scrollTo(0,0);
+}
+function renderLobby(focus = true) {
+  const feedback = message;
+  interrupt();
+  audio.suspend();
+  ui.encounter = null;
+  battle = null;
+  game = readTrainingGame();
+  roster = trainingRoster(game);
+  screen = "lobby";
+  root.innerHTML = arenaLobby(game,portrait,feedback);
+  if (focus) window.scrollTo(0,0);
+  message = "";
+}
+function resumeArena() {
+  game = readTrainingGame();
+  const active = game.arena?.active;
+  if (!active) { message = "Ese encuentro ya se resolvió."; renderLobby(); return; }
+  arenaEnemy(active.offer);
+  const snapshot = recoverArena(active);
+  if (!snapshot) { message = "No se pudo recuperar el encuentro. Puedes cerrarlo desde el registro."; renderLobby(); return; }
+  acceptArena(active,snapshot);
+}
+function chooseArena(id) {
+  if (game.arena?.active) { resumeArena(); return; }
+  const choices = arenaOffers(game);
+  ui.encounter = [...choices.board,...choices.champions,...choices.challenges].find(offer=>offer.id===id && !offer.locked);
+  if (!ui.encounter) { renderLobby(); return; }
+  ui.difficulty = ui.encounter.difficulty;
+  screen = "builder";
+  renderBuilder();
+  window.scrollTo(0,0);
+}
+async function arenaRound(instant) {
+  const active = activeArenaId;
+  const round = battle.round;
+  const orders = battle.commands.player.orders;
+  const outcome = await saveArena(current=>advanceArena(current,active,round,orders,instant));
+  if (outcome.ok) receipt = outcome.receipt;
+  else message = outcome.error;
+  return outcome.battle;
+}
+
 function renderBattle() {
   root.innerHTML = battleShell(battle, ui, portrait);
   root.querySelector("#scene").dataset.quality = animationQuality();
+  if (arenaMode && animationQuality() !== "minimal") root.querySelector("#scene").classList.add("arena-entry");
   updateBattlePanels();
 }
 
@@ -363,7 +461,9 @@ async function nextRound() {
   ui.armed = null;
   message = "Resolviendo la ronda.";
   updateBattlePanels();
-  const next = advanceCombat(battle, ui.difficulty);
+  const next = arenaMode ? await arenaRound(false) : advanceCombat(battle,ui.difficulty);
+  if (session !== token || token.signal.aborted) return;
+  if (!next) { ui.busy = false; ui.auto = false; updateBattlePanels(); return; }
   visualFrames = new Map(battle.units.map(unit => [unit.id, unit]));
   await playEvents(root.querySelector("#scene"), next.events,
     { speed: () => ui.speed, quality: animationQuality, skip: () => ui.instant,
@@ -387,22 +487,28 @@ function showResult() {
   interrupt();
   screen = "result";
   if (instantDialog.open) instantDialog.close("cancel");
-  root.innerHTML = resultView(battle,ui);
+  root.innerHTML = resultView(battle,ui,arenaMode ? arenaReceipt(receipt,{ ...ui,quality:animationQuality() }) : "");
   if (!ui.instant) audio.play(battle.result.winner === "player" ? "victory" : battle.result.winner === "enemy" ? "defeat" : "draw");
   window.scrollTo(0,0);
   root.querySelector(".results h1").focus({ preventScroll: true });
 }
 
-function resolveInstantly() {
+async function resolveInstantly() {
   const since = performance.now();
-  battle = finishCombat(battle,ui.difficulty);
+  const token = session;
+  ui.busy = true;
+  updateBattlePanels();
+  const next = arenaMode ? await arenaRound(true) : finishCombat(battle,ui.difficulty);
+  if (session !== token || token.signal.aborted) return;
+  if (!next) { ui.busy = false; ui.instant = false; updateBattlePanels(); return; }
+  battle = next;
   ui.elapsed += performance.now() - since;
   showResult();
 }
 
 function exportReport() {
   const url = URL.createObjectURL(new Blob([JSON.stringify({
-    seed: battle.initialSeed, difficulty: ui.difficulty, difficultyName: DIFFICULTIES[ui.difficulty], rival: ui.scout,
+    seed: battle.initialSeed, difficulty: ui.difficulty, difficultyName: DIFFICULTIES[ui.difficulty], rival: ui.encounter?.id ?? ui.scout,
     deployment: Object.fromEntries([["player", ui.slots], ["enemy", opponent]].map(([side, slots]) =>
       [side, slots.map(entry => entry ? { copyId: entry.copyId, cardId: entry.profile.cardId } : null)])),
     formations: battle.units.map(({ id, cardId, side, name, metrics }) => ({ id, cardId, side, name, metrics })),
@@ -431,6 +537,22 @@ root.addEventListener("click", event => {
     return;
   }
   switch (el.dataset.camp) {
+    case "arena-lobby": renderLobby(); break;
+    case "arena-pick": chooseArena(el.dataset.id); break;
+    case "arena-resume": resumeArena(); break;
+    case "arena-foe": {
+      const profile = prepareCombatant(arenaCard(el.dataset.id),ARENA_RULES);
+      if (profile) showDetails(profile,"enemy");
+      break;
+    }
+    case "arena-withdraw":
+      if (confirm("Abandonar cuenta como derrota. ¿Cerrar este encuentro?")) {
+        saveArena(current=>withdrawArena(current,activeArenaId)).then(result=>{
+          message = result.ok ? "Encuentro cerrado · "+result.receipt.delta+" puntos." : result.error;
+          renderLobby();
+        });
+      }
+      break;
     case "remove":
       ui.slots[ui.selected] = null;
       message = "";
@@ -445,6 +567,7 @@ root.addEventListener("click", event => {
       break;
     case "start":
     case "reset":
+      el.disabled = true;
       begin();
       break;
     case "exit":
@@ -501,6 +624,8 @@ function updateFilter(event) {
   const id = event.target.id.replace("camp-", "");
   if (Object.hasOwn(ui.filters, id)) {
     ui.filters[id] = event.target.value;
+    if (id === "sort" || id === "direction") writeCardOrder({ by:ui.filters.sort,direction:ui.filters.direction });
+    try { sessionStorage.setItem(rosterKey,JSON.stringify(ui.filters)); } catch { /* Sesión sin almacenamiento. */ }
     ui.page = 0;
     showRoster();
   }
@@ -554,17 +679,19 @@ dialog.addEventListener("click", event => {
   if (event.target.closest('[data-camp="close-detail"]') || event.target === dialog) dialog.close();
 });
 window.addEventListener("storage", event => {
-  if (event.key === "quimeraria:partida:v1" && screen === "builder") {
+  if (event.key === saveKey && arenaMode && screen === "lobby") renderLobby(false);
+  if (event.key === saveKey && screen === "builder") {
     syncRoster();
     renderBuilder();
   }
 });
 window.addEventListener("pagehide",() => { interrupt(); audio.suspend(); });
 window.addEventListener("pageshow", event => {
-  if (event.persisted && screen === "battle") returnToBuilder();
+  if (event.persisted && screen === "battle") arenaMode ? renderLobby() : returnToBuilder();
 });
 reduce.addEventListener("change", () => {
   const scene = root.querySelector("#scene");
   if (scene) scene.dataset.quality = animationQuality();
 });
-renderBuilder();
+if (arenaMode) renderLobby(false);
+else renderBuilder();

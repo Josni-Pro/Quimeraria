@@ -1,5 +1,5 @@
 import { CARDS } from "./catalog.js";
-import { historicalPack, MAX_PACK_PURCHASE, PACK_DISCOUNTS, packDefinition, shopPack } from "./pack-config.js";
+import { historicalPack, MAX_PACK_PURCHASE, PACK_DISCOUNTS, PACK_RULES_VERSION, packDefinition, shopPack } from "./pack-config.js";
 import { rollLegacyPack, rollShopPack } from "./pack-rules.js";
 
 const baseIds = new Set(CARDS.map(card => card.id));
@@ -28,40 +28,52 @@ export function purchasePackBatch(state, id, quantity, expectedSequence) {
   const quote = quotePackPurchase(state,id,quantity);
   if (!quote.ok) return quote;
   if (!quote.affordable) return fail("No tienes suficientes óbolos para esta compra.");
-  let sequence = state.sequence + 1;
-  const batchId = `pack-order-${sequence}`;
-  const basePaid = Math.floor(quote.final / quantity);
-  const remainder = quote.final % quantity;
-  const packs = Array.from({ length: quantity }, (_, index) => ({
-    id: `pack-seal-${++sequence}`, packId: id, batchId, paid: basePaid + Number(index < remainder)
-  }));
-  return { ok: true, quote, batchId, packs,
-    state: { ...state, sequence, coins: quote.remaining, packStock: [...(state.packStock ?? []), ...packs] } };
+  const grant = grantSealedPacks(state,id,quantity,quote.final);
+  return { ...grant, quote, state:{ ...grant.state,coins:quote.remaining } };
 }
 
-export function startPackOpening(state, sealIds, rng = Math.random) {
+export function grantSealedPacks(state,id,quantity,paid = 0) {
+  let sequence = state.sequence + 1;
+  const batchId = `pack-order-${sequence}`;
+  const basePaid = Math.floor(paid/quantity);
+  const remainder = paid%quantity;
+  const packs = Array.from({ length:quantity },(_,i) => ({
+    id:`pack-seal-${++sequence}`,packId:id,batchId,paid:basePaid+Number(i<remainder),
+    ...(shopPack(id) && { rulesVersion:PACK_RULES_VERSION })
+  }));
+  return { ok:true,batchId,packs,state:{ ...state,sequence,packStock:[...(state.packStock ?? []),...packs] } };
+}
+
+export function quotePackOpening(state, sealIds) {
+  if (!Array.isArray(sealIds) || !sealIds.length || new Set(sealIds).size !== sealIds.length) {
+    return fail("Selecciona sobres almacenados distintos.");
+  }
+  const stock = new Map((state.packStock ?? []).map(pack => [pack.id,pack]));
+  const seals = sealIds.map(id => stock.get(id));
+  if (seals.some(seal => !seal || !packDefinition(seal.packId))) return fail("Alguno de estos sobres ya no está disponible.");
+  const counts = {};
+  let cards = 0;
+  for (const seal of seals) {
+    counts[seal.packId] = (counts[seal.packId] ?? 0)+1;
+    cards += packDefinition(seal.packId).slots;
+  }
+  return { ok:true, seals, counts, cards };
+}
+
+export function startPackOpening(state, sealIds, rng = Math.random, mode) {
   if (state.pendingPack) return fail("Completa la apertura pendiente.");
-  if (!Array.isArray(sealIds) || !sealIds.length || sealIds.length > MAX_PACK_PURCHASE || new Set(sealIds).size !== sealIds.length) {
-    return fail("Selecciona sobres distintos de la misma compra.");
-  }
-  const stock = state.packStock ?? [];
-  const inventory = new Map(stock.map(pack => [pack.id, pack]));
-  const seals = sealIds.map(id => inventory.get(id));
-  const first = seals[0];
-  if (seals.some(seal => !seal || seal.batchId !== first.batchId || seal.packId !== first.packId)) {
-    return fail("Alguno de estos sobres ya no está disponible.");
-  }
-  const definition = packDefinition(first.packId);
-  if (!definition) return fail("Este sobre no tiene una definición disponible.");
+  const quote = quotePackOpening(state,sealIds);
+  if (!quote.ok) return quote;
+  const consumed = new Set(sealIds);
 
   let sequence = state.sequence + 1;
   const id = `pack-opening-${sequence}`;
   const known = new Set(state.discovered);
   let pity = state.pity;
-  const packs = seals.map(seal => {
+  const packs = quote.seals.map(seal => {
     const historical = historicalPack(seal.packId) && rollLegacyPack(pity,seal.packId,rng);
     if (historical) pity = historical.pity;
-    const ids = historical ? historical.cards : rollShopPack(seal.packId,rng);
+    const ids = historical ? historical.cards : rollShopPack(seal.packId,rng,seal.rulesVersion);
     const cards = ids.map(cardId => {
       const record = { id: `base-copy-${++sequence}`, cardId, isNew: !known.has(cardId) };
       known.add(cardId);
@@ -69,16 +81,17 @@ export function startPackOpening(state, sealIds, rng = Math.random) {
     });
     return { ...seal, cards, ...(historical?.pityTriggered && { pityTriggered: true }) };
   });
-  const pendingPack = { id, packs, revealed: [] };
+  const pendingPack = { id, packs, revealed: [], ...(mode === "joint" && { mode }) };
   return { ok: true, opening: pendingPack, state: { ...state, sequence, pity, pendingPack,
-    packStock: stock.filter(seal => !sealIds.includes(seal.id)) } };
+    packStock: state.packStock.filter(seal => !consumed.has(seal.id)) } };
 }
 
 export function revealPackCards(state, openingId, selected = null) {
   const opening = state.pendingPack;
   if (!opening || opening.id !== openingId) return fail("Esta apertura ya terminó.");
   const cards = opening.packs.flatMap(pack => pack.cards);
-  const outstanding = new Set(cards.filter(card => !opening.revealed.includes(card.id)).map(card => card.id));
+  const current = new Set(opening.revealed);
+  const outstanding = new Set(cards.filter(card => !current.has(card.id)).map(card => card.id));
   const requested = selected === null ? [...outstanding] : selected;
   if (!Array.isArray(requested) || !requested.length || requested.some(id => !outstanding.has(id))) {
     return fail("Estas cartas ya se revelaron.");
@@ -89,13 +102,15 @@ export function revealPackCards(state, openingId, selected = null) {
 
   const inventory = { ...state.inventory };
   const baseCopies = { ...state.baseCopies };
-  for (const card of cards) {
+  for (const pack of opening.packs) for (const card of pack.cards) {
     inventory[card.cardId] = (inventory[card.cardId] ?? 0) + 1;
     if (baseCopies[card.cardId] === state.baseCopies?.[card.cardId]) baseCopies[card.cardId] = [...(baseCopies[card.cardId] ?? [])];
-    baseCopies[card.cardId].push({ id: card.id, packId: opening.packs[0].packId });
+    baseCopies[card.cardId].push({ id: card.id, packId: pack.packId });
   }
   const ids = cards.map(card => card.cardId);
-  const entry = { kind: "pack", packId: opening.packs[0].packId, cards: ids, quantity: opening.packs.length,
+  const byType = {};
+  for(const pack of opening.packs) byType[pack.packId] = (byType[pack.packId] ?? 0)+1;
+  const entry = { kind: "pack", byType, packId: opening.packs[0].packId, cards: ids, quantity: opening.packs.length,
     paid: opening.packs.reduce((total, pack) => total + pack.paid, 0),
     pityTriggered: opening.packs.some(pack => pack.pityTriggered) };
   return { ok: true, complete: true, state: { ...state, pendingPack, inventory, baseCopies,
@@ -135,7 +150,8 @@ export function restorePackData(raw, inventory) {
     if (!id || !order || !packDefinition(saved?.packId) || seenSeals.has(saved.id)) return null;
     seenSeals.add(saved.id);
     sequence = Math.max(sequence,id,order);
-    return { id: saved.id, packId: saved.packId, batchId: saved.batchId, paid: natural(saved.paid) };
+    return { id:saved.id,packId:saved.packId,batchId:saved.batchId,paid:natural(saved.paid),
+      ...(shopPack(saved.packId) && { rulesVersion:saved.rulesVersion === 1 || (!saved.rulesVersion && raw.version < 6) ? 1 : PACK_RULES_VERSION }) };
   };
   const seenCards = new Set();
   function copy(saved) {
@@ -149,13 +165,12 @@ export function restorePackData(raw, inventory) {
   if (Array.isArray(raw.packStock)) restored.packStock = raw.packStock.map(seal).filter(Boolean);
   if (raw.pendingPack === null) restored.pendingPack = null;
   const opening = raw.pendingPack;
-  if (suffix(opening?.id,"pack-opening") && Array.isArray(opening.packs) && opening.packs.length > 0 &&
-      opening.packs.length <= MAX_PACK_PURCHASE) {
-    const packId = opening.packs[0]?.packId;
-    const definition = packDefinition(packId);
-    const batchId = opening.packs[0]?.batchId;
-    if (definition && opening.packs.every(pack => pack?.packId === packId && pack.batchId === batchId &&
-      Array.isArray(pack.cards) && pack.cards.length === definition.slots && pack.cards.every(card => baseIds.has(card?.cardId)))) {
+  if (suffix(opening?.id,"pack-opening") && Array.isArray(opening.packs) && opening.packs.length &&
+      opening.packs.every(pack => {
+        const definition = packDefinition(pack?.packId);
+        return definition && Array.isArray(pack.cards) && pack.cards.length === definition.slots &&
+          pack.cards.every(card => baseIds.has(card?.cardId));
+      })) {
       const packs = opening.packs.map(saved => {
         const record = seal(saved);
         if (!record || !saved.cards.every(copy)) return null;
@@ -166,9 +181,8 @@ export function restorePackData(raw, inventory) {
         const ids = new Set(packs.flatMap(pack => pack.cards.map(card => card.id)));
         const revealed = Array.isArray(opening.revealed) ? [...new Set(opening.revealed.filter(id => ids.has(id)))] : [];
         sequence = Math.max(sequence,suffix(opening.id,"pack-opening"));
-        restored.pendingPack = { id: opening.id, packs, revealed };
+        restored.pendingPack = { id: opening.id, packs, revealed, ...(opening.mode === "joint" && { mode:opening.mode }) };
       }
-    }
   }
 
   if (raw.baseCopies && typeof raw.baseCopies === "object" && !Array.isArray(raw.baseCopies)) {

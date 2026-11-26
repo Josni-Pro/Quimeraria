@@ -1,5 +1,5 @@
 import { CARDS, RARITIES } from "./catalog.js";
-import { CARD_PACK_TAGS, historicalPack, PACK_FAMILIES, shopPack } from "./pack-config.js";
+import { CARD_PACK_TAGS, historicalPack, PACK_FAMILIES, PACK_RULES_VERSION, shopPack } from "./pack-config.js";
 
 const poolsByFamily = Object.fromEntries(Object.entries(PACK_FAMILIES).map(([family, { matches }]) =>
   [family, RARITIES.map((_, rare) => CARDS.filter(card => card.rarity === rare && matches(CARD_PACK_TAGS[card.id])))]));
@@ -31,9 +31,10 @@ function draw(pools, weights, rng) {
   return pool[Math.floor(sample(rng) * pool.length)].id;
 }
 
-export function getShopPackOdds(id) {
-  if (profiles.has(id)) return profiles.get(id);
-  const pack = shopPack(id);
+export function getShopPackOdds(id,version = PACK_RULES_VERSION) {
+  const key = id+"@"+version;
+  if (profiles.has(key)) return profiles.get(key);
+  const pack = shopPack(id,version);
   if (!pack) return null;
   const groups = pack.positions.map(({ family, count, weights }) => {
     const pools = poolsByFamily[family];
@@ -41,7 +42,7 @@ export function getShopPackOdds(id) {
     if (!odds.some(Boolean)) throw new Error(`No hay resultados para ${id}/${family}.`);
     const byCard = Object.fromEntries(pools.flatMap((pool, rarity) => odds[rarity]
       ? pool.map(card => [card.id, odds[rarity] / pool.length]) : []));
-    return { family, label: PACK_FAMILIES[family].name, count, weights, pools, odds, byCard };
+    return { family, thematic: !["general","premium"].includes(family), label: PACK_FAMILIES[family].name, count, weights, pools, odds, byCard };
   });
   const atLeastOne = key => 1 - groups.reduce((none, group) => none * (1 - key(group)) ** group.count, 1);
   const rarities = RARITIES.map((_, index) => atLeastOne(group => group.odds[index]));
@@ -50,16 +51,16 @@ export function getShopPackOdds(id) {
     card, chance: atLeastOne(group => group.byCard[card.id] ?? 0),
     expected: groups.reduce((sum, group) => sum + (group.byCard[card.id] ?? 0) * group.count, 0)
   }));
-  const themedIds = new Set(groups.filter(group => group.family !== "general").flatMap(group => Object.keys(group.byCard)));
+  const themedIds = new Set(groups.filter(group => group.thematic).flatMap(group => Object.keys(group.byCard)));
   const expectedThematic = cards.reduce((total, row) => total + (themedIds.has(row.card.id) ? row.expected : 0),0);
   const expectedDuplicates = pack.slots - cards.reduce((total, row) => total + row.chance,0);
   const profile = { pack, groups, rarities, expectedRarities, expectedThematic, expectedDuplicates, cards };
-  profiles.set(id, profile);
+  profiles.set(key,profile);
   return profile;
 }
 
-export function rollShopPack(id, rng = Math.random) {
-  const profile = getShopPackOdds(id);
+export function rollShopPack(id, rng = Math.random, version) {
+  const profile = getShopPackOdds(id,version);
   if (!profile) return [];
   const cards = profile.groups.flatMap(({ pools, odds, count }) =>
     Array.from({ length: count }, () => draw(pools, odds, rng)));

@@ -131,3 +131,16 @@ El Mercado del Umbral presenta cada sobre como un objeto sellado. Las pinturas u
 | Arcano | Cuero violeta, amatista y grabado rúnico | [arcano.webp](docs/assets/sobres/arcano.webp) | 80 776 |
 | Panteón | Obsidiana, marfil y disco solar en relieve | [panteon.webp](docs/assets/sobres/panteon.webp) | 70 358 |
 | Quimérico | Metal iridiscente, cristal y cierre alquímico de dos materiales | [quimerico.webp](docs/assets/sobres/quimerico.webp) | 111 134 |
+
+
+## Escenarios de Arena
+
+El patio de Bronce usa piedra, caliza y bronce cálido. La explanada Arcana usa pizarra y plata al anochecer. El Santuario de Campeones usa columnas monumentales, piedra clara y bruma. La zona central queda libre para retratos y efectos. Los recortes móviles conservan el eje central y el contraste de las filas.
+
+| Escenario | Escritorio | Móvil | Peso total |
+| --- | --- | --- | ---: |
+| Bronce | [bronce.webp](docs/assets/arena/bronce.webp) | [bronce-movil.webp](docs/assets/arena/bronce-movil.webp) | 218 930 bytes |
+| Arcana | [arcana.webp](docs/assets/arena/arcana.webp) | [arcana-movil.webp](docs/assets/arena/arcana-movil.webp) | 232 942 bytes |
+| Campeones | [campeones.webp](docs/assets/arena/campeones.webp) | [campeones-movil.webp](docs/assets/arena/campeones-movil.webp) | 279 286 bytes |
+
+Los ocho emblemas de rango y diez estandartes se dibujan mediante SVG en `docs/arena-view.js`. Los rangos superiores añaden un segundo borde, motivos laterales y una corona manteniendo identificadores de forma y color.

@@ -1,3 +1,4 @@
+import { recentCards, sortCardEntries } from "./card-order.js";
 import { getAberrationCopies, getCard, previewEssence } from "./engine.js";
 import { ALCHEMY } from "./game-config.js";
 import { FAILURE_FAMILIES } from "./aberration-concepts.js";
@@ -155,7 +156,7 @@ function history(state) {
   return `<ol class="alchemy-history-list">${entries.map(entry => historyRow(entry, state)).join("")}</ol>`;
 }
 
-export function renderAlchemy({ state, selection = [], cardFace }) {
+export function renderAlchemy({ state, selection = [], cardFace, order }) {
   const required = ALCHEMY.aberrationsPerEssence;
   const stock = Object.entries(state.inventory).flatMap(([id, owned]) => {
     const card = getCard(id, state);
@@ -173,7 +174,7 @@ export function renderAlchemy({ state, selection = [], cardFace }) {
       <section class="panel alchemy-stock" aria-labelledby="alchemy-stock-title">
         <div class="alchemy-panel-title"><h3 id="alchemy-stock-title">Aberraciones</h3><span class="count">${total} disponibles</span></div>
         ${total ? '<p>Selecciona las copias que quieras destilar.</p>' : ""}
-        ${stock.length ? `<ul class="alchemy-ingredient-list">${stock.map(({ card, count }) => {
+        ${stock.length ? `<ul class="alchemy-ingredient-list">${sortCardEntries(stock,order,recentCards(state)).map(({ card, count }) => {
           const picked = picks.get(card.id) ?? 0;
           return aberrationRow(card, count, picked, selected < required && picked < count, state, cardFace);
         }).join("")}</ul>` : `<p class="alchemy-empty">Cuando una fusión falle, su aberración quedará disponible aquí.</p>`}
