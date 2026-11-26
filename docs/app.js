@@ -1,9 +1,9 @@
-import { ABILITIES, CARDS, CATEGORIES, ECONOMY, MISSIONS, PACKS, RARITIES, STATS, TRAITS } from "./catalog.js";
+import { ABILITIES, CARDS, CATEGORIES, ECONOMY, MISSIONS, RARITIES, STATS, TRAITS } from "./catalog.js";
 import {
-  acknowledgeReveal, createEssence, createGame, describeDiscoveredFusion, fuseCards, getCard, getExpeditionSlots, getFusionCopies, getPackOdds, loadGame,
-  MAX_GENERATION, openPack, previewExpedition, previewFusion, runExpedition, serializeGame, setAnimationMode, useEssence
+  acknowledgeReveal, createEssence, createGame, describeDiscoveredFusion, fuseCards, getCard, getExpeditionSlots, getFusionCopies, loadGame,
+  MAX_GENERATION, previewExpedition, previewFusion, runExpedition, serializeGame, setAnimationMode, useEssence
 } from "./engine.js";
-import { assetPortrait, getPortrait, portraitFinish, portraitLevelFor, portraitStatus } from "./illustrations.js";
+import { getPortrait, portraitFinish, portraitLevelFor, portraitStatus } from "./illustrations.js";
 import { describeFusionPortrait } from "./fusion-art.js";
 import { PORTRAIT_PROFILES } from "./portrait-profiles.js";
 import { renderAlchemy, renderAberrationDetails, renderEssences } from "./alchemy-ui.js";
@@ -13,6 +13,12 @@ import { FAILURE_FAMILIES } from "./aberration-concepts.js";
 import { CONCEPT_LABELS, getCreatureConcept } from "./creature-concepts.js";
 import { CAPABILITY_FAMILIES, COMBAT_ROLES, COMBAT_STATS, getCreatureProfiles, MOBILITY_LABELS, UTILITY_FAMILIES } from "./creature-profiles.js";
 import { VARIANT_FAMILIES, VARIANT_QUALITY_LABELS } from "./fusion-variants.js";
+
+import { oddsDetails, purchaseDetails, renderCheckoutTotal, renderPackOpening, renderPackShop } from "./pack-shop.js";
+import { playPackRupture } from "./pack-visuals.js";
+import { acknowledgePackOpening, getBaseCopies, purchasePackBatch, quotePackPurchase, revealPackCards, startPackOpening } from "./pack-transactions.js";
+import { packDefinition } from "./pack-config.js";
+import { createBattleAudio } from "./training-audio.js";
 
 const SAVE_KEY = "quimeraria:partida:v1";
 const number = new Intl.NumberFormat("es-MX", { maximumFractionDigits: 1 });
@@ -52,6 +58,24 @@ let collectionGroup = "none";
 let query = "";
 let toastTimer;
 let storageUnavailable = false;
+const shop = { id: "explorador", quantity: 1, custom: false, batch: null, sheet: 0, filter: "",
+  flip: null, away: false, fast: false, skipped: false, animatedId: null };
+let packMotion;
+const soundKey = "quimeraria:entrenamiento:preferencias:v1";
+function soundPreferences() {
+  try {
+    return JSON.parse(localStorage.getItem(soundKey)) ?? {};
+  } catch { return {}; }
+}
+const shopSound = createBattleAudio(() => {
+  const settings = soundPreferences();
+  return settings.muted === false && Number.isFinite(settings.volume) ? Math.max(0, Math.min(100, settings.volume)) : 0;
+});
+
+function setPackSound(changes) {
+  try { localStorage.setItem(soundKey,JSON.stringify({ ...soundPreferences(), ...changes })); }
+  catch { showToast("El navegador impide guardar el sonido."); }
+}
 const portraitObserver = typeof IntersectionObserver === "function" ? new IntersectionObserver(entries => {
   for (const { target, isIntersecting } of entries) {
     if (!isIntersecting) continue;
@@ -336,28 +360,63 @@ function renderForge() {
     </div>${renderResult()}</section>${renderInventory()}`;
 }
 
-function oddsList(odds) {
-  return odds.map((value, i) => `<span>${RARITIES[i].name} <strong>${number.format(value)}%</strong></span>`).join("");
+function renderShop() {
+  if (!state.pendingPack || shop.away) return renderPackShop(state,shop);
+  return renderPackOpening(state,shop,id => getCard(id,state),card => getPortrait(card,state).src);
 }
 
-function renderShop() {
-  return `${intro("sobres")}<div class="pack-grid">
-    ${PACKS.map(pack => {
-      const odds = getPackOdds(state, pack.id);
-      return `<article class="panel pack">
-        <div class="pack-art" aria-hidden="true">${photo({ src: assetPortrait("sobre-" + pack.art) })}</div>
-        <div><h2>${escape(pack.name)}</h2><p>${escape(pack.description)}</p></div>
-        <span class="pack-small">${pack.slots} cartas por sobre</span>
-        ${odds.ok ? `<details><summary>Probabilidades y garantía</summary>
-          <div class="odds">${oddsList(odds.odds)}</div>
-          ${odds.guaranteedOdds ? `<p>Garantía de ${RARITIES[pack.pityRarity].name.toLowerCase()} o superior. ${odds.pityActive
-            ? "Se activa en este sobre si las primeras cartas quedan por debajo."
-            : `Se activa dentro de ${odds.remaining} compra${odds.remaining === 1 ? "" : "s"} si antes no consigues esa rareza.`}</p>
-            ${odds.pityActive ? `<div class="odds">${oddsList(odds.guaranteedOdds)}</div>` : ""}` : ""}</details>` : ""}
-        <button class="button button--primary" data-action="buy" data-id="${pack.id}" ${!odds.ok || state.coins < pack.cost ? "disabled" : ""}>
-          ${state.coins < pack.cost ? "Óbolos insuficientes" : "Comprar sobre"} <span aria-hidden="true">◈</span> ${pack.cost}</button>
-      </article>`;
-    }).join("")}</div><p class="pack-note">Las probabilidades normales corresponden a cada carta. Los duplicados se conservan para que puedas probar nuevas fusiones. Gana óbolos en <a class="link-quiet" href="#expediciones">expediciones →</a></p>`;
+function animatePendingPack() {
+  const stage = app.querySelector("#pack-stage");
+  const pending = state.pendingPack;
+  if (!stage || !pending || shop.animatedId === pending.id) return;
+  shop.animatedId = pending.id;
+  if (["skip", "off"].includes(state.settings.animation) || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  packMotion = playPackRupture(stage,{
+    mode: state.settings.animation,
+    fast: shop.fast,
+    onBreak: theme => shopSound.play(({ profundidades:"water", arcano:"magic", quimerico:"alchemy",
+      panteon:"divine", primordial:"heavy", naturaleza:"nature", civilizacion:"slash" })[theme] ?? "arrow")
+  });
+}
+
+function focusShop(id) {
+  const element = document.getElementById(id);
+  if (!element) return;
+  element.scrollIntoView({ block:"start", behavior: "instant" });
+  element.querySelector("button, input, select")?.focus({ preventScroll:true });
+}
+
+function resetOpening() {
+  shop.sheet = 0;
+  shop.filter = "";
+  shop.flip = null;
+  shop.skipped = false;
+  shop.away = false;
+}
+
+async function openSavedPacks(button, ids, previous = null) {
+  button.disabled = true;
+  shopSound.unlock();
+  const outcome = await transact(game => {
+    if (!previous) return startPackOpening(game,ids);
+    const finished = acknowledgePackOpening(game,previous);
+    return finished.ok ? startPackOpening(finished.state,ids) : finished;
+  },resetOpening,{ durable:true });
+  if (outcome.ok) focusShop("pack-stage");
+}
+
+async function exposePack(button, id) {
+  const openingId = state.pendingPack?.id;
+  button.disabled = true;
+  shopSound.unlock();
+  await transact(game => revealPackCards(game,openingId,id ? [id] : null), outcome => {
+    shop.flip = id;
+    const picks = outcome.state.pendingPack.packs.flatMap(pack => pack.cards);
+    const card = id && picks.find(entry => entry.id === id);
+    shopSound.play(card && getCard(card.cardId,state)?.rarity >= 3 ? "magic" : card?.isNew ? "heal" : "arrow");
+  },{ durable:true });
+  const next = app.querySelector(id ? '[data-action="pack-reveal"]' : '[data-action="pack-result-leave"]');
+  next?.focus({ preventScroll:true });
 }
 
 function renderExpeditions() {
@@ -387,9 +446,14 @@ function renderExpeditions() {
 function render(focus) {
   if ((state.pendingReveal || revealRunning) && !revealVisible) return;
   portraitObserver?.disconnect();
+  packMotion?.dispose();
+  packMotion = null;
   if (view === "forja") app.innerHTML = renderForge();
   if (view === "coleccion") app.innerHTML = intro(view) + renderInventory();
-  if (view === "sobres") app.innerHTML = renderShop();
+  if (view === "sobres") {
+    app.innerHTML = renderShop();
+    animatePendingPack();
+  }
   if (view === "expediciones") app.innerHTML = renderExpeditions();
   if (view === "alquimia") app.innerHTML = intro(view) + renderAlchemy({ state, selection: alchemySelection, cardFace });
   observePortraits();
@@ -430,10 +494,15 @@ function showRules() {
 
 function showSettings() {
   const choices = [["full", "Completa"], ["reduced", "Reducida"], ["off", "Saltar animación"]];
-  showModal("Configuración", `<p>Elige cómo se revela una carta después de confirmar la fusión.</p>
-    <div class="animation-settings" role="group" aria-label="Animación de fusión">
+  const sound = soundPreferences();
+  showModal("Configuración", `<p>Animaciones de apertura y fusión</p>
+    <div class="animation-settings" role="group" aria-label="Animaciones de apertura y fusión">
       ${choices.map(([id, label]) => `<button class="button" type="button" data-action="animation-mode" data-id="${id}" aria-pressed="${state.settings.animation === id}">${label}</button>`).join("")}
-    </div>`);
+    </div>
+    ${view === "sobres" ? `<div class="animation-settings shop-sound">
+      <button type="button" class="button" data-action="pack-mute" aria-pressed="${sound.muted !== false}">${sound.muted === false ? "Silenciar" : "Activar sonido"}</button>
+      <label>Volumen <input id="pack-volume" type="range" min="0" max="100" value="${Number.isFinite(sound.volume) ? sound.volume : 28}"></label>
+    </div>` : ""}`);
 }
 
 function showExplanation(card = latestFusion?.card) {
@@ -509,6 +578,7 @@ function showCard(id) {
   if (!card) return;
   const count = state.inventory[id] || 0;
   const portrait = getPortrait(card, state);
+  const copies = getBaseCopies(state,id);
   const aberrant = card.category === "aberration";
   showModal(card.name, `<div class="detail-layout">${cardFace(card, { compact: true, eager: true })}
     <div>${aberrant ? "" : `<p>${escape(card.description)}</p>`}${statList(card)}
@@ -516,6 +586,8 @@ function showCard(id) {
     <p>${count ? `${count} ${count === 1 ? "copia" : "copias"} en el inventario.` : "Sin copias en el inventario."}</p>
     ${aberrant ? renderAberrationDetails({ state, card }) : card.parents.length ? `<p>Materiales · ${escape(cardNames(card.parents).join(" + "))}</p>` : ""}</div></div>
     ${aberrant ? "" : creatureProfile(card, portrait, count)}
+    ${copies.length ? `<details class="creature-profile"><summary>Ejemplares de sobres (${copies.length})</summary>
+      <ul class="pack-instance-list">${copies.map(copy => `<li>${escape(copy.id)} · ${escape(packDefinition(copy.packId).name)}</li>`).join("")}</ul></details>` : ""}
     <div class="modal-actions">
       ${portrait.src ? `<button class="button" data-action="portrait-card" data-id="${escape(id)}">Ver ilustración</button>` : ""}
       ${card.category === "fusion" ? `<button class="button" data-action="formula-card" data-id="${escape(id)}">Ver fórmula</button>` : ""}
@@ -604,7 +676,7 @@ async function transact(update, completed = () => {}, { repaint = true, durable 
       } catch { storageUnavailable = true; }
     }
     if (storageUnavailable && durable) {
-      const error = "El navegador impide guardar cambios. Activa el almacenamiento para continuar en la forja.";
+      const error = "El navegador impide guardar cambios. Activa el almacenamiento para continuar.";
       showToast(error);
       return { ok: false, error };
     }
@@ -789,14 +861,95 @@ document.addEventListener("click", async event => {
     case "alchemy-use":
       await runRitual(game => useEssence(game, id), button);
       break;
-    case "buy":
-      button.disabled = true;
-      await transact(game => openPack(game, id), outcome => {
-        showModal("Cartas del sobre", `<p>${escape(outcome.pack.name)} · ${outcome.cards.length} cartas nuevas en tu inventario${outcome.pityTriggered ? " · Se activó la garantía" : ""}.</p>
-          <div class="card-grid">${outcome.cards.map(card => cardFace(card, { compact: true })).join("")}</div>
-          <div class="modal-actions"><button class="button button--primary" data-action="close">Continuar</button><a class="button" href="#coleccion" data-action="close">Ver colección</a></div>`);
-      });
+    case "pack-pick":
+      shopSound.unlock();
+      shopSound.play("arrow");
+      shop.id = id;
+      render(focus);
+      if (matchMedia("(max-width: 720px)").matches) focusShop("pack-checkout");
       break;
+    case "pack-quantity":
+      shop.quantity = Number(id);
+      render(focus);
+      break;
+    case "pack-catalog": focusShop("pack-catalog"); break;
+    case "pack-odds": showModal(packDefinition(id).name,oddsDetails(id)); break;
+    case "pack-review": {
+      refreshSave();
+      const quote = quotePackPurchase(state,id,shop.quantity);
+      if (!quote.ok || !quote.affordable) { render(); break; }
+      shopSound.unlock();
+      showModal(quote.pack.name,purchaseDetails(quote,state.sequence,state.coins));
+      break;
+    }
+    case "pack-confirm": {
+      button.disabled = true;
+      shopSound.unlock();
+      const outcome = await transact(
+        game => game.coins === Number(button.dataset.balance)
+          ? purchasePackBatch(game,id,Number(button.dataset.quantity),Number(button.dataset.sequence))
+          : { ok:false, error:"El saldo cambió. Revisa la compra antes de confirmar." },
+        result => {
+          shop.batch = result.batchId;
+          shop.away = Boolean(state.pendingPack);
+          modal.close();
+          shopSound.play("shield");
+          showToast("Compra guardada. Los sobres siguen sellados.");
+        },{ durable:true });
+      if (outcome.ok) focusShop("pack-vault");
+      else modal.close();
+      break;
+    }
+    case "pack-mute": {
+      const muted = soundPreferences().muted === false;
+      setPackSound({ muted, volume: soundPreferences().volume ?? 28 });
+      if (muted) shopSound.suspend();
+      else shopSound.unlock();
+      showSettings();
+      break;
+    }
+    case "pack-open-one":
+    case "pack-open-batch": {
+      const batch = (state.packStock ?? []).filter(pack => pack.batchId === id);
+      const ids = (action === "pack-open-one" ? batch.slice(0,1) : batch).map(pack => pack.id);
+      await openSavedPacks(button,ids);
+      break;
+    }
+    case "pack-speed":
+      shop.fast = !shop.fast;
+      packMotion?.speed(shop.fast ? 2 : 1);
+      button.setAttribute("aria-pressed",String(shop.fast));
+      button.textContent = shop.fast ? "Volver a velocidad normal" : "Acelerar apertura";
+      break;
+    case "pack-skip":
+      shop.skipped = true;
+      packMotion?.finish();
+      break;
+    case "pack-reveal": await exposePack(button,id); break;
+    case "pack-reveal-all": await exposePack(button); break;
+    case "pack-defer":
+      shop.away = true;
+      render();
+      focusShop("pack-vault");
+      break;
+    case "pack-resume":
+      shop.away = false;
+      render();
+      focusShop("pack-stage");
+      break;
+    case "pack-next":
+      await openSavedPacks(button,[id],state.pendingPack?.id);
+      break;
+    case "pack-result-leave": {
+      const opening = state.pendingPack?.id;
+      const outcome = await transact(game => acknowledgePackOpening(game,opening),resetOpening,{ durable:true });
+      if (outcome.ok) {
+        location.hash = id;
+        changeView();
+        window.scrollTo({ top: 0 });
+      }
+      break;
+    }
     case "mission":
       missionId = id;
       team = [];
@@ -817,8 +970,31 @@ document.addEventListener("click", async event => {
   }
 });
 
+app.addEventListener("toggle", event => {
+  if (event.target.classList.contains("shop-custom")) shop.custom = event.target.open;
+},true);
+modal.addEventListener("input",event => {
+  if (event.target.id !== "pack-volume") return;
+  setPackSound({ volume:event.target.valueAsNumber });
+  if (event.target.valueAsNumber === 0) shopSound.stop();
+});
+app.addEventListener("change", event => {
+  if (event.target.id === "pack-sheet") { shop.sheet = Number(event.target.value); shop.flip = null; }
+  else if (event.target.id === "pack-result-filter") shop.filter = event.target.value;
+  else return;
+  const id = event.target.id;
+  render();
+  document.getElementById(id)?.focus({ preventScroll:true });
+});
+
 app.addEventListener("input", event => {
   if (revealRunning || state.pendingReveal) return;
+  if (event.target.id === "pack-custom-quantity") {
+    shop.quantity = event.target.valueAsNumber;
+    app.querySelector("#pack-cart").innerHTML = renderCheckoutTotal(state,shop.id,shop.quantity);
+    for (const preset of app.querySelectorAll(".shop-quantity")) preset.setAttribute("aria-pressed",String(Number(preset.dataset.id) === shop.quantity));
+    return;
+  }
   if (event.target.id === "search") query = event.target.value.trim();
   else if (event.target.id === "collection-group") collectionGroup = event.target.value;
   else return;

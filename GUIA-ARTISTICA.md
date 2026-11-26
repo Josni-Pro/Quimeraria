@@ -115,3 +115,19 @@ El lote incluye **20 pinturas WebP de 768 × 768** y **3.188.054 bytes**. El reg
 5. **Registra la revisión.** Conserva los identificadores históricos y distingue una pintura aprobada de un archivo en revisión. El SVG provisional también debe mostrar una obstrucción. Exporta las pinturas definitivas como WebP de 768 × 768.
 
 El informe recoge el dictamen de los 16 archivos, las correcciones del piloto y los conceptos que podrían funcionar como fusiones exitosas. [Revisión de aberraciones](REVISION-ABERRACIONES.md)
+
+
+## Arte de los sobres
+
+El Mercado del Umbral presenta cada sobre como un objeto sellado. Las pinturas usan iluminación ambiental y contraluz sobre materiales reconocibles. Mantienen la silueta completa sobre un fondo oscuro, incluyen márgenes para miniaturas y comparten formato vertical de 768 × 1152 píxeles. La interfaz proporciona el nombre y el precio. Cada clave de tienda referencia el archivo en `docs/pack-config.js`.
+
+| Sobre | Material y motivo | Arte WebP | Bytes |
+| --- | --- | --- | ---: |
+| Explorador | Cuero, pergamino y rosa de bronce | [explorador.webp](docs/assets/sobres/explorador.webp) | 89 920 |
+| Naturaleza | Raíces, helechos y relieve de búho y lobo | [naturaleza.webp](docs/assets/sobres/naturaleza.webp) | 120 252 |
+| Civilización | Cobre grabado, martillo y compás | [civilizacion.webp](docs/assets/sobres/civilizacion.webp) | 111 044 |
+| Era Primordial | Arenisca, ámbar y colmillo fósil | [primordial.webp](docs/assets/sobres/primordial.webp) | 96 900 |
+| Profundidades | Nácar, plata y broche de tentáculos | [profundidades.webp](docs/assets/sobres/profundidades.webp) | 103 770 |
+| Arcano | Cuero violeta, amatista y grabado rúnico | [arcano.webp](docs/assets/sobres/arcano.webp) | 80 776 |
+| Panteón | Obsidiana, marfil y disco solar en relieve | [panteon.webp](docs/assets/sobres/panteon.webp) | 70 358 |
+| Quimérico | Metal iridiscente, cristal y cierre alquímico de dos materiales | [quimerico.webp](docs/assets/sobres/quimerico.webp) | 111 134 |

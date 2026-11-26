@@ -16,7 +16,7 @@ La partida pertenece al navegador y al origen desde el que se abre el juego. `do
 
 La Forja muestra los materiales elegidos, el costo y las probabilidades de éxito y aberración. Al confirmar, aplica la tasa de la generación resultante y sortea una variante compatible del grupo correspondiente. Consume los dos materiales y los óbolos y revela la carta en el ritual. Configuración permite completar la animación, reducirla o saltarla.
 
-El juego guarda el gasto, la carta nueva y la revelación pendiente juntos en LocalStorage antes de mostrar la animación. Al volver al juego después de una recarga, se reanuda la revelación del mismo resultado. El formato 4 conserva las partidas de las versiones 1 a 3 y registra los identificadores de las nuevas copias de aberración. Las pilas históricas conservan su cantidad y su ficha.
+El juego guarda el gasto, la carta nueva y la revelación pendiente juntos en LocalStorage antes de mostrar la animación. Al volver al juego después de una recarga, se reanuda la revelación del mismo resultado. El formato 5 conserva las partidas anteriores y registra los sobres sellados, las aperturas pendientes y las copias obtenidas. El formato 4 añadió los identificadores de las copias de aberración. Las pilas históricas conservan su cantidad y su ficha.
 
 ## Aberraciones y esencias
 
@@ -68,17 +68,11 @@ La tasa de Forja se configura por separado para G1, G2, G3 y G4. Alquimia garant
 
 Abre **Entrenamiento** en la navegación o `/training.html` en el servidor local. Forma una escuadra de hasta seis criaturas con un máximo de 12 puntos, elige una patrulla y dirige el combate con dos puntos de mando por ronda. La práctica usa copias del inventario y resuelve vitalidad, estados y recargas en memoria. [Reglas y arquitectura](COMBATE-FASE-01.md) · [Ritmo, controles y validación](COMBATE-FASE-02.md)
 
-## Sobres y expediciones
+## Sobres
 
-Cada sobre contiene tres cartas base. Las probabilidades se aplican por posición. Dentro de cada rareza, todas las cartas disponibles en el sobre tienen el mismo peso y se pueden repetir. El contador de garantía es independiente para cada sobre y vuelve a cero cuando sale una carta que cumple su mínimo. Si se agota la espera, el último espacio del sobre garantiza ese mínimo cuando los dos primeros espacios aún no lo cumplen.
+La tienda ofrece ocho sobres de cinco a diez cartas base. Los paquetes de cinco y diez reducen el precio total un 5 % y un 10 %, respectivamente. El juego guarda los sobres sellados y permite abrir una compra completa, revelar cartas una a una o ver el resumen agrupado. Consulta `/pack-lab.html` para explorar probabilidades y simular aperturas en el servidor local. [Reglas, precios y análisis](SOBRES.md)
 
-| Sobre | Precio | Común | Poco común | Rara | Épica | Mítica | Garantía |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| Esencial | 55 | 70 % | 24 % | 5 % | 1 % | 0 % | Rara o mejor en hasta 4 sobres |
-| Arcano | 110 | 35 % | 42 % | 18 % | 4,5 % | 0,5 % | Épica o mejor en hasta 4 sobres |
-| Reliquia | 155 | 12 % | 33 % | 37 % | 16 % | 2 % | Épica o mejor en hasta 5 sobres |
-
-Esencial y Arcano incluyen las cinco familias de cartas base. Reliquia concentra su oferta en especies extintas, criaturas míticas y deidades.
+## Expediciones
 
 Las expediciones muestran su puntuación antes de salir. Suman el atributo que pide la misión de cada carta, su habilidad si corresponde y una bonificación única si el grupo tiene el rasgo solicitado. La primera victoria puede pagar un extra. Las cartas regresan tras cada intento. La Senda del recolector paga 12 óbolos. Puedes recorrerla con una carta o con el equipo vacío si agotaste las criaturas funcionales de tu inventario.
 
@@ -88,7 +82,7 @@ Las expediciones muestran su puntuación antes de salir. Suman el atributo que p
 - **Añadir un rasgo.** Decláralo en `TRAITS`. Su familia agrupa rasgos afines para la Forja. Para usarlo en un reto, asigna su clave a `trait` y la cantidad de puntos a `traitBonus` en `MISSIONS`.
 - **Añadir una habilidad.** Declárala en `ABILITIES` con un atributo y una bonificación de 1 a 3. Después referencia su identificador en las cartas y fórmulas que la utilicen.
 - **Registrar una fórmula.** Añade una entrada a `RECIPES` con dos identificadores de material y el nombre del resultado. Puedes definir descripción, rareza, habilidad, ilustración y rasgos destacados. `specialization` acepta un atributo y un peso de 0 a 6 que ajusta la distribución de puntos sin cambiar el presupuesto.
-- **Añadir un sobre o una ruta.** Usa una nueva entrada de `PACKS` o `MISSIONS`. Cada peso positivo del sobre necesita al menos una carta compatible con la rareza y familia indicadas. Mantén accesible la Senda del recolector al ajustar precios y recompensas.
+- **Añadir un sobre o una ruta.** Usa una nueva entrada de `SHOP_PACKS` en `docs/pack-config.js` o de `MISSIONS` en `docs/catalog.js`. Cada peso positivo del sobre necesita al menos una carta compatible con la rareza y familia indicadas. Mantén accesible la Senda del recolector al ajustar precios y recompensas.
 - **Mantener compatibilidad.** Conserva los identificadores publicados. Las quimeras descubiertas se guardan con sus propios atributos y habilidad. Si vas a eliminar cartas, renombrar identificadores o cambiar el esquema de guardado, añade una migración en `loadGame`.
 
 Por ejemplo, una profesión nueva que reutiliza rasgos y habilidad existentes se añade a `CARDS` con una sola entrada de datos.
@@ -144,6 +138,7 @@ node --test tests/art-batches.mjs
 node --test tests/aberrations.mjs
 node --test tests/combat.mjs
 node --test tests/playback.mjs
+node --test tests/packs.mjs
 ```
 
 Las pruebas cubren probabilidades y progresión, ilustraciones y linajes, migración de partidas, consumo de recursos y recuperación de una revelación pendiente. Tras ajustar los costos, revisa la distribución de rarezas, la garantía de los sobres y la recuperación de moneda.
