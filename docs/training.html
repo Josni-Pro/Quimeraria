@@ -8,15 +8,11 @@
   <title>Campo de entrenamiento · Quimeraria</title>
   <link rel="icon" href="./assets/sigil.png">
   <link rel="stylesheet" href="./training.css">
+  <link rel="stylesheet" href="./game-nav.css">
   <script type="module" src="./training.js"></script>
 </head>
 <body>
-  <header class="camp-header">
-    <div class="camp-wrap camp-nav">
-      <a href="./index.html#forja" class="camp-brand"><span aria-hidden="true">✧</span> Quimeraria</a>
-      <nav aria-label="Navegación"><a href="./index.html#forja">Forja</a><a href="./index.html#coleccion">Colección</a><a href="./training.html" aria-current="page">Entrenamiento</a><a href="./arena.html">Arena</a></nav>
-    </div>
-  </header>
+  <header id="game-nav"></header>
   <main class="camp-wrap" id="training"></main>
   <div class="camp-wrap camp-foot"><a href="./index.html#forja">← Volver a la Forja</a><span>Quimeraria</span></div>
   <dialog id="camp-detail" aria-labelledby="detail-title"><div id="detail-body"></div></dialog>

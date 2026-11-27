@@ -67,3 +67,9 @@ body[data-mode="arena"] :is(.scene,.results)[data-terrain] {--scene:var(--arena-
   body[data-mode="arena"] .camp-brand span {display:none;}
 }
 @media(prefers-reduced-motion:reduce){.arena-celebrate,.arena-entry{animation:none;}}
+.arena-aftercare {margin:18px 0;padding:18px}
+.arena-aftercare h2 {margin:0 0 10px}
+.arena-aftercare ul {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,235px),1fr));gap:8px;list-style:none;padding:0}
+.arena-aftercare li {display:grid;gap:4px;padding:10px;border:1px solid #b185584e;border-radius:8px;font-size:13px}
+.arena-aftercare li small {color:#e6c48e}
+.arena-aftercare>p:empty {display:none}

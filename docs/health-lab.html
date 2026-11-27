@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Diagnóstico de recuperación · Quimeraria</title>
+  <link rel="icon" href="./assets/sigil.png">
+  <link rel="stylesheet" href="./sanctuary.css">
+  <script type="module" src="./health-lab.js"></script>
+  <style>main{max-width:900px} pre{overflow:auto;font-size:13px}form{display:flex;gap:8px;align-items:end;flex-wrap:wrap}details{margin-block:14px}label{display:grid;gap:4px;font-size:13px}select{min-height:40px}</style>
+</head>
+<body>
+  <main class="sanctuary-shell">
+    <p><a href="./sanctuary.html">← Volver al Santuario</a></p>
+    <h1>Diagnóstico de recuperación</h1>
+    <p>Simulación reproducible con una colección de prueba independiente de la partida.</p>
+    <form id="simulation" class="sanctuary-panel">
+      <label>Escuadra <select name="scenario"></select></label>
+      <label>Encuentros <select name="matches"><option>1</option><option>5</option><option selected>10</option></select></label>
+      <label>Serie <select name="seed"><option>0</option><option>7</option><option>19</option><option>31</option><option>47</option><option>65</option></select></label>
+      <button class="sanctuary-button sanctuary-primary">Simular</button>
+    </form>
+    <section id="simulation-report" aria-live="polite"></section>
+    <details class="sanctuary-panel"><summary>Umbrales, fórmulas y probabilidades</summary>
+      <p>Fatiga = base + acciones, especiales y daño recibido con topes + dificultad − resistencia − regeneración. Una criatura en reserva recupera seis puntos tras un combate completado.</p>
+      <p>La probabilidad de herida depende de la exposición, la vida restante, la protección, la regeneración, la naturaleza y la dificultad. Una herida grave solo puede surgir tras incapacitación. Consulta los ejemplos y constantes de cada cálculo.</p>
+      <pre id="formula"></pre></details>
+    <details class="sanctuary-panel"><summary>Original y efectivo, heridas y afinidades de especialistas</summary><pre id="exposure"></pre></details>
+    <details class="sanctuary-panel"><summary>Costos, descuentos y compatibilidad de tratamientos</summary><pre id="treatments"></pre></details>
+  </main>
+</body>
+</html>

@@ -1,0 +1,119 @@
+:root {color-scheme:dark;--ink:#f1ebde;--muted:#c4c3b4;--line:#b6ab8547;--room-tone:#eac491;--paper:#1b211f;font-family:system-ui,sans-serif}
+* {box-sizing:border-box}
+body {margin:0;color:var(--ink);background:radial-gradient(ellipse at 76% 8%,#333026 0,#181d1b 40%,#141817 78%);min-height:100vh}
+h1,h2 {font-family:Georgia,serif;font-weight:500}
+a {color:#e7d4ad}
+button,input,select {font:inherit}
+button:disabled {opacity:.49;cursor:default}
+p {line-height:1.55}
+:focus-visible {outline:2px solid #e8cf9b;outline-offset:3px}
+.sanctuary-shell {width:min(1344px,100% - clamp(26px,7vw,94px));margin:auto}
+#sanctuary-areas {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:20px 0 12px}
+#sanctuary-areas a {border:1px solid var(--line);border-radius:9px;background:#242723;text-decoration:none;display:flex;gap:9px;align-items:center;min-height:49px;padding:8px clamp(8px,2vw,18px);font-size:14px}
+#sanctuary-areas a[aria-current] {color:var(--room-tone);border-color:var(--room-tone);background:#36322a;box-shadow:inset 0 -2px var(--room-tone)}
+#sanctuary-areas a>span:first-child {font-size:21px;line-height:1}
+.sanctuary-room {position:relative;isolation:isolate;min-height:315px;border:1px solid var(--line);border-radius:15px;overflow:hidden;background:#292622;display:flex;align-items:center}
+.sanctuary-room img,.sanctuary-room::after {position:absolute;z-index:-1;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 57%}
+.sanctuary-room::after {content:"";background:linear-gradient(90deg,#100e0cea 0%,#171310cf 27%,#17131052 54%,#19161000 81%),linear-gradient(0deg,#14181545,transparent 35%)}
+.sanctuary-room>div {width:min(540px,90%);padding:28px clamp(19px,5vw,60px)}
+.sanctuary-kicker {color:var(--room-tone);text-transform:uppercase;font-size:11px;letter-spacing:.17em;font-weight:750}
+.sanctuary-room h1 {margin:.22em 0 0;font-size:clamp(36px,5vw,69px);line-height:.97;text-shadow:0 2px 10px #100f0c}
+.sanctuary-room p:not(.sanctuary-kicker) {max-width:300px;color:#e8e1d4}
+.sanctuary-room-link {display:inline-flex;align-items:center;gap:8px;font-weight:670;padding:8px 0;color:#f3deb5;text-underline-offset:4px}
+.sanctuary-ledger {display:grid;grid-template-columns:minmax(250px,1fr) 1.25fr;gap:12px;margin:14px 0}
+.sanctuary-ledger dl,.sanctuary-counts {margin:0;padding:12px;border:1px solid var(--line);border-radius:10px;background:#252823}
+.sanctuary-ledger dl {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;text-align:center}
+.sanctuary-ledger dd {margin:0;font:29px Georgia,serif;color:var(--room-tone)}
+.sanctuary-ledger dt {color:#e0ddcf;font-size:12px}
+.sanctuary-counts {display:grid;gap:6px}
+.sanctuary-counts>div {display:flex;gap:6px;flex-wrap:wrap}
+.sanctuary-counts span {background:#f2eacc0b;border:1px solid #d1c8ac25;border-radius:8px;padding:3px 6px;font-size:11px}
+.sanctuary-counts b {color:var(--room-tone);padding-left:3px}
+.sanctuary-work {display:grid;grid-template-columns:minmax(0,2.1fr) minmax(0,.92fr);gap:14px;align-items:start}
+.sanctuary-panel {min-width:0;padding:16px;border:1px solid var(--line);border-radius:12px;background:linear-gradient(150deg,#292a24,var(--paper) 125px)}
+.sanctuary-head {display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.sanctuary-panel h2 {margin:0 0 10px;font-size:24px}
+.sanctuary-head output,.sanctuary-head span {color:var(--muted);font-size:13px}
+.sanctuary-button {border:1px solid #807354;border-radius:7px;padding:7px 11px;color:#f2e7d6;background:#373129;min-height:42px;font-size:13px;font-weight:650;cursor:pointer;text-align:center}
+.sanctuary-button:not(:disabled):hover {border-color:#e0c596;background:#484033}
+.sanctuary-primary {color:#20180e;background:#ddc08e;border-color:#edcf9e}
+.sanctuary-primary:not(:disabled):hover {color:#20180e;background:#edcfa1}
+.sanctuary-quiet {background:transparent}
+.sanctuary-actions {display:flex;gap:6px;flex-wrap:wrap;margin-block:4px 12px}
+.sanctuary-filters {border-top:1px solid var(--line);padding:10px 0;color:#e9dfcb;font-size:13px}
+summary {cursor:pointer}
+.sanctuary-filters>div {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:9px}
+#sanctuary label,#sanctuary-dialog label {display:grid;gap:4px;color:#ded8c6;font-size:13px;min-width:0}
+#sanctuary :is(input[type=search],select),#sanctuary-dialog select {min-height:39px;padding:5px 8px;width:100%;min-width:0;border:1px solid #847858;border-radius:6px;color:#f4ebd7;background:#222523}
+.patient-list,.specialist-list {padding:0;margin:5px 0;list-style:none}
+.patient-row {display:grid;align-items:center;grid-template-columns:42px 54px minmax(0,1fr) auto;gap:9px;padding:8px 6px;border-bottom:1px solid #b6ab852e}
+.patient-row:nth-child(2n) {background:#d0cbb106}
+.patient-row img,.patient-sigil {height:54px;width:54px;object-fit:cover;border-radius:7px;border:1px solid var(--line);background:#282620}
+.patient-sigil {display:grid;place-items:center}
+#sanctuary .patient-select {place-items:center;min-height:44px}
+.patient-select input {width:19px;height:19px;accent-color:#d2b982;cursor:pointer}
+.patient-row div {display:grid;gap:2px;font-size:12px;overflow-wrap:anywhere}
+.patient-row strong {font-size:15px;line-height:1.24}
+.patient-row small,.patient-row span {color:#d1caba}
+.patient-row[data-condition]:not([data-condition="0"]) .patient-wound {color:#f1c295}
+.patient-row meter {width:49px;height:9px;vertical-align:1px}
+.patient-pages {display:flex;align-items:center;justify-content:center;gap:12px;margin-top:10px;font-size:13px}
+.patient-pages:empty {display:none}
+.sanctuary-empty {padding:16px 0;color:var(--muted)}
+.sanctuary-aside {display:grid;gap:12px}
+.sanctuary-aside p {font-size:13px;color:var(--muted);margin:4px 0 10px}
+.specialist-list li {display:flex;align-items:center;justify-content:space-between;gap:7px;padding:7px 0;border-top:1px solid var(--line)}
+.specialist-list strong,.specialist-list small {display:block;font-size:13px}
+.specialist-list small {color:#e6c79c}
+#specialist-form {display:grid;gap:7px;margin-top:7px}
+.sanctuary-guide a {font-size:13px}
+.sanctuary-footer {display:flex;align-items:center;justify-content:space-between;margin:22px auto;padding:12px 0;border-top:1px solid var(--line);font-size:14px;color:var(--muted)}
+#sanctuary-dialog {width:min(640px,100% - 28px);max-height:88dvh;padding:18px;border:1px solid #8a7c5d;border-radius:12px;color:var(--ink);background:#232823}
+#sanctuary-dialog::backdrop {background:#080b0bca}
+.sanctuary-dialog-head {display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+.sanctuary-dialog-head h2 {margin:0;font-size:26px;overflow-wrap:anywhere}
+.sanctuary-quote dl {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.sanctuary-quote dl div,.sanctuary-quote li {background:#ffffff09;padding:8px;border-radius:6px}
+.sanctuary-quote dd {margin:3px 0 0;color:#f3d59c;font-weight:650}
+.sanctuary-quote ul {padding:0;display:grid;gap:5px;list-style:none;max-height:36vh;overflow:auto}
+.sanctuary-quote li {display:grid;gap:3px;font-size:13px}
+.sanctuary-quote .sanctuary-button {margin-top:10px}
+.sanctuary-error {color:#f6bdab}
+.sanctuary-status {position:fixed;z-index:4;bottom:16px;left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100% - 24px);padding:11px 15px;background:#302b22;color:#fff0cd;border:1px solid #947a54;border-radius:9px;box-shadow:0 8px 31px #0008;font-size:14px}
+.sanctuary-status:empty,.sanctuary-effect[hidden] {display:none}
+.sanctuary-effect {position:fixed;z-index:5;right:16px;bottom:64px;width:min(300px,100% - 32px);display:grid;grid-template-columns:54px 1fr;align-items:center;gap:6px;background:#252821f5;padding:9px;border:1px solid var(--room-tone);border-radius:12px;box-shadow:0 9px 40px #0009;font-size:14px}
+.sanctuary-effect button {grid-column:2;justify-self:start;min-height:36px}
+.sanctuary-aura {grid-row:span 2;display:grid;place-items:center;position:relative;height:58px;color:var(--room-tone);isolation:isolate}
+.sanctuary-aura span {font-size:28px;text-shadow:0 0 12px currentColor}
+.sanctuary-aura i {position:absolute;inset:15px;border:1px solid currentColor;border-radius:50%;animation:care-ring 1.5s ease-out both}
+.sanctuary-aura i:nth-child(2) {animation-delay:.16s}
+.sanctuary-aura i:nth-child(3) {animation-delay:.31s}
+.sanctuary-aura i:nth-child(4) {animation-delay:.42s}
+.sanctuary-effect[data-quality="low"] i:nth-child(n+3) {display:none}
+.sanctuary-effect[data-room="taller"] i {inset:24px;border-width:2px;border-radius:0;animation-name:care-spark}
+.sanctuary-effect[data-room="arcana"] i {border-style:dashed;animation-name:care-arc}
+.sanctuary-effect[data-room="descanso"] i {border-radius:70% 25% 70% 25%;animation-name:care-leaf}
+@keyframes care-ring {from {opacity:.7;transform:scale(.6)} to {opacity:0;transform:scale(2.1)}}
+@keyframes care-spark {from {opacity:1;transform:translate(4px,4px) rotate(30deg)} to {opacity:0;transform:translate(-22px,-21px) scale(.5) rotate(100deg)}}
+@keyframes care-arc {from {opacity:.9;transform:scale(.4) rotate(-25deg)} to {opacity:0;transform:scale(2.35) rotate(46deg)}}
+@keyframes care-leaf {from {opacity:.75;transform:translate(-8px,5px) rotate(-26deg) scale(.4)} to {opacity:0;transform:translate(13px,-13px) rotate(10deg) scale(1.6)}}
+@media(max-width:890px){.sanctuary-work {grid-template-columns:minmax(0,1fr) minmax(0,.6fr)}.sanctuary-filters>div {grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:690px){
+  .sanctuary-work,.sanctuary-ledger {grid-template-columns:minmax(0,1fr)}
+  #sanctuary-areas {grid-template-columns:repeat(2,minmax(0,1fr));margin-top:12px;gap:6px}
+  #sanctuary-areas a {min-height:43px;font-size:13px}
+  .sanctuary-room {min-height:286px;align-items:end}
+  .sanctuary-room img {object-position:60% 54%}
+  .sanctuary-room::after {background:linear-gradient(0deg,#141310f5 0,#141310b8 36%,#14131025 84%)}
+  .sanctuary-room>div {width:100%;padding:14px 16px}
+  .sanctuary-room p {margin:.55em 0}
+  .sanctuary-counts {gap:4px;padding:8px}
+  .sanctuary-panel {padding:12px}
+  .sanctuary-button {min-height:44px}
+  .patient-row {grid-template-columns:29px 42px minmax(0,1fr) auto;gap:6px;padding:7px 2px}
+  .patient-row img,.patient-sigil {width:42px;height:42px}
+}
+@media(prefers-reduced-motion:reduce){.sanctuary-aura i {animation:none}}
+.patient-group summary {padding:9px 10px 9px 15px;border-bottom:1px solid #b6ab852e;background:#d0cbb108}
+.patient-group summary small {display:block;padding-left:17px;color:#d1caba;font-size:12px}
+.patient-group .patient-row {padding-left:12px}

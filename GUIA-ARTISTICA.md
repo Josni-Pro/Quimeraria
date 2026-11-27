@@ -144,3 +144,16 @@ El patio de Bronce usa piedra, caliza y bronce cálido. La explanada Arcana usa 
 | Campeones | [campeones.webp](docs/assets/arena/campeones.webp) | [campeones-movil.webp](docs/assets/arena/campeones-movil.webp) | 279 286 bytes |
 
 Los ocho emblemas de rango y diez estandartes se dibujan mediante SVG en `docs/arena-view.js`. Los rangos superiores añaden un segundo borde, motivos laterales y una corona manteniendo identificadores de forma y color.
+
+## Santuario de recuperación
+
+Cuatro pinturas ambientales originales de fantasía en `docs/assets/santuario/`. La composición conserva profundidad, materiales de piedra y madera y espacio de lectura para el título. La navegación conserva el tratamiento visual de Quimeraria y cada sala tiene un color de iluminación y de interfaz acorde a su oficio.
+
+| Archivo | Escena | Peso en bytes |
+| --- | --- | ---: |
+| `enfermeria.webp` | Lechos, preparados y luz cálida de trabajo | 159 370 |
+| `taller.webp` | Herramientas, componentes, bancos e iluminación de fragua | 197 470 |
+| `arcana.webp` | Cristales y círculo restaurador bajo luz fría | 143 826 |
+| `descanso.webp` | Agua, vegetación y refugios de un patio tranquilo | 223 336 |
+
+Las imágenes se publican en WebP de 1280 × 853 y suman 724 002 bytes. El Santuario reutiliza los retratos originales de las criaturas. La ilustración ambiental se carga al seleccionar su área.

@@ -1,6 +1,7 @@
 import { CARDS } from "../catalog.js";
-import { acknowledgeReveal, createGame, fuseCards, getCard, getFusionCopies, loadGame } from "../engine.js";
-import { getBaseCopies } from "../pack-transactions.js";
+import { acknowledgeReveal, createGame, fuseCards, getCard, loadGame } from "../engine.js";
+import { activeCopies, creatureCopies } from "../creature-instances.js";
+import { effectiveStats, healthFor, healthSummary } from "../health.js";
 import { TRAINING_RULES } from "./config.js";
 import { prepareCombatant } from "./skills.js";
 
@@ -12,16 +13,22 @@ export function readTrainingGame() {
 }
 
 export function trainingRoster(game, rules = TRAINING_RULES) {
-  return Object.entries(game.inventory).flatMap(([id, owned]) => {
-    const card = getCard(id, game);
-    const profile = prepareCombatant(card, rules);
+  const clinical = rules.mode === "arena";
+  const occupied = activeCopies(game);
+  return Object.entries(game.inventory).flatMap(([id,owned])=>{
+    const card = getCard(id,game);
+    const profile = prepareCombatant(card,rules);
     if (!profile) return [];
-    const tracked = card.generation ? getFusionCopies(game,id) : getBaseCopies(game,id);
-    const count = Math.min(owned, rules.slots);
-    const copies = Array.from({ length: count }, (_, index) => ({
-      copyId: tracked[index]?.id ?? `legacy:${id}:${index - tracked.length}`, profile
-    }));
-    return [{ card, profile, copies, owned }];
+    const instances = creatureCopies(game,id);
+    const copies = instances.map(({id:copyId},i)=>{
+      const health = healthFor(game,copyId);
+      const condition = healthSummary(health,occupied.has(copyId));
+      const effective = clinical ? effectiveStats(profile.stats,health) : null;
+      const adapted = effective ? { ...profile,...effective,baseStats:profile.stats,
+        maxHp:Math.round(rules.healthBase+effective.stats.vitality*rules.healthPerVitality) } : profile;
+      return {copyId,profile:adapted,health,condition,index:i+1};
+    });
+    return [{card,profile,copies,owned}];
   });
 }
 

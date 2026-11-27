@@ -1,3 +1,8 @@
+import { mountGameNavigation } from "./game-nav.js";
+import { PRESENTATION_KEY as soundKey, SAVE_KEY } from "./save-store.js";
+import { activeCopies, chooseMaterials, creatureCopies } from "./creature-instances.js";
+import { healthFor, healthSummary } from "./health.js";
+import { conditionLabel, healthDetails } from "./health-ui.js";
 import { CARD_ORDERS, readCardOrder, recentCards, sortCardEntries, writeCardOrder } from "./card-order.js";
 import { ABILITIES, CARDS, CATEGORIES, ECONOMY, MISSIONS, RARITIES, STATS, TRAITS } from "./catalog.js";
 import {
@@ -21,15 +26,12 @@ import { acknowledgePackOpening, getBaseCopies, purchasePackBatch, quotePackOpen
 import { packDefinition } from "./pack-config.js";
 import { createBattleAudio } from "./training-audio.js";
 
-const SAVE_KEY = "quimeraria:partida:v1";
 const number = new Intl.NumberFormat("es-MX", { maximumFractionDigits: 1 });
 const collator = new Intl.Collator("es-MX");
 const app = document.querySelector("#app");
-const wallet = document.querySelector("#wallet");
 const modal = document.querySelector("#modal");
 const modalContent = document.querySelector("#modal-content");
 const toast = document.querySelector("#toast");
-const tabs = [...document.querySelectorAll("[data-view]")];
 const icons = { power: "⚔", guard: "⛨", focus: "✧" };
 const sigils = { human: "✺", animal: "❖", extinct: "◈", mythic: "✵", deity: "✷", fusion: "✧", aberration: "◬" };
 const preferredOrder = ["alquimista", "lobo", "mamut", "buho", "obrero", "zorro"];
@@ -45,6 +47,7 @@ let persisted;
 try { persisted = localStorage.getItem(SAVE_KEY); } catch { /* The current session still works. */ }
 let state = persisted ? loadGame(persisted) : createGame();
 let selected = persisted ? [] : preferredOrder.slice(0, 2);
+let chosenCopies = [];
 let latestFusion = null;
 let lastExpedition = null;
 let alchemySelection = [];
@@ -53,6 +56,7 @@ let revealVisible = false;
 let missionId = MISSIONS[0].id;
 let team = [];
 let view = currentView();
+const nav = mountGameNavigation({ section:view,coins:state.coins,onSettings:showSettings,onWallet:showRules });
 let category = "all";
 let collectionMode = "owned";
 let collectionGroup = "none";
@@ -75,7 +79,6 @@ const shop = { id: "explorador", quantity: 1, custom: false, batch: null, sheet:
   flip: null, away: false, fast: false, skipped: false, animatedId: null };
 let packMotion;
 let pendingStockIds;
-const soundKey = "quimeraria:entrenamiento:preferencias:v1";
 function soundPreferences() {
   try {
     return JSON.parse(localStorage.getItem(soundKey)) ?? {};
@@ -192,18 +195,29 @@ function cardFace(card, options = {}) {
   </${tag}>`;
 }
 
-function ingredients() {
+function ingredients(materials) {
+  const occupied = activeCopies(state);
   return [0, 1].map(i => {
     const card = getCard(selected[i], state);
+    const copies = card ? creatureCopies(state,card.id) : [];
+    const picked = chosenCopies[i] ?? materials?.[i]?.copyId;
+    const other = chosenCopies[1-i] ?? materials?.[1-i]?.copyId;
+    const options = copies.map(({id},index)=>{
+      const record = healthFor(state,id);
+      const unavailable = occupied.has(id) || id===other;
+      return `<option value="${escape(id)}" ${id===picked ? "selected" : ""} ${unavailable ? "disabled" : ""}>Ejemplar ${index+1} · ${occupied.has(id) ? "En Arena" : conditionLabel(record)}</option>`;
+    }).join("");
     return `<div class="ingredient-col"><span class="ingredient-label">Material ${i === 0 ? "I" : "II"}</span>
       <div class="ingredient-slot">${card ? cardFace(card, { slot: true }) +
         `<button type="button" class="remove-slot" data-action="remove" data-id="${i}" aria-label="Quitar ${escape(card.name)}">×</button>`
-        : `<button type="button" class="ingredient-empty" data-action="inventory"><strong aria-hidden="true">+</strong> Elegir carta</button>`}</div></div>`;
+        : `<button type="button" class="ingredient-empty" data-action="inventory"><strong aria-hidden="true">+</strong> Elegir carta</button>`}</div>
+      ${copies.length ? `<label class="forge-copy">Ejemplar del material ${i+1}<select aria-label="Ejemplar del material ${i+1}" data-material-copy="${i}">
+        ${copies.some(copy=>copy.id===picked) ? "" : '<option value="">Elegir ejemplar</option>'}${options}</select></label>` : ""}</div>`;
   }).join('<div class="ritual" aria-hidden="true">✧</div>');
 }
 
 function forgePreview() {
-  return selected.length === 2 ? previewFusion(state, ...selected) : null;
+  return selected.length === 2 ? previewFusion(state, ...selected, chosenCopies) : null;
 }
 
 function renderResult() {
@@ -368,11 +382,14 @@ function renderInventory() {
 
 function renderForge() {
   const preview = forgePreview();
+  const materials = chooseMaterials(state,selected,chosenCopies);
+  const hurt = materials?.filter(({copyId})=>healthSummary(healthFor(state,copyId)).needsCare) ?? [];
   return `${intro("forja")}<section class="forge" aria-label="Mesa de fusión">
     <div class="forge-left">
       <div class="forge-title"><span aria-hidden="true">⚗</span> Mesa de fusión</div>
-      <div class="ingredient-row">${ingredients()}</div>
+      <div class="ingredient-row">${ingredients(materials)}</div>
       <div class="forge-footer">
+        ${hurt.length ? `<p class="forge-health-warning" role="status">${hurt.map(({cardId})=>escape(getCard(cardId,state).name)).join(" y ")} presenta desgaste o heridas. La Forja consumirá los ejemplares seleccionados con las probabilidades habituales.</p>` : ""}
         <button class="button button--primary button--forge" type="button" data-action="fuse" ${preview?.ok && preview.affordable ? "" : "disabled"}>
           <span aria-hidden="true">✦</span> Fusionar cartas ${preview?.ok ? `<span class="button-price"><span aria-hidden="true">◈</span> ${preview.cost} <span class="sr-only">óbolos</span></span>` : ""}
         </button>
@@ -479,6 +496,7 @@ function renderExpeditions() {
 }
 
 function render(focus) {
+  nav.update(view,state.coins);
   if ((state.pendingReveal || revealRunning) && !revealVisible) return;
   portraitObserver?.disconnect();
   packMotion?.dispose();
@@ -492,11 +510,6 @@ function render(focus) {
   if (view === "expediciones") app.innerHTML = renderExpeditions();
   if (view === "alquimia") app.innerHTML = intro(view) + renderAlchemy({ state, selection: alchemySelection, cardFace, order });
   observePortraits();
-  wallet.textContent = number.format(state.coins);
-  for (const tab of tabs) {
-    if (tab.dataset.view === view) tab.setAttribute("aria-current", "page");
-    else tab.removeAttribute("aria-current");
-  }
   if (focus?.action) [...app.querySelectorAll("[data-action]")].find(item => item.dataset.action === focus.action && item.dataset.id === focus.id)?.focus({ preventScroll: true });
 }
 
@@ -615,12 +628,19 @@ function showCard(id) {
   const portrait = getPortrait(card, state);
   const copies = getBaseCopies(state,id);
   const aberrant = card.category === "aberration";
+  const owned = view==="forja" || (view==="coleccion" && collectionMode==="owned");
+  const occupied = activeCopies(state);
+  const health = !aberrant && owned && count ? creatureCopies(state,id) : [];
   showModal(card.name, `<div class="detail-layout">${cardFace(card, { compact: true, eager: true })}
     <div>${aberrant ? "" : `<p>${escape(card.description)}</p>`}${statList(card)}
     <div class="card-tags">${traits(card)}</div><div class="detail-ability">${ability(card, true)}</div>
     <p>${count ? `${count} ${count === 1 ? "copia" : "copias"} en el inventario.` : "Sin copias en el inventario."}</p>
     ${aberrant ? renderAberrationDetails({ state, card }) : card.parents.length ? `<p>Materiales · ${escape(cardNames(card.parents).join(" + "))}</p>` : ""}</div></div>
     ${aberrant ? "" : creatureProfile(card, portrait, count)}
+    ${health.length ? `<details class="creature-profile" open><summary>Salud de los ejemplares (${health.length})</summary>
+      <label class="forge-copy">Ejemplar <select id="card-health-copy" data-card="${escape(id)}">${health.map(({id},index)=>`<option value="${escape(id)}">Ejemplar ${index+1} · ${conditionLabel(healthFor(state,id))}</option>`).join("")}</select></label>
+      <div id="card-health-details">${healthDetails(healthFor(state,health[0].id),healthSummary(healthFor(state,health[0].id),occupied.has(health[0].id)),getCreatureProfiles(card).combat.stats,{ link:health[0].id })}</div>
+    </details>` : ""}
     ${copies.length ? `<details class="creature-profile"><summary>Ejemplares de sobres (${copies.length})</summary>
       <ul class="pack-instance-list">${copies.map(copy => `<li>${escape(copy.id)} · ${escape(packDefinition(copy.packId).name)}</li>`).join("")}</ul></details>` : ""}
     <div class="modal-actions">
@@ -649,11 +669,16 @@ function choose(id) {
   }
   const copies = selected.filter(item => item === id).length;
   if (copies >= state.inventory[id]) {
-    selected.splice(selected.lastIndexOf(id), 1);
+    const slot = selected.lastIndexOf(id);
+    selected.splice(slot,1);
+    chosenCopies.splice(slot,1);
   } else if (selected.length < 2) {
+    chosenCopies[selected.length] = "";
     selected.push(id);
   } else {
-    selected[selected[1] === id ? 0 : 1] = id;
+    const slot = selected[1] === id ? 0 : 1;
+    selected[slot] = id;
+    chosenCopies[slot] = "";
   }
   latestFusion = null;
 }
@@ -676,6 +701,7 @@ function reconcileSelections() {
       counts.set(id, count);
       return count <= (state.inventory[id] || 0);
     });
+    if (list===selected && valid.length!==list.length) chosenCopies=[];
     list.splice(0, list.length, ...valid);
   }
 }
@@ -753,6 +779,7 @@ async function revealPending() {
     revealVisible = true;
     latestFusion = { card, portraitLevel: pending.portraitLevel };
     selected = [];
+    chosenCopies = [];
     render();
   };
   try {
@@ -840,6 +867,7 @@ document.addEventListener("click", async event => {
       break;
     case "remove":
       selected.splice(Number(id), 1);
+      chosenCopies.splice(Number(id),1);
       latestFusion = null;
       render();
       document.querySelector(".ingredient-empty")?.focus({ preventScroll: true });
@@ -863,7 +891,8 @@ document.addEventListener("click", async event => {
       break;
     case "fuse": {
       const materials = selected.slice();
-      await runRitual(game => fuseCards(game, ...materials), button);
+      const copies = chooseMaterials(state,materials,chosenCopies)?.map(item=>item.copyId);
+      if (copies) await runRitual(game => fuseCards(game, ...materials, Math.random, copies), button);
       break;
     }
     case "alchemy-add":
@@ -1032,7 +1061,23 @@ modal.addEventListener("input",event => {
   setPackSound({ volume:event.target.valueAsNumber });
   if (event.target.valueAsNumber === 0) shopSound.stop();
 });
+modal.addEventListener("change",event=>{
+  const field = event.target;
+  if (field.id!=="card-health-copy") return;
+  const record = healthFor(state,field.value);
+  const status = healthSummary(record,activeCopies(state).has(field.value));
+  modal.querySelector("#card-health-details").innerHTML = healthDetails(record,status,
+    getCreatureProfiles(getCard(field.dataset.card,state)).combat.stats,{ link:field.value });
+});
+
 app.addEventListener("change", event => {
+  if (event.target.dataset.materialCopy!==undefined) {
+    const slot = Number(event.target.dataset.materialCopy);
+    chosenCopies[slot] = event.target.value;
+    render();
+    app.querySelector(`[data-material-copy="${slot}"]`)?.focus({ preventScroll:true });
+    return;
+  }
   if (/^(card|expedition)-(order|direction)$/.test(event.target.id)) {
     const field = event.target.id.endsWith("-order") ? "by" : "direction";
     order = { ...order, [field]:event.target.value };

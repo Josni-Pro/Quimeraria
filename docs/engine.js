@@ -1,3 +1,5 @@
+import { chooseMaterials, removeInstances, restoreLegacyCopies } from "./creature-instances.js";
+import { restoreHealth } from "./health.js";
 import {
   ABILITIES, CARDS, ECONOMY, MISSIONS, RARITIES, RECIPES, STATS, STARTER, TRAITS
 } from "./catalog.js";
@@ -13,7 +15,7 @@ import { restorePackData } from "./pack-transactions.js";
 import { restoreArena } from "./arena-records.js";
 import { COMBAT_STATS } from "./creature-profiles.js";
 
-export const SAVE_VERSION = 6;
+export const SAVE_VERSION = 7;
 export const MAX_GENERATION = ALCHEMY.maxGeneration;
 
 const STAT_KEYS = Object.keys(STATS);
@@ -310,16 +312,23 @@ function createHistoricalAberration(a, b) {
   };
 }
 
-export function previewFusion(state, idA, idB) {
+function fusionQuote(state,idA,idB,copyIds) {
   const [a, b] = [idA, idB].map(id => getCard(id, state));
   const invalid = checkParents(a, b, { allowIdenticalFusion: true });
   if (invalid) return error(invalid);
   if (!hasSelection(state, [idA, idB])) return error("Necesitas una copia disponible por cada material.");
+  const instances = chooseMaterials(state,[idA,idB],copyIds);
+  if (!instances) return error("Un ejemplar seleccionado está en Arena o ya no está disponible.");
   const cost = ECONOMY.fusionCosts[Math.max(a.rarity, b.rarity)];
   const generation = fusionGeneration(a, b);
   return {
-    ok: true, cost, affordable: state.coins >= cost, generation, ...fusionRates(generation)
+    ok:true,cost,affordable:state.coins>=cost,generation,...fusionRates(generation),instances
   };
+}
+
+export function previewFusion(state,idA,idB,copyIds) {
+  const { instances,...presentation } = fusionQuote(state,idA,idB,copyIds);
+  return presentation;
 }
 
 export function inspectFusionVariants(state, idA, idB) {
@@ -357,7 +366,7 @@ function updateCopies(previous, inventory, materials, cardId, copy) {
   return copies;
 }
 
-function commitFusion(state, result, { materials = [], paid = 0, essenceId = null }) {
+function commitFusion(state, result, { materials = [], instances = [], paid = 0, essenceId = null }) {
   const { card } = result;
   const failed = card.category === "aberration";
   const outcome = failed ? "aberration" : "success";
@@ -376,12 +385,12 @@ function commitFusion(state, result, { materials = [], paid = 0, essenceId = nul
     ...(copy ? { copyId: copy.id } : {}), ...(aberrationCopy ? { instanceId: aberrationCopy.id } : {}),
     ...(essenceId ? { essenceId } : {})
   };
+  const consumed = removeInstances(state,instances);
   const next = {
-    ...state,
+    ...state, ...consumed,
     coins: state.coins - paid,
     inventory: inventoryAfter(state, materials, [card.id]),
-    fusionCopies: updateCopies(state.fusionCopies, state.inventory, materials, card.id, copy),
-    ...(state.baseCopies && { baseCopies: updateCopies(state.baseCopies, state.inventory, materials) }),
+    fusionCopies: updateCopies(consumed.fusionCopies ?? state.fusionCopies,state.inventory,[],card.id,copy),
     ...(failed ? { aberrations: { ...state.aberrations, [card.id]: card } } : {
       fusions: { ...state.fusions, [card.id]: card },
       portraits: { ...state.portraits, [card.id]: portraitLevel }
@@ -402,9 +411,9 @@ function commitFusion(state, result, { materials = [], paid = 0, essenceId = nul
     ...(aberrationCopy ? { instanceId: aberrationCopy.id } : {}) };
 }
 
-export function fuseCards(state, idA, idB, rng = Math.random) {
+export function fuseCards(state, idA, idB, rng = Math.random, copyIds) {
   if (state.pendingReveal) return error("Revela la carta pendiente para iniciar otra fusión.");
-  const preview = previewFusion(state, idA, idB);
+  const preview = fusionQuote(state,idA,idB,copyIds);
   if (!preview.ok) return preview;
   if (!preview.affordable) return error("No tienes suficientes monedas para esta fusión.");
 
@@ -417,7 +426,7 @@ export function fuseCards(state, idA, idB, rng = Math.random) {
     const { probability, ...selected } = selectVariant(aberrationsFor(a, b, preview.generation), sample(rng));
     result = { card: getCard(selected.id, state) ?? selected };
   }
-  return commitFusion(state, result, { materials, paid: preview.cost });
+  return commitFusion(state,result,{ materials,instances:preview.instances,paid:preview.cost });
 }
 
 export function acknowledgeReveal(state, id) {
@@ -857,7 +866,7 @@ export function loadGame(serialized) {
   } catch {
     return createGame();
   }
-  if (!isRecord(raw) || ![1, 2, 3, 4, 5, SAVE_VERSION].includes(raw.version) || !isRecord(raw.inventory)) return createGame();
+  if (!isRecord(raw) || ![1, 2, 3, 4, 5, 6, SAVE_VERSION].includes(raw.version) || !isRecord(raw.inventory)) return createGame();
 
   const fusions = restoreFusions(raw.fusions);
   const aberrations = restoreAberrations(raw.aberrations, { fusions });
@@ -893,6 +902,8 @@ export function loadGame(serialized) {
     history: [], alchemyHistory: [], pendingReveal: null, ...restorePackData(raw, inventory), ...restoreArena(raw.arena),
     settings: { ...settings, animation: ANIMATION_MODES.includes(settings.animation) ? settings.animation : "full" }
   };
+  Object.assign(state,restoreLegacyCopies(raw.legacyCopies,state));
+  Object.assign(state,restoreHealth(raw,state));
   state.history = restoreHistory(raw.history, state);
   state.alchemyHistory = restoreHistory(raw.alchemyHistory, state, ALCHEMY.historyLimit)
     .filter(entry => entry.kind === "aberration" || entry.kind === "essence" || entry.kind === "recovered");

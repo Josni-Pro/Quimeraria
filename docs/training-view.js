@@ -21,8 +21,8 @@ export function builderShell(model) {
   const roleList = Object.entries(COMBAT_ROLES).map(([id, info]) => [id, info.name]);
   return `<header class="mast">
       <div><p class="eyebrow">${model.encounter ? "Arena" : "Santuario del Umbral"}</p><h1>${model.encounter ? "Prepara tu escuadra" : "Campo de entrenamiento"}</h1>
-      <p>${model.encounter ? escape(model.encounter.description) : "Prepara tu escuadra y pon a prueba su forma de luchar."}</p></div>
-      ${model.encounter ? button("arena-lobby","Volver a la Arena","quiet") : '<span class="safe-tag">◇ Práctica sin costo</span>'}
+      <p>${model.encounter ? escape(model.encounter.description) : "Simulación segura con estadísticas originales. Puedes practicar con ejemplares heridos u ocupados."}</p></div>
+      ${model.encounter ? `<div class="camp-health-links"><a href="./sanctuary.html">Santuario</a>${button("arena-lobby","Volver a la Arena","quiet")}</div>` : '<span class="safe-tag">◇ Práctica sin costo</span>'}
     </header>
     <div class="build-grid">
       <section class="camp-panel collection-panel" aria-labelledby="camp-roster-title">
@@ -75,18 +75,19 @@ export function unitCard(unit, art, options = {}) {
   const effects = Object.keys(unit.effects ?? {});
   const roleText = roles(unit);
   return `<button type="button" class="unit-card${options.selected ? " is-selected" : ""}${options.focused ? " is-focused" : ""}${hp <= 0 ? " down" : ""}"
-    data-name="${escape(unit.name)}" aria-label="${escape([unit.name, options.label, options.inBattle ? hp + " de " + unit.maxHp + " de vitalidad" : roleText].filter(Boolean).join(", "))}" ${attrs}>
+    data-name="${escape(unit.name)}" aria-label="${escape([unit.name, options.label, options.inBattle ? hp + " de " + unit.maxHp + " de vitalidad" : roleText,options.condition].filter(Boolean).join(", "))}" ${attrs}>
     <div class="unit-fig">${art ? `<img src="${escape(art)}" alt="" decoding="async">` : ""}<span class="unit-badge">${options.inBattle ? "G" + unit.generation : "◈ " + unit.cost}</span></div>
     <div class="unit-copy"><strong>${escape(unit.name)}</strong>
     ${options.inBattle ? `<div class="life-track" aria-hidden="true"><div class="life-fill" style="width:${hp / unit.maxHp * 100}%"></div><div class="shield-fill" style="width:${shield / unit.maxHp * 100}%"></div></div>
     <div class="vitals"><span class="hp-text">${hp}/${unit.maxHp}${shield ? " · ⬟ " + shield : ""}</span><span class="unit-states" title="${escape(effects.map(id => EFFECTS[id].name).join(", "))}">${effects.slice(0, 3).map(id => EFFECTS[id].icon).join(" ")}</span></div>`
-      : `<small>G${unit.generation} · ${escape(COMBAT_ROLES[unit.role].name)}</small>`}</div>
+      : `<small>G${unit.generation} · ${escape(COMBAT_ROLES[unit.role].name)}</small>${options.condition ? `<small class="slot-condition">${escape(options.condition)}</small>` : ""}`}</div>
   </button>`;
 }
 
-export function builderFormation(slots, selected, portrait) {
+export function builderFormation(slots, selected, portrait, clinical) {
   const cards = slots.map((entry, index) => unitCard(entry?.profile, entry ? portrait(entry.profile.cardId) : null,
-    { attrs: `data-slot="${index}"`, selected: index === selected, label: SLOTS[index] }));
+    { attrs: `data-slot="${index}"`, selected: index === selected, label: SLOTS[index],
+      condition:clinical && entry ? entry.condition.blocked || `${entry.condition.fatigue} · ${entry.health.fatigue}/100${entry.health.wound ? " · "+entry.condition.wound : ""}` : "" }));
   return rank("Vanguardia") + cards.slice(0,3).join("") + rank("Retaguardia") + cards.slice(3).join("");
 }
 
@@ -95,11 +96,12 @@ export function updateBudget(element, slots, maximum = TRAINING_RULES.budget) {
   element.innerHTML = `<div class="budget ${used > maximum ? "over" : ""}"><b>${used} / ${maximum}</b><span>${maximum - used} puntos libres</span></div>`;
 }
 
-export function rosterEntry(entry, free, portrait) {
+export function rosterEntry(entry, free, portrait,clinical) {
   const { profile, card } = entry;
+  const unavailable = clinical ? entry.copies.filter(copy=>!copy.condition.available).length : 0;
   return `<div class="roster-row"><button type="button" class="roster-pick" data-pick="${escape(card.id)}" ${free > 0 ? "" : "disabled"}>
       <img class="roster-img" ${portrait ? `src="${escape(portrait)}"` : `data-portrait="${escape(card.id)}"`} alt="" loading="lazy" decoding="async">
-      <span><strong>${escape(card.name)}</strong><small>G${profile.generation} · ${escape(roles(profile))}</small><small>VIT ${profile.stats.vitality} · AGI ${profile.stats.agility} · ${free} libres</small></span>
+      <span><strong>${escape(card.name)}</strong><small>G${profile.generation} · ${escape(roles(profile))}</small><small>VIT ${profile.stats.vitality} · AGI ${profile.stats.agility} · ${free} libres${unavailable ? " · "+unavailable+" con restricción" : ""}</small></span>
       <span class="cost">◈ ${profile.cost}</span></button>
     <button type="button" class="icon-btn" data-details="${escape(card.id)}" aria-label="Ficha de ${escape(card.name)}">ⓘ</button></div>`;
 }
@@ -210,12 +212,12 @@ export function unitPanel(state, unit) {
     ${button("unit-details", "Ficha completa", "quiet", `data-id="${escape(unit.id)}"`)}`;
 }
 
-export function detailMarkup(unit, portrait) {
+export function detailMarkup(unit, portrait, condition = "") {
   const effects = Object.entries(unit.effects ?? {});
   return `<div class="detail-top">${portrait ? `<img src="${escape(portrait)}" alt="">` : ""}
     <div><h2 id="detail-title">${escape(unit.name)}</h2><p>G${unit.generation} · ${escape(roles(unit))} · ◈ ${unit.cost}</p><p>${escape(unit.motif)}</p></div>
     <button class="icon-btn" data-camp="close-detail" aria-label="Cerrar ficha">✕</button></div>
-    <div class="stats-grid">${Object.entries(COMBAT_STATS).map(([id, label]) => `<div><b>${unit.stats[id]}</b>${label}</div>`).join("")}</div>
+    ${condition}<div class="stats-grid">${Object.entries(COMBAT_STATS).map(([id, label]) => `<div><b>${unit.stats[id]}</b>${label}</div>`).join("")}</div>
     ${[["Básica", unit.basic], ["Principal", unit.main], ["Especial", unit.special]].map(([label, id]) => {
       const skill = SKILLS[id];
       return `<div class="detail-skill"><strong>${label} · ${skill.name}</strong>

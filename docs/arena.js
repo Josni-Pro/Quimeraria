@@ -5,6 +5,7 @@ import { budgetUsed, issueOrder, startCombat, validateFormation } from "./combat
 import { advanceCombat, finishCombat } from "./combat/bots.js";
 import { grantSealedPacks } from "./pack-transactions.js";
 import { ARCHETYPES, ARENA_DIFFICULTY, ARENA_HISTORY_LIMIT, ARENA_RANKS, ARENA_RULES, CHAMPIONS, CHALLENGES, ranking } from "./arena-config.js";
+import { resolveCondition } from "./health.js";
 import { arenaProgress } from "./arena-records.js";
 
 const fail = error => ({ ok:false,error });
@@ -96,6 +97,8 @@ export function rewardQuote(offer, playerBudget, opponentBudget) {
 export function validateArenaTeam(slots, offer, available) {
   const ruled = validateFormation(slots,{ ...ARENA_RULES,budget: offer.kind==="challenge" ? offer.budget : ARENA_RULES.budget },available);
   if (!ruled.ok) return ruled;
+  const unavailable = slots.find(entry=>entry?.condition && !entry.condition.available);
+  if (unavailable) return fail(unavailable.profile.name+" · "+unavailable.condition.blocked+". Visita el Santuario.");
   if(slots.filter(Boolean).length > offer.size) return fail(`Este encuentro admite hasta ${offer.size} criaturas.`);
   if(slots.some(unit => unit?.profile.generation > offer.generation)) return fail(`Generación máxima G${offer.generation}.`);
   return ruled;
@@ -150,6 +153,29 @@ export function recoverArena(active) {
   return battle;
 }
 
+function battleCondition(game,active,battle,completed) {
+  const rounds = battle?.result?.rounds ?? active.turns.length;
+  if (!rounds || !battle) return { state:game,changes:[],rested:0 };
+  const activity = new Map();
+  for (const event of battle.history) {
+    const id = event.type === "action" ? event.actor : event.type === "damage" ? event.target : null;
+    if (!id?.startsWith("player:")) continue;
+    const work = activity.get(id) ?? { actions:0,specials:0,absorbed:0 };
+    if (event.type==="action") { work.actions++; work.specials += Number(event.special); }
+    else work.absorbed += event.absorbed ?? 0;
+    activity.set(id,work);
+  }
+  const units = new Map(battle.units.map(unit=>[unit.id,unit]));
+  const participants = active.player.filter(Boolean).map(entry=>{
+    const unit = units.get("player:"+entry.copyId);
+    return { copyId:entry.copyId,cardId:entry.profile.cardId,unit,activity:activity.get(unit.id) };
+  });
+  let seed = (battle.seed ^ active.seed ^ 0x9e3779b9)>>>0;
+  const rng = () => (seed=(Math.imul(seed,1664525)+1013904223)>>>0)/4294967296;
+  return resolveCondition(game,{ participants,rounds,completed,hardship:active.offer.kind==="champion" ? 2 :
+    active.offer.difficulty==="hard" ? 1 : 0,rng,cardFor:id=>getCard(id,game) });
+}
+
 function settle(game, arena, active, battle, outcome) {
   const win = outcome==="win";
   const loss = outcome==="loss" || outcome==="withdraw";
@@ -162,12 +188,13 @@ function settle(game, arena, active, battle, outcome) {
   const firstChallenge = win && offer.kind==="challenge" && !arena.challenges.includes(offer.key);
   const seals = firstChampion ? [CHAMPIONS[offer.key].pack] : firstChallenge ? [CHALLENGES[offer.key].pack] : [];
   const payment = (win ? coins : 0)+(firstChampion ? CHAMPIONS[offer.key].coins : 0)+ranks.reduce((n,id)=>n+ARENA_RANKS[id][3],0);
-  let next = { ...game, coins:game.coins+payment };
+  const recovery = battleCondition(game,active,battle,outcome!=="withdraw");
+  let next = { ...recovery.state, coins:game.coins+payment };
   for(const pack of seals) next = grantSealedPacks(next,pack,1).state;
   const receipt = { id:active.id, name:offer.name, family:offer.family, kind:offer.kind, difficulty:offer.difficulty,
     outcome, delta:points-arena.points, points, coins:payment, packs:seals,ranks,
     champion:firstChampion, challenge:firstChallenge, rounds:battle?.result?.rounds ?? (active.turns.length || 0),
-    team:active.player.map(entry=>entry?.profile.name ?? null) };
+    team:active.player.map(entry=>entry?.profile.name ?? null),health:recovery.changes,rested:recovery.rested };
   const streak = win ? arena.streak+1 : 0;
   next.arena = { ...arena,active:null,points,peak,serial:arena.serial+1,
     wins:arena.wins+Number(win),losses:arena.losses+Number(loss),draws:arena.draws+Number(outcome==="draw"),
@@ -196,5 +223,5 @@ export function advanceArena(game, matchId, expectedRound, orders, instant = fal
 export function withdrawArena(game,id) {
   const arena = arenaProgress(game);
   if (!arena.active || arena.active.id!==id) return fail("Este encuentro ya se cerró.");
-  return settle(game,arena,arena.active,null,"withdraw");
+  return settle(game,arena,arena.active,recoverArena(arena.active),"withdraw");
 }
