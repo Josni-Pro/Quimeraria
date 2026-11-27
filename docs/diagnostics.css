@@ -47,7 +47,8 @@ dd { margin: 0 0 .55rem; overflow-wrap: anywhere; }
 .variant__refs { display: flex; gap: .75rem; flex-wrap: wrap; margin-top: .7rem; font-size: .85rem; }
 @media (max-width: 44rem) { .layout { grid-template-columns: 1fr; } }
 .art-batch { padding-bottom: 3rem; }
-.art-batch .variant__art, .variant__art[src^="./assets/lote-04/"] { aspect-ratio: 1; height: auto; }
+.art-batch .variant__art,
+.variant__art:is([src^="./assets/lote-04/"], [src^="./assets/lote-05/"]) { aspect-ratio: 1; height: auto; }
 .art-batch .variant__name { margin-bottom: .4rem; }
 .art-batch code { overflow-wrap: anywhere; }
 .art-links { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .25rem 1rem; }

@@ -1,0 +1,248 @@
+{
+  "version": 7,
+  "coins": 96,
+  "pity": {},
+  "inventory": {
+    "lobo": 1,
+    "mamut": 1,
+    "buho": 1,
+    "obrero": 1,
+    "zorro": 1,
+    "variant(fusion(alquimista+alquimista);mastery)": 1
+  },
+  "fusionCopies": {
+    "variant(fusion(alquimista+alquimista);mastery)": [
+      {
+        "id": "copy-1",
+        "origin": "fusion"
+      }
+    ]
+  },
+  "aberrationCopies": {},
+  "fusions": {
+    "variant(fusion(alquimista+alquimista);mastery)": {
+      "id": "variant(fusion(alquimista+alquimista);mastery)",
+      "name": "Destilador de campo de las Dos Escuelas",
+      "category": "fusion",
+      "rarity": 1,
+      "stats": {
+        "power": 3,
+        "guard": 4,
+        "focus": 8
+      },
+      "ability": "elixir",
+      "traits": [
+        "alquimia",
+        "erudicion"
+      ],
+      "art": null,
+      "description": "Dos tradiciones de Alquimista enseñan el mismo oficio desde perspectivas distintas. Su especialista separa reactivos mediante señales de su organismo.",
+      "generation": 1,
+      "parents": [
+        "alquimista",
+        "alquimista"
+      ],
+      "lineage": [
+        "alquimista"
+      ],
+      "combinationId": "fusion(alquimista+alquimista)",
+      "variantId": "variant(fusion(alquimista+alquimista);mastery)",
+      "variantKey": "mastery",
+      "fusionRulesVersion": 3,
+      "family": "evolution",
+      "quality": "uncommon",
+      "concept": {
+        "speciesId": "variant(fusion(alquimista+alquimista);mastery)",
+        "nature": "biological",
+        "anatomy": "humanoid",
+        "size": "medium",
+        "intelligence": "sapient",
+        "profession": "alquimia",
+        "structure": null,
+        "culture": null,
+        "role": "mage",
+        "secondaryRole": null,
+        "inheritance": [
+          {
+            "parentId": "alquimista",
+            "field": "knowledge",
+            "value": "transmutación"
+          },
+          {
+            "parentId": "alquimista",
+            "field": "materials",
+            "value": "reactivos"
+          },
+          {
+            "parentId": "alquimista",
+            "field": "tags",
+            "value": "profession"
+          },
+          {
+            "parentId": "alquimista",
+            "field": "knowledge",
+            "value": "elaboración de reactivos"
+          },
+          {
+            "parentId": "alquimista",
+            "field": "tags",
+            "value": "alchemy"
+          },
+          {
+            "parentId": "alquimista",
+            "field": "habitat",
+            "value": "asentamientos"
+          }
+        ],
+        "tags": [
+          "profession",
+          "alchemy"
+        ],
+        "features": [
+          "manos articuladas"
+        ],
+        "habitat": [
+          "asentamientos"
+        ],
+        "knowledge": [
+          "transmutación",
+          "elaboración de reactivos"
+        ],
+        "tools": [
+          "retorta",
+          "mortero"
+        ],
+        "materials": [
+          "reactivos"
+        ],
+        "affinities": [],
+        "capabilities": [],
+        "utility": [
+          "craft",
+          "research"
+        ]
+      },
+      "identity": {
+        "shape": "humanoid",
+        "accent": null,
+        "bodySource": null,
+        "anatomy": "humanoid",
+        "speciesId": "variant(fusion(alquimista+alquimista);mastery)",
+        "visual": "Maestro de alquimia con retorta y filtros de cobre. Representar cómo separa reactivos mediante señales de su organismo.",
+        "materials": [
+          "reactivos"
+        ],
+        "accessories": [
+          "retorta",
+          "mortero"
+        ],
+        "powers": [],
+        "illustration": {
+          "reference": "variant(fusion(alquimista+alquimista);mastery)",
+          "final": null,
+          "provisional": null,
+          "status": "procedural SVG"
+        },
+        "brief": {
+          "silhouette": "Tronco erguido, dos piernas y dos brazos con manos libres. Rasgos reconocibles: Maestro de alquimia con retorta y filtros de cobre. Representar cómo separa reactivos mediante señales de su organismo.",
+          "anatomy": "Humanoide",
+          "size": "Mediana",
+          "limbs": [
+            "manos articuladas"
+          ],
+          "face": [
+            "frasco turquesa y lentes de laboratorio",
+            "frasco turquesa y lentes de laboratorio"
+          ],
+          "clothing": [
+            "frasco turquesa y lentes de laboratorio",
+            "frasco turquesa y lentes de laboratorio"
+          ],
+          "materials": [
+            "reactivos"
+          ],
+          "tools": [
+            "retorta",
+            "mortero"
+          ],
+          "structures": [],
+          "visiblePowers": [],
+          "action": "Dos tradiciones de Alquimista enseñan el mismo oficio desde perspectivas distintas. Su especialista separa reactivos mediante señales de su organismo.",
+          "distinguishingFeatures": "Maestro de alquimia con retorta y filtros de cobre. Representar cómo separa reactivos mediante señales de su organismo.",
+          "sources": [
+            {
+              "id": "alquimista",
+              "name": "Alquimista",
+              "motif": "frasco turquesa y lentes de laboratorio"
+            },
+            {
+              "id": "alquimista",
+              "name": "Alquimista",
+              "motif": "frasco turquesa y lentes de laboratorio"
+            }
+          ]
+        }
+      },
+      "origin": "fusion"
+    }
+  },
+  "aberrations": {},
+  "portraits": {
+    "variant(fusion(alquimista+alquimista);mastery)": 1
+  },
+  "essences": {},
+  "discovered": [
+    "alquimista",
+    "lobo",
+    "mamut",
+    "buho",
+    "obrero",
+    "zorro",
+    "variant(fusion(alquimista+alquimista);mastery)"
+  ],
+  "history": [
+    {
+      "kind": "fusion",
+      "cardId": "variant(fusion(alquimista+alquimista);mastery)",
+      "parents": [
+        "alquimista",
+        "alquimista"
+      ],
+      "paid": 24,
+      "copyId": "copy-1"
+    }
+  ],
+  "alchemyHistory": [],
+  "pendingReveal": {
+    "id": "reveal-1",
+    "kind": "fusion",
+    "outcome": "success",
+    "cardId": "variant(fusion(alquimista+alquimista);mastery)",
+    "parents": [
+      "alquimista",
+      "alquimista"
+    ],
+    "portraitLevel": 1,
+    "paid": 24
+  },
+  "sequence": 1,
+  "settings": {
+    "animation": "full"
+  },
+  "stats": {
+    "packs": 0,
+    "fusions": 1,
+    "fusionFailures": 0,
+    "essencesCreated": 0,
+    "essencesUsed": 0,
+    "expeditions": 0,
+    "won": 0,
+    "missions": {}
+  },
+  "legacyCopies": {
+    "alquimista": {
+      "head": 2,
+      "removed": []
+    }
+  }
+}

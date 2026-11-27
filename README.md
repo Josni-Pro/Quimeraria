@@ -125,7 +125,7 @@ Configura `nameMotif` como `[raíz, forma, epíteto]` en una carta nueva para pe
 
 La auditoría de fusiones recoge los criterios artísticos y los dos retratos piloto. El lote 03 tiene un informe propio con el barrido de las 496 parejas y los resultados añadidos. [Auditoría de fusiones](AUDITORIA-FUSIONES.md) · [Ampliación del lote 03](AMPLIACION-FUSIONES-03.md)
 
-La [guía artística](GUIA-ARTISTICA.md) describe el estilo y el formato. En el servidor local, abre `/lote-01.html`, `/lote-02.html`, `/lote-03.html` o `/lote-04.html` para revisar las pinturas y sus fichas. El recuento de cobertura por variante y archivo está en `/diagnostics.html#art-coverage`. [Producción del lote 04](LOTE-ARTISTICO-04.md)
+La [guía artística](GUIA-ARTISTICA.md) describe el estilo y el formato. En el servidor local, abre `/lote-01.html`, `/lote-02.html`, `/lote-03.html`, `/lote-04.html` o `/lote-05.html` para revisar las pinturas y sus fichas. El recuento de cobertura por variante y archivo está en `/diagnostics.html#art-coverage`. [Producción del lote 04](LOTE-ARTISTICO-04.md) · [Producción del lote 05](LOTE-ARTISTICO-05.md)
 
 ## Comprobar cambios
 
