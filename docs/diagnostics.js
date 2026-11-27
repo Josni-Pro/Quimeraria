@@ -1,3 +1,4 @@
+import { firstGenerationArtCoverage } from "./art-coverage.js";
 import { sortCards } from "./card-order.js";
 import { CARDS, RARITIES } from "./catalog.js";
 import { acknowledgeReveal, createEssence, createGame, fuseCards, getCard, inspectAberrationVariants,
@@ -199,6 +200,8 @@ function variantArticle(card, index) {
     ["Aportes de cada progenitor", formatList(brief.sources.map(source => `${source.name} · ${source.motif}`))],
     ["Distintivo", brief.distinguishingFeatures],
     ...(brief.artDirection ? [["Dirección artística", brief.artDirection]] : []),
+    ...(brief.artHeritage ? [["Herencia visible en la pintura", formatList(brief.artHeritage.map((trait, i) =>
+      `${cardName(card.parents[i])} · ${trait}`))]] : []),
     ["Referencia de ilustración", identity?.illustration?.reference],
     ["Estado de ilustración", status]
   ];
@@ -292,6 +295,36 @@ function renderPair() {
   failureResults.innerHTML = failed.map(aberrationArticle).join("");
   refreshTrial();
 }
+
+const coveragePanel = document.querySelector("#art-coverage");
+function renderCoverage() {
+  const result = firstGenerationArtCoverage();
+  const rows = [
+    ["Variantes exitosas G1", result.total],
+    ["Variantes con pintura definitiva", result.painted],
+    ["Archivos definitivos distintos", result.unique],
+    ["Variantes que usan un retrato de catálogo", result.catalogue],
+    ["Variantes con WebP provisional", result.baked],
+    ["Variantes con imagen procedural", result.generated],
+    ["Variantes sin representación", result.missing]
+  ];
+  const shared = result.shared.map(file =>
+    `<li><a href="${escape(file.src)}">${escape(file.name)}</a> · ${file.variants} variantes</li>`).join("");
+  document.querySelector("#art-coverage-report").innerHTML = `<p class="note">Recuento por variante al nivel inicial del retrato, incluidas las parejas de cartas iguales.</p>
+    ${renderRows(rows.map(([label, value]) => [label, currency.format(value)]))}${shared ? `<p>Archivos compartidos por varios resultados</p><ul>${shared}</ul>` : ""}`;
+}
+
+function openCoverageFromLink() {
+  if (location.hash === "#art-coverage") coveragePanel.open = true;
+}
+coveragePanel.addEventListener("toggle", () => {
+  if (coveragePanel.open && !coveragePanel.dataset.ready) {
+    renderCoverage();
+    coveragePanel.dataset.ready = "true";
+  }
+});
+window.addEventListener("hashchange", openCoverageFromLink);
+openCoverageFromLink();
 
 function loadExample(index) {
   state = freshState();

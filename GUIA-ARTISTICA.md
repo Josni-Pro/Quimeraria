@@ -106,6 +106,12 @@ El lote incluye **20 pinturas WebP de 768 × 768** y **3.188.054 bytes**. El reg
 | Estratega de las Cien Piezas | Atenea + Atenea | Nueva | `variant(fusion(atenea+atenea);hundred-pieces)` | [estratega-de-las-cien-piezas.webp](docs/assets/lote-03/estratega-de-las-cien-piezas.webp) | 150.018 |
 | Rastreador de Coraza · Anquilosaurio | Anquilosaurio + Lobo | Nueva | `variant(fusion(anquilosaurio+lobo);scent-vanguard)` | [rastreador-coraza-anquilosaurio.webp](docs/assets/lote-03/rastreador-coraza-anquilosaurio.webp) | 167.642 |
 
+## Lote 04
+
+El lote incorpora 25 pinturas de fusiones exitosas de primera generación. Axolocola integra las branquias y la aleta en un solo cuerpo de talla vulpina. Las alas del Planeador de Zorro son sus extremidades delanteras. La Esfinge del Eco y la Mesa de Pactos incorporan una función legible mediante las membranas de resonancia y los brazos de sellado, respectivamente.
+
+Los 25 WebP de 768 × 768 suman **3.354.348 bytes**. La cobertura al nivel inicial llega a 140 variantes con pintura definitiva y 129 archivos distintos. El [registro del lote](docs/fusion-art-batch-04.js) describe la herencia visible de cada variante. La [galería](docs/lote-04.html) muestra las pinturas y sus fichas. El [informe de producción](LOTE-ARTISTICO-04.md) reúne los nombres, progenitores, identificadores y pendientes.
+
 ## Aberraciones · Revisión obligatoria
 
 1. **Haz que el fallo se vea al primer golpe de vista.** La criatura debe resultar grotesca, inutilizable y anatómica o estructuralmente inviable. Diseña un defecto dominante que interrumpa dos ejes visibles en la ficha nueva. Entre ellos están la locomoción, la percepción, la respiración y el uso de herramientas.
