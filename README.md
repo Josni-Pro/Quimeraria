@@ -151,3 +151,9 @@ Las pruebas cubren probabilidades y progresión, ilustraciones y linajes, migrac
 ## Publicación
 
 GitHub Pages sirve la carpeta `/docs` de la rama configurada. Las rutas son relativas para que el juego también funcione bajo el nombre del repositorio. Para preparar el artefacto estático de Sites, ejecuta `node scripts/build-static.mjs`. Este comando copia la versión de `docs` en `dist`.
+
+## Santuario de recuperación
+
+El Santuario permite consultar el estado de cada ejemplar, asignar especialistas y recuperar sin costo a toda la escuadra. La Arena aplica fatiga y heridas persistentes después de cada encuentro. El entrenamiento usa los perfiles originales en una simulación independiente.
+
+Consulta las [reglas, balance y validación](SANTUARIO.md).

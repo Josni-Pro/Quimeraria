@@ -1,3 +1,5 @@
+import { healthFor, healthSummary } from "./health.js";
+import { availabilityLabel } from "./health-ui.js";
 import { ARCHETYPES, ARENA_DIFFICULTY, ARENA_RANKS, ranking } from "./arena-config.js";
 import { arenaEnemy, arenaOffers, rewardQuote } from "./arena.js";
 import { arenaProgress } from "./arena-records.js";
@@ -73,6 +75,8 @@ export function arenaLobby(game,portrait,message = "") {
   <div class="arena-ledger">${[["Victorias",ledger.wins],["Derrotas",ledger.losses],["Empates",ledger.draws],
     ["Racha / mejor",ledger.streak+" / "+ledger.bestStreak],["Rango máximo",ARENA_RANKS[ranking(ledger.peak)][0]],
     ["Óbolos / sobres",ledger.rewards.coins+" / "+ledger.rewards.packs]].map(([label,value])=>`<div><small>${label}</small><strong>${value}</strong></div>`).join("")}</div>
+  ${ledger.history[0]?.health?.some(row=>healthSummary(healthFor(game,row.copyId)).needsCare) ? `<details class="arena-chronicle">
+    <summary>Cuidados del último encuentro</summary>${arenaHealthReceipt(ledger.history[0])}</details>` : ""}
   <section><div class="arena-section-head"><h2>Adversarios disponibles</h2><p>Los importes mostrados suponen el mismo presupuesto en ambos lados.</p></div><div class="arena-cards">${offersSection(offers.board,portrait)}</div></section>
   <section><div class="arena-section-head"><h2>Campeones</h2><p>${ledger.champions.length} de ${offers.champions.length} derrotados</p></div>
     <div class="arena-cards">${offersSection(offers.champions,portrait)}</div></section>
@@ -86,6 +90,22 @@ export function arenaLobby(game,portrait,message = "") {
      ${item.packs.map(id=>escape(packDefinition(id).name)).join(", ")}</li>`).join("")}</ul>` : "<p>Tu primer encuentro aparecerá aquí.</p>"}</details>`;
 }
 
+function arenaHealthReceipt(result) {
+  const health = Array.isArray(result.health) ? result.health : [];
+  return health.length ? `<section id="arena-health-result" class="camp-panel arena-aftercare">
+    <h2>Estado de tu escuadra</h2>
+    <ul>${health.map(row=>{
+      const status = healthSummary(row.after);
+      return `<li><strong>${escape(row.name)}</strong><span>Fatiga ${row.before.fatigue} → ${row.after.fatigue}/100 · ${status.fatigue}</span>
+        <span>${healthSummary(row.before).wound} → ${status.wound}${status.damage ? " · "+status.damage : ""}</span>
+        <small>${availabilityLabel(status,row.after)}${status.needsCare ? " · Puede recibir atención" : ""}</small></li>`;
+    }).join("")}</ul>
+    ${result.rested ? `<p>${result.rested} ejemplares en reserva redujeron su fatiga.</p>` : ""}
+    <div class="camp-health-links">${act("arena-care","Recuperar escuadra gratis",result.id,"gold")}
+      ${act("arena-edit","Modificar escuadra")}<a href="./sanctuary.html">Ir al Santuario →</a></div>
+    <p id="arena-care-message" role="status"></p></section>` : "";
+}
+
 export function arenaReceipt(result,model) {
   if (!result) return "";
   return `<section class="arena-award ${model.quality === "minimal" || model.instant ? "" : "arena-celebrate"}" aria-label="Recompensa de arena">
@@ -96,5 +116,5 @@ export function arenaReceipt(result,model) {
     ${result.champion ? "<div><strong>Primer triunfo contra el campeón</strong></div>" : ""}
     ${result.challenge ? "<div><strong>Desafío completado</strong></div>" : ""}
     ${result.packs.map(id=>`<div><small>Sobre sellado</small><strong>${escape(packDefinition(id).name)}</strong>
-      <a href="./index.html#sobres">Ver sobres</a></div>`).join("")}</section>`;
+      <a href="./index.html#sobres">Ver sobres</a></div>`).join("")}</section>${arenaHealthReceipt(result)}`;
 }

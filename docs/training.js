@@ -1,5 +1,9 @@
+import { mountGameNavigation } from "./game-nav.js";
+import { commitGame, presentationPreferences, PRESENTATION_KEY as preferenceKey, SAVE_KEY as saveKey } from "./save-store.js";
+import { applyRecovery } from "./recovery.js";
+import { conditionLabel, healthDetails } from "./health-ui.js";
 import { readCardOrder, recentCards, sortCardEntries, writeCardOrder } from "./card-order.js";
-import { getCard, loadGame, serializeGame } from "./engine.js";
+import { getCard } from "./engine.js";
 import { advanceArena, arenaCard, arenaEnemy, arenaOffers, arenaPortraitState, beginArena, recoverArena, rewardQuote, validateArenaTeam, withdrawArena } from "./arena.js";
 import { ARENA_RULES } from "./arena-config.js";
 import { arenaLobby, arenaReceipt } from "./arena-view.js";
@@ -22,10 +26,9 @@ const dialog = document.querySelector("#camp-detail");
 const detail = document.querySelector("#detail-body");
 const instantDialog = document.querySelector("#camp-instant");
 const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
-const preferenceKey = "quimeraria:entrenamiento:preferencias:v1";
 const pageSize = 14;
 const arenaMode = document.body.dataset.mode === "arena";
-const saveKey = "quimeraria:partida:v1";
+const squadKey = "quimeraria:arena:formacion:v1";
 const rosterKey = "quimeraria:filtros-escuadra:v1";
 function savedRosterFilters() {
   try { return JSON.parse(sessionStorage.getItem(rosterKey)) ?? {}; }
@@ -48,7 +51,14 @@ let screen = arenaMode ? "lobby" : "builder";
 let activeArenaId;
 let receipt;
 let game = readTrainingGame();
-let roster = trainingRoster(game);
+const rules = arenaMode ? ARENA_RULES : TRAINING_RULES;
+const section = arenaMode ? "arena" : "entrenamiento";
+const nav = mountGameNavigation({ section,coins:game.coins,onSaved:latest=>{
+  game = latest;
+  nav.update(section,game.coins);
+  Object.assign(ui,presentationPreferences());
+} });
+let roster = trainingRoster(game,rules);
 let battle = null;
 let session = null;
 let visualFrames = null;
@@ -57,7 +67,7 @@ let opponent = null;
 let autoTimer = 0;
 let observer;
 let resumeOnCancel = false;
-const animationQuality = () => reduce.matches ? "minimal" : ui.quality;
+const animationQuality = () => reduce.matches || game.settings.animation==="off" ? "minimal" : ui.quality;
 const audio = createBattleAudio(() => ui.muted ? 0 : ui.volume);
 
 function savePreferences() {
@@ -74,6 +84,16 @@ function portrait(id, side = "player", defer = false) {
 }
 
 function setDefaults() {
+  if (arenaMode) {
+    try {
+      const ids = JSON.parse(localStorage.getItem(squadKey));
+      if (Array.isArray(ids) && ids.length===ui.slots.length) {
+        const byId = new Map(roster.flatMap(entry=>entry.copies.map(copy=>[copy.copyId,copy])));
+        ui.slots = ids.map(id=>byId.get(id) ?? null);
+        return;
+      }
+    } catch { /* Recupera la formación inicial. */ }
+  }
   for (const [id, slot] of [["lobo", 0], ["mamut", 1], ["alquimista", 4]]) {
     const found = roster.find(entry => entry.card.id === id);
     if (found) ui.slots[slot] = found.copies[0];
@@ -81,9 +101,15 @@ function setDefaults() {
 }
 setDefaults();
 
+function saveFormation() {
+  if (!arenaMode) return;
+  try { localStorage.setItem(squadKey,JSON.stringify(ui.slots.map(entry=>entry?.copyId ?? null))); }
+  catch { /* La formación se mantiene en esta sesión. */ }
+}
+
 function freeCopies(entry) {
-  const deployed = ui.slots.filter(copy => copy?.profile.cardId === entry.card.id).length;
-  return entry.owned - deployed;
+  const deployed = new Set(ui.slots.filter(Boolean).map(copy=>copy.copyId));
+  return entry.copies.filter(copy=>!deployed.has(copy.copyId) && (!arenaMode || copy.condition.available)).length;
 }
 
 function filteredRoster() {
@@ -98,7 +124,7 @@ function filteredRoster() {
       (!filters.cost || unit.cost === Number(filters.cost)) &&
       (!filters.affinity || unit.affinities.includes(filters.affinity)) &&
       (!filters.family || [unit.basic, unit.main, unit.special].some(key => SKILLS[key].intent === filters.family)) &&
-      (filters.available === "free" ? freeCopies(entry) > 0 : filters.available !== "deployed" || freeCopies(entry) < entry.owned);
+      (filters.available === "free" ? freeCopies(entry) > 0 : filters.available !== "deployed" || ui.slots.some(copy=>copy?.profile.cardId===entry.card.id));
   }).map(entry => ({ ...entry,available:freeCopies(entry) }));
   return sortCardEntries(visible,{ by:filters.sort,direction:filters.direction },recentCards(game));
 }
@@ -110,7 +136,7 @@ function showRoster() {
   ui.page = Math.min(ui.page, pages - 1);
   const visible = available.slice(ui.page * pageSize, (ui.page + 1) * pageSize);
   const list = root.querySelector("#camp-roster");
-  list.innerHTML = visible.map(entry => rosterEntry(entry, freeCopies(entry), portrait(entry.card.id, "player", true))).join("")
+  list.innerHTML = visible.map(entry => rosterEntry(entry, freeCopies(entry), portrait(entry.card.id, "player", true),arenaMode)).join("")
     || '<p class="tactic">No hay criaturas que coincidan con estos filtros.</p>';
   root.querySelector("#camp-roster-count").textContent = `${available.length} ${available.length === 1 ? "variante disponible" : "variantes disponibles"}`;
   root.querySelector("#camp-pages").innerHTML = pages > 1 ?
@@ -131,7 +157,7 @@ function showRoster() {
 function showFormation() {
   const used = budgetUsed(ui.slots);
   const view = root.querySelector("#camp-formation");
-  view.innerHTML = builderFormation(ui.slots, ui.selected, portrait);
+  view.innerHTML = builderFormation(ui.slots, ui.selected, portrait,arenaMode);
   const offer = ui.encounter;
   const maximum = offer?.kind === "challenge" ? offer.budget : TRAINING_RULES.budget;
   updateBudget(root.querySelector("#camp-budget"),ui.slots,maximum);
@@ -159,11 +185,12 @@ function renderBuilder() {
   showFormation();
 }
 
-function place(id) {
+function place(id,copyId) {
   const entry = roster.find(row => row.card.id === id);
   if (!entry) return;
   const used = new Set(ui.slots.map(copy => copy?.copyId));
-  const copy = entry.copies.find(candidate => !used.has(candidate.copyId));
+  const copy = entry.copies.find(candidate=>(!copyId || candidate.copyId===copyId) &&
+    !used.has(candidate.copyId) && (!arenaMode || candidate.condition.available));
   if (!copy) return;
   const destination = ui.slots[ui.selected] ? ui.slots.indexOf(null) : ui.selected;
   if (destination < 0) {
@@ -172,6 +199,7 @@ function place(id) {
     return;
   }
   ui.slots[destination] = copy;
+  saveFormation();
   ui.selected = destination;
   message = "";
   showFormation();
@@ -181,25 +209,37 @@ function place(id) {
 function selectSlot(index) {
   if (index === ui.selected && ui.slots[index]) {
     const entry = ui.slots[index];
-    showDetails(entry.profile);
+    showDetails(entry.profile,"player",entry);
     return;
   }
   if (ui.slots[ui.selected] && index !== ui.selected) {
     [ui.slots[index], ui.slots[ui.selected]] = [ui.slots[ui.selected], ui.slots[index]];
+    saveFormation();
   }
   ui.selected = index;
   showFormation();
   root.querySelector(`[data-slot="${index}"]`)?.focus({ preventScroll: true });
 }
 
-function showDetails(unit, side = "player") {
-  detail.innerHTML = detailMarkup(unit, portrait(unit.cardId, side));
+function showDetails(unit,side = "player",copy,withSelection = false) {
+  const entry = roster.find(item=>item.card.id===unit.cardId);
+  const selected = copy ?? (side==="player" && screen==="builder" ? entry?.copies[0] : null);
+  const available = selected && !ui.slots.some(item=>item?.copyId===selected.copyId) &&
+    (!arenaMode || selected.condition.available);
+  const picker = withSelection && selected && entry ? `<label class="camp-copy-picker">Ejemplar
+    <select class="camp-input" id="camp-copy-picker" data-card="${escape(unit.cardId)}">${entry.copies.map(item=>
+      `<option value="${escape(item.copyId)}" ${item.copyId===selected.copyId ? "selected" : ""}>Ejemplar ${item.index} · ${conditionLabel(item.health,item.condition)}${item.condition.blocked ? " · "+item.condition.blocked : ""}</option>`).join("")}</select></label>
+    <button class="camp-btn gold" type="button" data-exact-copy="${escape(selected.copyId)}" data-card="${escape(unit.cardId)}" ${available ? "" : "disabled"}>Añadir este ejemplar</button>` : "";
+  const condition = selected ? healthDetails(selected.health,selected.condition,unit.baseStats ?? unit.stats,
+    { training:!arenaMode,link:selected.copyId }) : "";
+  detail.innerHTML = detailMarkup(unit,portrait(unit.cardId,side),picker+condition);
   if (!dialog.open) dialog.showModal();
 }
 
 function syncRoster() {
   game = readTrainingGame();
-  roster = trainingRoster(game);
+  nav.update(section,game.coins);
+  roster = trainingRoster(game,rules);
   const latest = new Map(roster.flatMap(entry => entry.copies.map(copy => [copy.copyId, copy])));
   const old = ui.slots.filter(Boolean).length;
   ui.slots = ui.slots.map(copy => latest.get(copy?.copyId) ?? null);
@@ -258,18 +298,13 @@ function returnToBuilder() {
   window.scrollTo(0,0);
 }
 
-function saveArena(operation) {
-  const commit = () => {
-    try {
-      const current = loadGame(localStorage.getItem(saveKey));
-      const result = operation(current);
-      if (!result.ok) return result;
-      localStorage.setItem(saveKey,serializeGame(result.state));
-      game = result.state;
-      return result;
-    } catch { return { ok:false,error:"El navegador impide guardar la Arena." }; }
-  };
-  return navigator.locks?.request ? navigator.locks.request(saveKey,commit) : Promise.resolve(commit());
+async function saveArena(operation) {
+  const result = await commitGame(operation);
+  if (result.ok) {
+    game = result.state;
+    nav.update(section,game.coins);
+  }
+  return result;
 }
 function acceptArena(active, snapshot) {
   ui.encounter = active.offer;
@@ -278,6 +313,7 @@ function acceptArena(active, snapshot) {
   opponent = active.enemy;
   activeArenaId = active.id;
   receipt = null;
+  ui.careMessage = "";
   battle = snapshot;
   ui.elapsed = 0;
   ui.instant = false;
@@ -297,7 +333,8 @@ function renderLobby(focus = true) {
   ui.encounter = null;
   battle = null;
   game = readTrainingGame();
-  roster = trainingRoster(game);
+  nav.update(section,game.coins);
+  roster = trainingRoster(game,rules);
   screen = "lobby";
   root.innerHTML = arenaLobby(game,portrait,feedback);
   if (focus) window.scrollTo(0,0);
@@ -527,7 +564,7 @@ root.addEventListener("click", event => {
   if (el.dataset.pick) { place(el.dataset.pick); return; }
   if (el.dataset.details) {
     const entry = roster.find(row => row.card.id === el.dataset.details);
-    if (entry) showDetails(entry.profile);
+    if (entry) showDetails(entry.copies[0].profile,"player",entry.copies[0],true);
     return;
   }
   if (el.dataset.slot !== undefined) { selectSlot(Number(el.dataset.slot)); return; }
@@ -538,6 +575,25 @@ root.addEventListener("click", event => {
   }
   switch (el.dataset.camp) {
     case "arena-lobby": renderLobby(); break;
+    case "arena-edit": {
+      syncRoster();
+      chooseArena(arenaOffers(game).board[0].id);
+      break;
+    }
+    case "arena-care": {
+      el.disabled = true;
+      const match = el.dataset.id;
+      saveArena(current=>{
+        const item = current.arena?.history.find(result=>result.id===match);
+        return item ? applyRecovery(current,item.health.map(row=>row.copyId)) : { ok:false,error:"El encuentro ya no está en el historial." };
+      }).then(result=>{
+        ui.careMessage = result.ok ? `Escuadra recuperada · ${result.quote.rows.length} ejemplares.` : result.error;
+        const status = el.closest(".arena-aftercare")?.querySelector("[role=status]");
+        if (status) status.textContent = ui.careMessage;
+        if (!result.ok) el.disabled = false;
+      });
+      break;
+    }
     case "arena-pick": chooseArena(el.dataset.id); break;
     case "arena-resume": resumeArena(); break;
     case "arena-foe": {
@@ -555,6 +611,7 @@ root.addEventListener("click", event => {
       break;
     case "remove":
       ui.slots[ui.selected] = null;
+      saveFormation();
       message = "";
       showFormation();
       showRoster();
@@ -675,10 +732,25 @@ root.addEventListener("toggle", event => {
   if (event.target.parentElement?.classList.contains("filters-wrap")) ui.filtersOpen = event.target.open;
   if (event.target.classList.contains("seed")) ui.seedOpen = event.target.open;
 }, true);
+dialog.addEventListener("change",event=>{
+  if (event.target.id!=="camp-copy-picker") return;
+  const copy = roster.find(item=>item.card.id===event.target.dataset.card)?.copies.find(item=>item.copyId===event.target.value);
+  if (copy) {
+    showDetails(copy.profile,"player",copy,true);
+    dialog.querySelector("#camp-copy-picker")?.focus();
+  }
+});
 dialog.addEventListener("click", event => {
+  const exact = event.target.closest("[data-exact-copy]");
+  if (exact) {
+    dialog.close();
+    place(exact.dataset.card,exact.dataset.exactCopy);
+  }
   if (event.target.closest('[data-camp="close-detail"]') || event.target === dialog) dialog.close();
 });
 window.addEventListener("storage", event => {
+  if (event.key===saveKey) nav.update(section,readTrainingGame().coins);
+  if (event.key===preferenceKey) Object.assign(ui,presentationPreferences());
   if (event.key === saveKey && arenaMode && screen === "lobby") renderLobby(false);
   if (event.key === saveKey && screen === "builder") {
     syncRoster();
@@ -687,7 +759,11 @@ window.addEventListener("storage", event => {
 });
 window.addEventListener("pagehide",() => { interrupt(); audio.suspend(); });
 window.addEventListener("pageshow", event => {
-  if (event.persisted && screen === "battle") arenaMode ? renderLobby() : returnToBuilder();
+  if (!event.persisted) return;
+  nav.update(section,readTrainingGame().coins);
+  if (screen==="battle") arenaMode ? renderLobby() : returnToBuilder();
+  else if (screen==="lobby") renderLobby(false);
+  else if (screen==="builder") { syncRoster(); renderBuilder(); }
 });
 reduce.addEventListener("change", () => {
   const scene = root.querySelector("#scene");

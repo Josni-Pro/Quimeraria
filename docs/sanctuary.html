@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#151b19">
+  <meta name="description" content="Cuida a tus criaturas, repara constructos y recupera tu escuadra tras la Arena.">
+  <title>Santuario · Quimeraria</title>
+  <link rel="icon" href="./assets/sigil.png">
+  <link rel="stylesheet" href="./game-nav.css">
+  <link rel="stylesheet" href="./sanctuary.css">
+  <script type="module" src="./sanctuary.js"></script>
+</head>
+<body>
+  <header id="game-nav"></header>
+  <main class="sanctuary-shell" id="sanctuary">
+    <nav id="sanctuary-areas" aria-label="Áreas del Santuario"></nav>
+    <section id="sanctuary-room" class="sanctuary-room" aria-labelledby="sanctuary-title"></section>
+    <section id="sanctuary-ledger" class="sanctuary-ledger" aria-label="Estado de la colección"></section>
+    <div class="sanctuary-work">
+      <section id="sanctuary-patients" class="sanctuary-panel" aria-labelledby="patient-title">
+        <div class="sanctuary-head"><h2 id="patient-title">Ejemplares</h2><output id="patient-count"></output></div>
+        <div id="patient-actions"></div>
+        <details class="sanctuary-filters"><summary>Filtros y orden</summary><div>
+          <label>Buscar <input id="patient-search" type="search" placeholder="Nombre de la criatura"></label>
+          <label>Estado <select id="patient-condition"><option value="">Todos</option><option value="care">Necesita atención</option><option value="wound">Con heridas</option><option value="tired">Desde 25 de fatiga</option><option value="ready">Disponible</option><option value="blocked">Restringida</option></select></label>
+          <label>Generación <select id="patient-generation"><option value="">Todas</option><option value="0">G0</option><option value="1">G1</option><option value="2">G2</option><option value="3">G3</option><option value="4">G4</option></select></label>
+          <label>Orden <select id="patient-order"><option value="rarity">Rareza descendente</option><option value="wound">Gravedad</option><option value="fatigue">Fatiga</option><option value="generation">Generación descendente</option><option value="available">Disponibilidad</option></select></label>
+        </div></details>
+        <ul id="patient-list" class="patient-list"></ul>
+        <nav id="patient-pages" class="patient-pages" aria-label="Páginas de ejemplares"></nav>
+      </section>
+      <aside class="sanctuary-aside">
+        <section id="sanctuary-specialists" class="sanctuary-panel" aria-labelledby="specialist-title"></section>
+        <section class="sanctuary-panel sanctuary-guide"><h2>Cuidados de la colección</h2>
+          <p>La recuperación gratuita elimina todas las heridas y la fatiga en el momento. Cada copia conserva su propio estado.</p>
+          <p>Los tratamientos en óbolos aportan una pequeña reserva para el próximo combate real. Tu equipo de especialistas puede ampliar el alivio y reducir el costo del área.</p>
+          <p>Los ejemplares en un encuentro de Arena reciben atención al concluirlo.</p>
+          <a href="./health-lab.html">Consultar diagnóstico de recuperación →</a>
+        </section>
+      </aside>
+    </div>
+    <noscript>Activa JavaScript para abrir el Santuario.</noscript>
+  </main>
+  <footer class="sanctuary-shell sanctuary-footer"><a href="./arena.html">← Volver a la Arena</a><span>Quimeraria</span></footer>
+  <div id="sanctuary-status" class="sanctuary-status" role="status" aria-live="polite"></div>
+  <aside id="sanctuary-effect" class="sanctuary-effect" aria-label="Animación de recuperación" hidden></aside>
+  <dialog id="sanctuary-dialog" aria-labelledby="sanctuary-dialog-title"><div id="sanctuary-dialog-body"></div></dialog>
+</body>
+</html>
