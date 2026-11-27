@@ -3,13 +3,14 @@ import { CONCEPT_LABELS, getCreatureConcept } from "./creature-concepts.js";
 import { FUSION_ART_BATCH_01 } from "./fusion-art-batch-01.js";
 import { FUSION_ART_BATCH_02 } from "./fusion-art-batch-02.js";
 import { FUSION_ART_BATCH_03 } from "./fusion-art-batch-03.js";
+import { FUSION_ART_BATCH_04 } from "./fusion-art-batch-04.js";
 import { BAKED_FUSIONS } from "./fusion-bakes.js";
 import { fusionArtKey, PAINTED_FUSIONS, PORTRAIT_OVERRIDES } from "./fusion-paintings.js";
 import { PORTRAIT_PROFILES } from "./portrait-profiles.js";
 import { aberrationPainting, ARCHIVED_ABERRATION_PAINTINGS } from "./aberration-art-pilot.js";
 
 const recipes = new Map(RECIPES.map(recipe => [fusionArtKey(recipe.parents), recipe]));
-const batch = new Map([FUSION_ART_BATCH_01, FUSION_ART_BATCH_02, FUSION_ART_BATCH_03]
+const batch = new Map([FUSION_ART_BATCH_01, FUSION_ART_BATCH_02, FUSION_ART_BATCH_03, FUSION_ART_BATCH_04]
   .flatMap(entries => entries.map(entry => [entry.id, entry])));
 const dedicated = new Map([
   ["variant(fusion(alquimista+mamut);colossus)", ["piloto/coloso-alquimico"]],
@@ -80,7 +81,7 @@ export function buildArtBrief(card, parents) {
     .find(source => !source.profession && source.anatomy !== "hybrid")?.anatomy ?? concept.anatomy : concept.anatomy;
   const anatomy = bodyPlans[body] ?? bodyPlans.hybrid;
   const features = concept.features.length ? concept.features : sources.map(source => source.motif);
-  const artDirection = batch.get(card.id)?.direction;
+  const painting = batch.get(card.id);
   return {
     silhouette: `${anatomy}. Rasgos reconocibles: ${/[.!?]$/.test(contrast) ? contrast : contrast + "."}`,
     anatomy: CONCEPT_LABELS.anatomy[concept.anatomy] ?? concept.anatomy,
@@ -95,7 +96,8 @@ export function buildArtBrief(card, parents) {
     action: card.description.startsWith("Quimera que combina los rasgos")
       ? `Mostrar ${features.slice(0, 2).join(" y ")} en una postura funcional.` : card.description,
     distinguishingFeatures: contrast,
-    ...(artDirection ? { artDirection } : {}),
+    ...(painting && { artDirection: painting.direction }),
+    ...(painting?.heritage && { artHeritage: painting.heritage }),
     sources
   };
 }
