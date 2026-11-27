@@ -112,6 +112,12 @@ El lote incorpora 25 pinturas de fusiones exitosas de primera generación. Axolo
 
 Los 25 WebP de 768 × 768 suman **3.354.348 bytes**. La cobertura al nivel inicial llega a 140 variantes con pintura definitiva y 129 archivos distintos. El [registro del lote](docs/fusion-art-batch-04.js) describe la herencia visible de cada variante. La [galería](docs/lote-04.html) muestra las pinturas y sus fichas. El [informe de producción](LOTE-ARTISTICO-04.md) reúne los nombres, progenitores, identificadores y pendientes.
 
+## Lote 05
+
+El lote incorpora 40 pinturas de fusiones exitosas de primera generación. La selección distribuye el arte entre linajes naturales, ancestrales y míticos, oficios y funciones de apoyo. La producción usa marcos de cuerpo completo y referencias del entorno para que la escala, el oficio y los rasgos heredados sigan legibles a tamaño de carta.
+
+Los 40 WebP de 768 × 768 suman **5.974.044 bytes**. La cobertura inicial llega a 180 variantes con arte definitivo y 169 archivos distintos. Consulta la [galería](docs/lote-05.html), el [registro artístico](docs/fusion-art-batch-05.js) y el [informe de producción](LOTE-ARTISTICO-05.md).
+
 ## Aberraciones · Revisión obligatoria
 
 1. **Haz que el fallo se vea al primer golpe de vista.** La criatura debe resultar grotesca, inutilizable y anatómica o estructuralmente inviable. Diseña un defecto dominante que interrumpa dos ejes visibles en la ficha nueva. Entre ellos están la locomoción, la percepción, la respiración y el uso de herramientas.

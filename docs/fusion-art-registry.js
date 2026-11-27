@@ -4,13 +4,14 @@ import { FUSION_ART_BATCH_01 } from "./fusion-art-batch-01.js";
 import { FUSION_ART_BATCH_02 } from "./fusion-art-batch-02.js";
 import { FUSION_ART_BATCH_03 } from "./fusion-art-batch-03.js";
 import { FUSION_ART_BATCH_04 } from "./fusion-art-batch-04.js";
+import { FUSION_ART_BATCH_05 } from "./fusion-art-batch-05.js";
 import { BAKED_FUSIONS } from "./fusion-bakes.js";
 import { fusionArtKey, PAINTED_FUSIONS, PORTRAIT_OVERRIDES } from "./fusion-paintings.js";
 import { PORTRAIT_PROFILES } from "./portrait-profiles.js";
 import { aberrationPainting, ARCHIVED_ABERRATION_PAINTINGS } from "./aberration-art-pilot.js";
 
 const recipes = new Map(RECIPES.map(recipe => [fusionArtKey(recipe.parents), recipe]));
-const batch = new Map([FUSION_ART_BATCH_01, FUSION_ART_BATCH_02, FUSION_ART_BATCH_03, FUSION_ART_BATCH_04]
+const batch = new Map([FUSION_ART_BATCH_01, FUSION_ART_BATCH_02, FUSION_ART_BATCH_03, FUSION_ART_BATCH_04, FUSION_ART_BATCH_05]
   .flatMap(entries => entries.map(entry => [entry.id, entry])));
 const dedicated = new Map([
   ["variant(fusion(alquimista+mamut);colossus)", ["piloto/coloso-alquimico"]],

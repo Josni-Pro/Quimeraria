@@ -217,8 +217,11 @@ dialog::backdrop { background: #07050bbd; backdrop-filter: blur(3px); }
 .result-art .portrait-image { object-position: 61% 30%; }
 .result--generated .result-art .portrait-image { object-position: 50% 39%; }
 
-/* Los encuadres del lote 04 conservan la silueta completa en tarjetas estrechas. */
-:is(.card-art, .result-art) .portrait-image[src^="./assets/lote-04/"] { object-fit: contain; object-position: center 22%; }
+/* Los encuadres de los lotes 04 y 05 conservan la silueta completa en tarjetas estrechas. */
+:is(.card-art, .result-art) .portrait-image:is([src^="./assets/lote-04/"], [src^="./assets/lote-05/"]) {
+  object-fit: contain;
+  object-position: center 22%;
+}
 .result--generated::after { background: linear-gradient(0deg,#130c1efe,#150e20f7 26%,#150e208c 51%,transparent 77%); }
 .result-links { display: flex; flex-wrap: wrap; gap: 7px 15px; }
 .finish-label { color: #f1cb86; font-size: 10px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }

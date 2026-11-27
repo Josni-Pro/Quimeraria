@@ -132,7 +132,7 @@ button:disabled { cursor: default; opacity: .49; }
 .scene .unit-fig::after {content:"";position:absolute;inset:0;pointer-events:none;
   background:linear-gradient(180deg,#0b181954,transparent 32%,transparent 65%,#081519b7);}
 .scene .unit-fig img {object-position:50% 40%;}
-.unit-fig img[src^="./assets/lote-04/"] {object-fit:contain;object-position:center;}
+.unit-fig img:is([src^="./assets/lote-04/"], [src^="./assets/lote-05/"]) {object-fit:contain;object-position:center;}
 .scene .unit-badge {z-index:1;}
 .scene .unit-copy strong {font-size:clamp(11px,1.25vw,16px);color:#fff0d9;}
 .scene .unit-copy {padding:4px 8px 6px;background:#12262a;}
