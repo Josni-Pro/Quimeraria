@@ -65,7 +65,7 @@ La prueba inicial mostró demasiadas interrupciones en formaciones ofensivas. Se
 
 Hay cuatro pinturas ambientales originales WebP de 1280 × 853 píxeles. La vista carga la ilustración del área activa y usa una composición y un recorte adaptados a móvil. Enfermería emplea pulsos cálidos, Taller chispas, Cámara arcana anillos lumínicos y Descanso hojas concéntricas. Los efectos duran dos segundos, pueden omitirse y respetan el movimiento reducido, la calidad gráfica, el modo de animación y el sonido. Las transacciones se guardan antes de los efectos. [Guía artística](GUIA-ARTISTICA.md)
 
-- Ejecuta la batería con `node --test tests/*.mjs` y las simulaciones con `node scripts/health-sim.mjs`.
+- La batería pasó las 75 pruebas, incluidas 12 específicas de salud y navegación y la simulación de regresión de 24 000 fusiones. Ejecuta `node --test tests/*.mjs` y `node scripts/health-sim.mjs` para reproducir los resultados.
 - Para repetir la validación visual, sirve `docs` en la ruta `/Quimeraria/` y ejecuta `python tests/browser-sanctuary.py` con Chromium, Playwright para Python y FFmpeg. `QUIMERARIA_URL` y `QUIMERARIA_EVIDENCE` ajustan la URL y la carpeta de evidencias.
-- Se comprobó Chromium de escritorio y emulación táctil en 360, 393 y 430 px en vertical. La emulación cubre el flujo móvil de tipo Galaxy A54. El dispositivo físico queda pendiente.
+- Se comprobó Chromium de escritorio y emulación táctil en 360, 393 y 430 px en vertical. Se verificaron los saldos entre pestañas, la recarga tras el pago, una victoria recompensada y una derrota con heridas persistentes. La emulación cubre el flujo móvil de tipo Galaxy A54. El dispositivo físico queda pendiente.
 - La rama de revisión es `feat/recovery-sanctuary`. GitHub Pages conserva `docs` como origen.

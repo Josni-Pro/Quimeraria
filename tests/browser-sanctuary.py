@@ -304,6 +304,28 @@ async def modalities(browser):
     print("Compras, fusión, recompensas y saldo entre pestañas; entrenamiento, Arena, recarga y diagnóstico", flush=True)
 
 
+async def wounded_result(browser):
+    ctx, page = await prepare(browser, 1440, clinical=False)
+    await go(page, "arena")
+    await page.locator('[data-camp="arena-pick"]').nth(2).click()
+    await page.locator("#camp-start").click()
+    await instant(page)
+    await expect(page.locator(".results h1")).to_have_text("Derrota")
+    await expect(page.locator("#arena-health-result")).to_contain_text("Herida leve")
+    actual = await save(page)
+    assert actual["arena"]["history"][0]["health"][0]["injury"] == 1
+    assert actual["health"]["legacy:lobo:0"]["wound"] == 1
+    await shot(page, "15-heridas-de-arena")
+    await page.reload()
+    assert await save(page) == actual
+    await page.get_by_text("Cuidados del último encuentro", exact=True).click()
+    await page.get_by_role("button", name="Recuperar escuadra gratis").click()
+    await expect(page.locator("#arena-care-message")).to_contain_text("Escuadra recuperada")
+    assert not (await save(page))["health"]
+    await ctx.close()
+    print("Derrota real: heridas y fatiga persistentes, recuperación gratuita desde el historial", flush=True)
+
+
 async def mobile(browser, width):
     ctx, page = await prepare(browser, width, balance=0)
     await header(page, "forja", True)
@@ -358,6 +380,7 @@ async def main():
                                              args=["--no-sandbox", "--disable-dev-shm-usage"])
         await desktop(browser)
         await modalities(browser)
+        await wounded_result(browser)
         for width in (360, 393, 430):
             await mobile(browser, width)
         await browser.close()
